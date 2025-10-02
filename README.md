@@ -1,2 +1,2 @@
 # tempTeam1Capstone
-temporary github repo before moving to gittea
+This is my repo, just pull the stuff you need
