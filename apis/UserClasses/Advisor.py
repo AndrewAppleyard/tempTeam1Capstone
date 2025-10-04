@@ -12,7 +12,7 @@ class Advisor(User.User):
     def getAdvisor():
         return self
 
-class AdvisorMap(Base):
+class AdvisorMap(User.Base):
     __tablename__="Advisor"
 
     advisorID: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
