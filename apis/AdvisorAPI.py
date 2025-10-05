@@ -52,3 +52,28 @@ def getAdvisors():
         return "Failed to Execute Search"
     finally:
         session.close()
+
+@app.route("Advisor/<advisorID>")
+def getAdvisor(advisorID: int):
+    try:
+        with Session(engine) as session:
+            result = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap == advisorID).first()
+            
+            advisor = Advisor.Advisor()
+
+            advisor.advisorID = result.advisorID
+            advisor.firstName = result.firstName
+            advisor.lastName = result.lastName
+            advisor.email = result.email
+            advisor.phoneNumber = result.phoneNumber
+            advisor.role = result.role
+            advisor.school = result.school
+
+            return advisor.__dict__
+    except Exception as e:
+        traceback.print_exc()
+        return "Failed to Find Advisor"
+    finally:
+        session.close()
+
+app.run(host="0.0.0.0", port=80)
