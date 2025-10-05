@@ -24,6 +24,7 @@ base.metadata.create_all(bind=engine)
 
 app = Flask(__name__)
 
+dateFormatString = "%m-%d-%Y"
 
 @app.route("/Admin/Advisor/Insert", methods = ['POST'])
 def addAdvisor() -> None:
@@ -97,6 +98,9 @@ def updateAdvisor(id: int) -> None:
 
 @app.route("/Admin/Student/Insert", methods=['POST']) 
 def addStudent():
+    true = "True"
+    false = "False"
+
     student = Student.StudentMap()
     student.firstName = request.form.get('firstName')
     student.lastName = request.form.get('lastName')
@@ -107,27 +111,44 @@ def addStudent():
     student.gpa = request.form.get('gpa')
     student.major = request.form.get('major')
     student.minor = request.form.get('minor')
-    student.registrationStatus = request.form.get('registrationStatus')
-    student.advisingStatus = request.form.get('advisingStatus')
-    student.dateAdvised = request.form.get('dateAdvised')
-    student.financialHold = request.form.get('financialHold')
-    student.advisingHold = request.form.get('advisingHold')
-    student.academicHold = request.form.get('academicHold')
+
+    if(request.form.get('registrationStatus').casefold() == true.casefold()):
+        student.registrationStatus = True
+    elif(request.form.get('registrationStatus').casefold() == false.casefold()):
+        student.registrationStatus = False
+    if(request.form.get('advisingStatus').casefold() == true.casefold()):
+        student.advisingStatus = True
+    elif(request.form.get('advisingStatus').casefold() == false.casefold()):
+        student.advisingStatus = False
+    if(request.form.get('dateAdvised') != None):
+        date = datetime.strptime(request.form.get('dateAdvised'), dateFormatString)
+        student.dateAdvised = date
+    if(request.form.get('financialHold').casefold() == true.casefold()):
+        student.financialHold = True
+    elif(request.form.get('financialHold').casefold() == false.casefold()):
+        student.financialHold = False
+    if(request.form.get('advisingHold').casefold() == true.casefold()):
+        student.advisingHold = True
+    elif(request.form.get('advisingHold').casefold() == false.casefold()):
+        student.advisingHold = False
+    if(request.form.get('academicHold').casefold() == true.casefold()):
+        student.academicHold = True
+    elif(request.form.get('academicHold').casefold() == false.casefold()):
+        student.academicHold = False
 
     try:
         with Session(engine) as session:
             session.add(student)
             session.commit()
             session.refresh(student)
-            session.close()
 
             return "Student Added"
     except Exception as e:
         traceback.print_exc()
-        
+        session.rollback()
         return "Student Add Failed"
     finally:
-        pass
+        session.close()
 
 @app.route("/Admin/Student/<id>")
 def deleteStudent(id: int):
@@ -145,8 +166,8 @@ def deleteStudent(id: int):
     finally:
         session.close()
 
-@app.route("/Admin/Student/Update/<id>", methods = ['GET', 'POST'])
-def updateStudent(id: int) -> None:
+@app.route("/Admin/Student/Update/<id>/<role>", methods = ['GET', 'POST'])
+def updateStudent(id: int, role: str) -> None:
     try:
         with Session(engine) as session:
             student = session.query(Student.StudentMap).filter(Student.StudentMap.StudentID == id).first()
@@ -169,17 +190,33 @@ def updateStudent(id: int) -> None:
             if(request.form.get('minor') != None):
                 student.minor = request.form.get('minor')
             if(request.form.get('registrationStatus') != None):
-                student.registrationStatus = request.form.get('registrationStatus')
+                if(request.form.get('registrationStatus').casefold() == true.casefold()):
+                    student.registrationStatus = True
+                elif(request.form.get('registrationStatus').casefold() == false.casefold()):
+                    student.registrationStatus = False
             if(request.form.get('advisingStatus') != None):
-                student.advisingStatus = request.form.get('advisingStatus')
+                if(request.form.get('advisingStatus').casefold() == true.casefold()):
+                    student.advisingStatus = True
+                elif(request.form.get('advisingStatus').casefold() == false.casefold()):
+                    student.advisingStatus = False
             if(request.form.get('dateAdvised') != None):
-                student.dateAdvised = request.form.get('dateAdvised')
+                date = datetime.strptime(request.form.get('dateAdvised'), dateFormatString)
+                student.dateAdvised = date
             if(request.form.get('financialHold') != None):
-                student.financialHold = request.form.get('financialHold')
+               if(request.form.get('financialHold').casefold() == true.casefold()):
+                    student.financialHold = True
+            elif(request.form.get('financialHold').casefold() == false.casefold()):
+                    student.financialHold = False
             if(request.form.get('advisingHold') != None):
-                student.advisingHold = request.form.get('advisingHold')
+                if(request.form.get('advisingHold').casefold() == true.casefold()):
+                    student.advisingHold = True
+                elif(request.form.get('advisingHold').casefold() == false.casefold()):
+                    student.advisingHold = False
             if(request.form.get('academicHold') != None):
-                student.academicHold = request.form.get('academicHold')
+                if(request.form.get('academicHold').casefold() == true.casefold()):
+                    student.academicHold = True
+                elif(request.form.get('academicHold').casefold() == false.casefold()):
+                    student.academicHold = False
 
             session.commit()
 
@@ -212,4 +249,42 @@ def getAdmin(id: int):
         return "Failed to Find Admin"
     finally:
         session.close()
+
+
+@app.route("/Admin/Student/Advisor", methods=['POST'])
+def addStudentToAdvisor():
+    advisorAndStudents = Advisor.Advisor_And_StudentsMap()
+    advisorAndStudents.advisorID = request.form.get('advisorID')
+    advisorAndStudents.studentID = request.form.get('studentID')
+
+    try:
+        with Session(engine) as session:
+            session.add(advisorAndStudents)
+            session.commit()
+            session.refresh(advisorAndStudents)
+
+            return "Student Added to Advisor"
+    except Exception as e:
+        traceback.print_exc()
+        session.rollback()
+        
+        return "Failed to Add Student to Advisor"
+    finally:
+        session.close()
+
+@app.route("/Admin/Student/Advisor/<studentID>/<advisorID>")
+def removeStudentFromAdvisor(studentID: int, advisorID: int):
+    try:
+        with Session(engine) as session:
+            result = session.query(Advisor.Advisor_And_StudentsMap).filter(Advisor.Advisor_And_StudentsMap.advisorID == advisorID).filter(Advisor.Advisor_And_StudentsMap.studentID == studentID).first()
+            session.delete(result)
+            session.commit()
+            return "Student Removed From Advisor"
+    except Exception as e:
+        traceback.print_exc()
+        session.rollback()
+        return "Failed to Remove Student From Advisor"
+    finally:
+        session.close()
+
 app.run(host = "0.0.0.0", port=80)

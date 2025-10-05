@@ -7,7 +7,6 @@ class Student(User.User):
     classes: list[str]
     grades: list[str]
     gpa: float
-    advisor: str
     major: str
     minor: str
     registrationStatus: bool
@@ -34,7 +33,6 @@ class StudentMap(User.Base):
     role: Mapped[str] = mapped_column(String(10))
     school: Mapped[str] = mapped_column(String(50))
     gpa: Mapped[float] = mapped_column(Float)
-    advisor: Mapped[str] = mapped_column(String(50)) #ask Chris and Sophia
     major: Mapped[str] = mapped_column(String(50))
     minor: Mapped[str] = mapped_column(String(50))
     registrationStatus: Mapped[bool] = mapped_column(Boolean)
