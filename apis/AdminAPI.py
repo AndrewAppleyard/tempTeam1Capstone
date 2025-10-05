@@ -198,7 +198,7 @@ def getAdmin(id: int):
             result = session.query(Admin.AdminMap).filter(Admin.AdminMap.adminID == id).first()
             admin = Admin.Admin()
 
-            admin.adminID = result.adminID
+            admin.adminID= result.adminID
             admin.firstName = result.firstName
             admin.lastName = result.lastName
             admin.email = result.email

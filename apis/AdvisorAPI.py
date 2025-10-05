@@ -1,0 +1,54 @@
+from flask import Flask, jsonify, request
+from sqlalchemy import Column, Integer, String, create_engine, select
+from sqlalchemy.orm import Mapped, mapped_column, sessionmaker, DeclarativeBase, Session
+from sqlalchemy_utils import database_exists, create_database
+from pymysql import install_as_MySQLdb
+import json
+import traceback
+from datetime import datetime
+from UserClasses import Advisor, User, Student, Admin
+
+databaseURL = "mysql+pymysql://User:pass@localhost:3306/Test"
+engine = create_engine(databaseURL)
+
+if not database_exists(engine.url):
+    create_database(engine.url)
+    print("Database has been created!\n")
+    
+sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+base = User.Base.getBase()
+
+base.metadata.create_all(bind=engine)
+
+app = Flask(__name__)
+
+@app.route("/Advisor/")
+def getAdvisors():
+    try:
+        with Session(engine) as session:
+            advisorData = Advisor.Advisor()
+            advisorList = []
+            
+            results = session.execute(session.query(Advisor.AdvisorMap)).scalars()
+
+            for advisor in results:
+                a = Advisor.Advisor()
+                a.userID = advisor.advisorID
+                a.firstName = advisor.firstName
+                a.lastName = advisor.lastName
+                a.email = advisor.email
+                a.phoneNumber = advisor.phoneNumber
+                a.role = advisor.role
+                a.school = advisor.school
+
+                advisorList.append(a)
+
+            return advisorList
+
+    except Exception as e:
+        traceback.print_exc()
+        return "Failed to Execute Search"
+    finally:
+        session.close()
