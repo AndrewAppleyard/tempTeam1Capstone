@@ -17,7 +17,6 @@ if not database_exists(engine.url):
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
 base = User.Base.getBase()
 
 base.metadata.create_all(bind=engine)
@@ -53,7 +52,7 @@ def getAdvisors():
     finally:
         session.close()
 
-@app.route("Advisor/<advisorID>")
+@app.route("/Advisor/<advisorID>", methods= ['GET', 'POST'] )
 def getAdvisor(advisorID: int):
     try:
         with Session(engine) as session:

@@ -23,7 +23,42 @@ base.metadata.create_all(bind=engine)
 
 app = Flask(__name__)
 
-@app.route("/Student/<studentID>")
+@app.route("/Student/")
+def getStudents():
+    try:
+        with Session(engine) as session:
+            studentList = []
+
+            results = session.execute(session.query(Student.StudentMap)).scalars()
+
+            for student in results:
+                s = Student.Student()
+                s.studentID = student.studentID
+                s.firstName = student.firstName
+                s.lastName = student.lastName
+                s.email = student.email
+                s.phoneNumber = student.phoneNumber
+                s.role = student.role
+                s.school = student.school
+                s.gpa = student.gpa
+                s.major = student.major
+                s.minor = student.minor
+                s.registrationStatus = student.registrationStatus
+                s.advisingStatus = student.advisingStatus
+                s.dateAdvised = student.dateAdvised
+                s.financialHold = student.financialHold
+                s.advisingHold = student.advisingHold
+                s.academicHold = student.academicHold
+
+            return studentList
+        
+    except Exception as e:
+        traceback.print_exc()
+        return "Failed to Execute Search"
+    finally:
+        session.close()
+
+@app.route("/Student/<studentID>",methods = ['GET', 'POST'])
 def getStudentInfo(studentID: int):
 
     try:
@@ -57,5 +92,67 @@ def getStudentInfo(studentID: int):
     except Exception as e:
         traceback.print_exc()
         return "Failed to Execute Search"
+    finally:
+        session.close()
+
+@app.route("/Admin/Student/Update/<id>/<role>", methods = ['GET', 'POST'])
+def updateStudent(id: int, role: str) -> None:
+    try:
+        with Session(engine) as session:
+            student = session.query(Student.StudentMap).filter(Student.StudentMap.StudentID == id).first()
+            if(request.form.get('firstName') != None):
+                student.firstName = request.form.get('firstName')
+            if(request.form.get('lastName') != None):
+                student.lastName = request.form.get('lastName')
+            if(request.form.get('email') != None):
+                student.email = request.form.get('email')
+            if(request.form.get('phoneNumber') != None):
+                student.phoneNumber = request.form.get('phoneNumber')
+            if(request.form.get('role') != None):
+                student.role = request.form.get('role')
+            if(request.form.get('school') != None):
+                student.school = request.form.get('school')
+            if(request.form.get('gpa') != None):
+                student.gpa = request.form.get('gpa')
+            if(request.form.get('major') != None):
+                student.major = request.form.get('major')
+            if(request.form.get('minor') != None):
+                student.minor = request.form.get('minor')
+            if(request.form.get('registrationStatus') != None):
+                if(request.form.get('registrationStatus').casefold() == true.casefold()):
+                    student.registrationStatus = True
+                elif(request.form.get('registrationStatus').casefold() == false.casefold()):
+                    student.registrationStatus = False
+            if(request.form.get('advisingStatus') != None):
+                if(request.form.get('advisingStatus').casefold() == true.casefold()):
+                    student.advisingStatus = True
+                elif(request.form.get('advisingStatus').casefold() == false.casefold()):
+                    student.advisingStatus = False
+            if(request.form.get('dateAdvised') != None):
+                date = datetime.strptime(request.form.get('dateAdvised'), dateFormatString)
+                student.dateAdvised = date
+            if(request.form.get('financialHold') != None):
+               if(request.form.get('financialHold').casefold() == true.casefold()):
+                    student.financialHold = True
+            elif(request.form.get('financialHold').casefold() == false.casefold()):
+                    student.financialHold = False
+            if(request.form.get('advisingHold') != None):
+                if(request.form.get('advisingHold').casefold() == true.casefold()):
+                    student.advisingHold = True
+                elif(request.form.get('advisingHold').casefold() == false.casefold()):
+                    student.advisingHold = False
+            if(request.form.get('academicHold') != None):
+                if(request.form.get('academicHold').casefold() == true.casefold()):
+                    student.academicHold = True
+                elif(request.form.get('academicHold').casefold() == false.casefold()):
+                    student.academicHold = False
+
+            session.commit()
+
+            return "Student Update Successful"
+    except Exception as e:
+        traceback.print_exc()
+        session.rollback()
+        return "Student Update Failed"
     finally:
         session.close()
