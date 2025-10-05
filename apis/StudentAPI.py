@@ -44,7 +44,6 @@ def getStudentInfo(studentID: int):
             student.role = result.role
             student.school = result.school
             student.gpa = result.gpa
-            student.advisor = result.advisor
             student.major = result.major
             student.minor = result.minor
             student.registrationStatus = result.registrationStatus
@@ -60,20 +59,3 @@ def getStudentInfo(studentID: int):
         return "Failed to Execute Search"
     finally:
         session.close()
-
-'''@app.route("/Student/Advisor/<advisor>")
-def getAdvisorInfo(advisor: str):
-    try:
-        with Session(engine) as session:
-
-            result = session.query(Student.StudentMap) \
-            .filter(Student.StudentMap.advisor == advisor).first()
-
-            new_result = session.query(Admin.AdminMap) \
-            .filter(Admin.AdminMap.)
-
-    except Exception as e:
-        traceback.print_exc()
-        return "Failed to Execute Search"
-    finally:
-        session.close()'''
