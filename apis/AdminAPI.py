@@ -169,8 +169,10 @@ def deleteStudent(id: int):
 @app.route("/Admin/Student/Update/<id>/<role>", methods = ['GET', 'POST'])
 def updateStudent(id: int, role: str) -> None:
     try:
+        true = "True"
+        flase = "False"
         with Session(engine) as session:
-            student = session.query(Student.StudentMap).filter(Student.StudentMap.StudentID == id).first()
+            student = session.query(Student.StudentMap).filter(Student.StudentMap.studentID == id).first()
             if(request.form.get('firstName') != None):
                 student.firstName = request.form.get('firstName')
             if(request.form.get('lastName') != None):
@@ -190,9 +192,10 @@ def updateStudent(id: int, role: str) -> None:
             if(request.form.get('minor') != None):
                 student.minor = request.form.get('minor')
             if(request.form.get('registrationStatus') != None):
-                if(request.form.get('registrationStatus').casefold() == true.casefold()):
+                status = request.form.get('registrationStatus')
+                if(status.casefold() == true.casefold()):
                     student.registrationStatus = True
-                elif(request.form.get('registrationStatus').casefold() == false.casefold()):
+                elif(status.casefold() == false.casefold()):
                     student.registrationStatus = False
             if(request.form.get('advisingStatus') != None):
                 if(request.form.get('advisingStatus').casefold() == true.casefold()):
@@ -203,9 +206,10 @@ def updateStudent(id: int, role: str) -> None:
                 date = datetime.strptime(request.form.get('dateAdvised'), dateFormatString)
                 student.dateAdvised = date
             if(request.form.get('financialHold') != None):
-               if(request.form.get('financialHold').casefold() == true.casefold()):
+                hold = request.form.get('financialHold')
+                if(hold.casefold() == true.casefold()):
                     student.financialHold = True
-            elif(request.form.get('financialHold').casefold() == false.casefold()):
+                elif(hold.casefold() == false.casefold()):
                     student.financialHold = False
             if(request.form.get('advisingHold') != None):
                 if(request.form.get('advisingHold').casefold() == true.casefold()):
