@@ -26,6 +26,6 @@ class AdvisorMap(User.Base):
 class Advisor_And_StudentsMap(User.Base):
     __tablename__="Advisor_And_Students"
 
-    advisorAndStudentsID: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    advisorAndStudentID: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     advisorID: Mapped[int] = mapped_column(Integer, ForeignKey('Advisor.advisorID'))
     studentID: Mapped[int] = mapped_column(Integer, ForeignKey('Student.studentID'))
