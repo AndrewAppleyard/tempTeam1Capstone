@@ -17,8 +17,9 @@ sys.path.append(parent_dir)
 
 from UserClasses import Advisor, User, Student, Admin
 
-# databaseURL = URL.decrypt("APIs/config/config.txt", "APIs/config/.gitignore.key")
-databaseURL = "postgresql+psycopg2://postgres:us3URownP4$sword8410@localhost:5432/advising"
+path = os.path.abspath(__file__)
+directory = os.path.dirname(path)
+databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config/.gitignore.key")
 
 engine = create_engine(databaseURL)
 

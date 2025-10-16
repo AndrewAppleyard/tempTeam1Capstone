@@ -4,9 +4,9 @@ import os, sys
 def findFilePath():
     path = os.path.abspath(__file__)
     directory = os.path.dirname(path)
-    print(directory)
-    sys.exit(0)
+    return directory
 
 def encryptURL():
-    URL.encrypt("APIs/config/config.txt", "APIs/config/.gitignore.key")
+    path = findFilePath()
+    URL.encrypt(path + "/APIs/config/config.txt", path + "/APIs/config/.gitignore.key")
     sys.exit(0)
