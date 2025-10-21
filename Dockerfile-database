@@ -1,0 +1,12 @@
+FROM postgres:15-alpine
+
+# custom init scripts / config files
+# COPY ./init.sql /docker-entrypoint-initdb.d/
+# COPY ./postgres.conf /etc/postgresql/postgresql.conf
+
+# config info set in Backend/postgres.sh and Backend/database.sql?
+# ENV POSTGRES_DB=advising
+# ENV POSTGRES_USER=postgres
+# ENV POSTGRES_PASSWORD=us3URownP4$sword8410
+
+EXPOSE 5432

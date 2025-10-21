@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+
+# --- Development (Vite) ---
+FROM node:20-alpine AS dev
+WORKDIR /app
+COPY Frontend/package.json .
+COPY Frontend/ .
+RUN npm install
+EXPOSE 5173
+CMD ["npm", "run", "dev"]
+
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY Frontend/package.json .
+COPY Frontend/ .
+RUN npm install && npm run build
+
+# --- Production (Apache) ---
+FROM httpd:2.4-alpine
+COPY --from=builder /app/dist/ /usr/local/apache2/htdocs/

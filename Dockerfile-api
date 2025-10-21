@@ -1,0 +1,26 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies + flit
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential && \
+    pip install --upgrade pip flit && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY Backend/ .
+COPY Backend/Advising/APIs/config/config.txt /app/Advising/APIs/config/config.txt
+COPY Backend/Advising/APIs/config/.gitignore.key /app/Advising/APIs/config/.gitignore.key
+
+ENV FLIT_ROOT_INSTALL=1
+RUN flit install --deps production --symlink
+
+EXPOSE 5000
+
+# Production:
+# CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000"]
+
+# Development:
+CMD ["python", "Advising/app.py"]

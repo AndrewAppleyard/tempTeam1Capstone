@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export default {
-    async getAllStudents() {
+  async getAllStudents() {
     try {
       const response = await axios.get('/Student/');
       console.log('All Students:', response.data);

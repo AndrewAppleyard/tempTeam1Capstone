@@ -1,5 +1,5 @@
 import os
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 import traceback
 
 def encrypt(path, keyPath):
@@ -60,3 +60,27 @@ def decrypt(path, keyPath):
 
     return decryptedData.decode('utf-8')
 
+# def decrypt(path, keyPath):
+#     key = loadKey(keyPath)
+#     f = Fernet(key)
+#     encryptedData = ""
+#     try:
+#         with open(path, "rb") as file:
+#             encryptedData = file.read()
+
+#         if not encryptedData:
+#             raise ValueError("Encrypted file is empty")
+
+#         if(encryptedData != ""):
+#             decryptedData = f.decrypt(encryptedData)
+#             return decryptedData.decode('utf-8')
+
+#     except (FileNotFoundError, InvalidToken, ValueError, Exception) as e:
+#         print(f"[WARN] Decryption failed or file missing: {e}")
+#         print("[INFO] Falling back to environment variable DATABASE_URL")
+
+#         env_url = os.getenv("DATABASE_URL")  
+#         if env_url:
+#             return env_url
+#         else:
+#             raise Exception("No valid database URL found (decryption failed and DATABASE_URL is not set)")
