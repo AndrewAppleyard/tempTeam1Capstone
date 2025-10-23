@@ -57,6 +57,7 @@ def getStudents():
                 s.gpa = student.gpa
                 s.major = student.major
                 s.minor = student.minor
+                s.classstanding = student.classstanding
                 s.registrationstatus = student.registrationstatus
                 s.advisingstatus = student.advisingstatus
                 s.dateadvised = student.dateadvised
@@ -97,6 +98,7 @@ def getStudentInfo(studentid: int):
             student.gpa = result.gpa
             student.major = result.major
             student.minor = result.minor
+            s.classstanding = student.classstanding
             student.registrationstatus = result.registrationstatus
             student.advisingstatus = result.advisingstatus
             student.dateadvised = result.dateadvised
@@ -128,6 +130,8 @@ def updateStudent(id: int, role: str) -> None:
                     student.major = request.form.get('major')
                 if(request.form.get('minor') != None):
                     student.minor = request.form.get('minor')
+                if(request.form.get('classstanding') != None):
+                    student.major = request.form.get('classstanding')
                 if(request.form.get('advisingstatus') != None):
                     if(request.form.get('advisingstatus').casefold() == true.casefold()):
                         student.advisingstatus = True
@@ -159,6 +163,8 @@ def updateStudent(id: int, role: str) -> None:
                     student.major = request.form.get('major')
                 if(request.form.get('minor') != None):
                     student.minor = request.form.get('minor')
+                if(request.form.get('classstanding') != None):
+                    student.major = request.form.get('classstanding')
                 if(request.form.get('registrationstatus') != None):
                     if(request.form.get('registrationstatus').casefold() == true.casefold()):
                         student.registrationstatus = True

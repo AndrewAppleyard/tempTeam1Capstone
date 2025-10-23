@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, defineProps, defineEmits } from 'vue'
 import AdminAPI from '../apis/AdminAPI.js'
+import Popups from '../components/Popups.vue'
 
 const props = defineProps({
   advisor: { type: Object, default: null },
@@ -20,35 +21,31 @@ const form = ref({
 
 const localVisible = ref(props.visible)
 
-watch(() => props.visible, (newVal) => {
-  localVisible.value = newVal
-})
-
-watch(localVisible, (val) => {
-  emits('update:visible', val)
-})
-
-watch(() => props.advisor, (newAdvisor) => {
-  if (newAdvisor) {
-    Object.assign(form.value, newAdvisor)
-  } else {
-    Object.keys(form.value).forEach(key => form.value[key] = '')
-  }
-}, { immediate: true })
-
 async function save() {
   try {
     if (props.advisor) {
-      console.log('Updating advisor ID:', props.advisor?.advisorid)
-      await AdminAPI.updateAdvisor(props.advisor.advisorid, form.value)
+      console.log('Updating advisor ID:', props.advisor?.userid) // advisorid = userid
+      await AdminAPI.updateAdvisor(props.advisor.userid, form.value)
     } else {
       form.value.role = 'advisor'
       await AdminAPI.addAdvisor(form.value)
     }
     emits('saved')
     localVisible.value = false
+    resetForm()
   } catch (err) {
     console.error('Save Error:', err)
+  }
+}
+
+function resetForm() { // need to reset id
+  form.value = {
+    firstname: '',
+    lastname: '',
+    email: '',
+    phonenumber: '',
+    role: 'advisor',
+    school: ''
   }
 }
 
@@ -56,6 +53,20 @@ function close() {
   localVisible.value = false
   emits('close')
 }
+
+watch(() => props.visible, (newVal) => {
+  localVisible.value = newVal
+})
+watch(localVisible, (val) => {
+  emits('update:visible', val)
+})
+watch(() => props.advisor, (newAdvisor) => {
+  if (newAdvisor) {
+    Object.assign(form.value, newAdvisor)
+  } else {
+    Object.keys(form.value).forEach(key => form.value[key] = '')
+  }
+}, { immediate: true })
 </script>
 
 <template>

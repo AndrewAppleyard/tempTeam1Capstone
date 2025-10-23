@@ -2,6 +2,7 @@
 import { ref, watch, defineProps, defineEmits } from 'vue'
 import AdminAPI from '../apis/AdminAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
+import Popups from '../components/Popups.vue'
 
 const props = defineProps({
   student: { type: Object, default: null }, 
@@ -12,26 +13,17 @@ const emits = defineEmits(['update:visible', 'close', 'saved'])
 
 const localVisible = ref(props.visible)
 
-watch(() => props.visible, (newVal) => {
-  localVisible.value = newVal
-})
-watch(localVisible, (val) => {
-  emits('update:visible', val)
-})
-
 const form = ref({
   firstname: '',
   lastname: '',
   email: '',
   phonenumber: '',
-  // role: 'student',
   school: '',
   gpa: '',
   major: '',
   majorconcentration: '',
   minor: '',
   classstanding: '',
-  classes: [],
   financialhold: false,
   advisinghold: false,
   academichold: false,
@@ -41,23 +33,32 @@ const form = ref({
   dateadvised: '' // needs to be null at first 
 })
 
-watch(() => props.student, (newStudent) => {
-  if (newStudent) {
-    Object.assign(form.value, newStudent)
-  } else {
-    Object.keys(form.value).forEach(key => form.value[key] = key === 'activestatus' ? true : '')
-    form.value.classes = []
-    form.value.financialhold = false
-    form.value.advisinghold = false
-    form.value.academichold = false
+async function assignAdvisor() {
+  if (!selectedAdvisor.value || !props.student?.studentid) return
+  try {
+    await AdminAPI.addStudentToAdvisor(selectedAdvisor.value, props.student.studentid)
+    alert('Advisor assigned successfully!')
+  } catch {
+    alert('Failed to assign advisor')
   }
-}, { immediate: true })
+}
+
+async function removeAdvisor() {
+  if (!selectedAdvisor.value || !props.student?.studentid) return
+  try {
+    await AdminAPI.removeStudentFromAdvisor(props.student.studentid, selectedAdvisor.value)
+    alert('Removed advisor successfully.')
+  } catch {
+    alert('Failed to remove advisor')
+  }
+}
 
 async function save() {
   try {
     if (props.student) {
       console.log('Updating student ID:', props.student?.studentid)
-      await StudentAPI.updateStudent(props.student.studentid, form.value)
+      const userRole = 'admin' // hardcoding for now
+      await StudentAPI.updateStudent(props.student.studentid, userRole, form.value)
     } else {
       form.value.role = 'student'
       form.value.dateadvised = '2025-01-01'
@@ -65,8 +66,31 @@ async function save() {
     }
     emits('saved')
     localVisible.value = false
+    resetForm()
   } catch (err) {
     console.error('Save Error:', err)
+  }
+}
+
+function resetForm() { // need to reset id
+  form.value = {
+    firstname: '',
+    lastname: '',
+    email: '',
+    phonenumber: '',
+    school: '',
+    gpa: '',
+    major: '',
+    majorconcentration: '',
+    minor: '',
+    classstanding: '',
+    financialhold: false,
+    advisinghold: false,
+    academichold: false,
+    registrationstatus: false,
+    advisingstatus: false,
+    activestatus: true,
+    dateadvised: '' // needs to be null at first 
   }
 }
 
@@ -74,6 +98,23 @@ function close() {
   localVisible.value = false
   emits('close')
 }
+
+watch(() => props.visible, (newVal) => {
+  localVisible.value = newVal
+})
+watch(localVisible, (val) => {
+  emits('update:visible', val)
+})
+watch(() => props.student, (newStudent) => {
+  if (newStudent) {
+    Object.assign(form.value, newStudent)
+  } else {
+    Object.keys(form.value).forEach(key => form.value[key] = key === 'activestatus' ? true : '')
+    form.value.financialhold = false
+    form.value.advisinghold = false
+    form.value.academichold = false
+  }
+}, { immediate: true })
 </script>
 
 <template>
@@ -118,6 +159,12 @@ function close() {
               <v-text-field v-model="form.classstanding" label="Class Standing" />
             </v-col>
           </v-row>
+
+          <!-- <v-row>
+            <v-col cols="6">
+              <v-text-field v-model="form.advisor" label="Advisor" />
+            </v-col>
+          </v-row> -->
 
         </v-container>
       </v-card-text>

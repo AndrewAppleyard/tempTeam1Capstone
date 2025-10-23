@@ -1,1 +1,1 @@
-postgresql+psycopg2://postgres:us3URownP4%24sword8410@db:5432/advising
+postgresql+psycopg2://postgres:us3URownP4$sword8410@db:5432/advising

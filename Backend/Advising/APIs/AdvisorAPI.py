@@ -47,7 +47,7 @@ def getAdvisors():
 
             for advisor in results:
                 a = Advisor.Advisor()
-                a.userid = advisor.advisorid
+                a.userid = advisor.advisorid # a.userid = advisor.advisorid
                 a.firstname = advisor.firstname
                 a.lastname = advisor.lastname
                 a.email = advisor.email

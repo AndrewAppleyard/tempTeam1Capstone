@@ -8,6 +8,7 @@ import AdvisorAPI from '../apis/AdvisorAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import StudentFormCard from '../components/StudentFormCard.vue'
 import AdvisorFormCard from '../components/AdvisorFormCard.vue'
+import Popups from '../components/Popups.vue'
 
 const store = useViewModeStore()
 const { viewMode } = storeToRefs(store)
@@ -53,7 +54,7 @@ function selectUser(item) {
   if (editMode.value) {
     selectedItem.value = item
   } else {
-    goToUser(item[viewMode.value === 'students' ? 'studentid' : 'advisorid'])
+    goToUser(item[viewMode.value === 'students' ? 'studentid' : 'userid']) // userid = advisorid
   }
 }
 
@@ -85,7 +86,7 @@ function updateUser() {
 
 async function deleteUser() {
   if (!selectedItem.value) return
-  const id = selectedItem.value[viewMode.value === 'students' ? 'studentid' : 'advisorid']
+  const id = selectedItem.value[viewMode.value === 'students' ? 'studentid' : 'userid'] // advisorid = userid
   try {
     console.log("Deleting ")
     if (viewMode.value === 'students') {
@@ -157,12 +158,12 @@ watch(viewMode, (newMode) => {
             </v-col>
           </v-row>
 
-          <!-- pop ups -->
+          <!-- pop ups --> <!-- advisorid = userid -->
           <v-card-text>
-            <v-row>
+            <v-row> 
               <v-col
                 v-for="item in (viewMode === 'students' ? students : advisors)"
-                :key="item[viewMode === 'students' ? 'studentid' : 'advisorid']"
+                :key="item[viewMode === 'students' ? 'studentid' : 'userid']"
                 cols="12" sm="6" md="4"
               >
                 <v-card

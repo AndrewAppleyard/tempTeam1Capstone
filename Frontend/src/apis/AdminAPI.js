@@ -1,6 +1,17 @@
 import axios from 'axios';
 
 export default {
+  async getAdmin(adminid) {
+    try {
+      const response = await axios.get(`/Admin/${adminid}`);
+      console.log('Admin Data:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Get Admin Error:', err);
+      throw err;
+    }
+  },
+
   async addAdvisor(advisor) {
     try {
       const formData = new FormData();
@@ -79,5 +90,16 @@ export default {
       console.error('Delete Student Error:', err);
       throw err;
     }
-  }
+  },
+
+  async addStudentToAdvisor(advisorId, studentId) {
+    const formData = new FormData();
+    formData.append('advisorid', advisorId);
+    formData.append('studentid', studentId);
+    return axios.post('/Student/Advisor', formData);
+  },
+
+  async removeStudentFromAdvisor(studentId, advisorId) {
+    return axios.get(`/Student/Advisor/${studentId}/${advisorId}`);
+  },
 };
