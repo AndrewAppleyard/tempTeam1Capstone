@@ -6,15 +6,18 @@ export default defineConfig({
   server: {
     proxy: {
       '/Advisor': {
-        target: 'http://127.0.0.1:5000',
+        // target: 'http://127.0.0.1:5000',
+        target: 'http://uafs_backend:5000',
         changeOrigin: true,
       },
       '/Student': {
-        target: 'http://127.0.0.1:5000',
+        // target: 'http://127.0.0.1:5000',
+        target: 'http://uafs_backend:5000',
         changeOrigin: true,
       },
       '/Admin': {
-        target: 'http://127.0.0.1:5000',
+        // target: 'http://127.0.0.1:5000',
+        target: 'http://uafs_backend:5000',
         changeOrigin: true,
       },
     },

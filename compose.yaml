@@ -24,7 +24,7 @@ services:
       dockerfile: Dockerfile-frontend
       target: dev  # dev for dev server, builder for prod 
     ports:
-      - "5173:5173" # "8080:80" for apache prod
+      - "5173:5173" # "8080:80" for apache prod?
     depends_on:
       - backend
 
@@ -36,8 +36,6 @@ services:
       dockerfile: Dockerfile-api
     ports:
       - "5000:5000"
-    environment:
-      DATABASE_URL: postgresql://postgres:us3URownP4$$sword8410@db:5432/advising
     depends_on:
       - db
 
