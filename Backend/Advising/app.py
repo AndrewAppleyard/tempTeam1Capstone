@@ -18,13 +18,8 @@ def create_app():
     app.register_blueprint(AdminAPI.bp)
     app.register_blueprint(StudentAPI.bp)
 
-    # app.run(debug=True, host='0.0.0.0', port=5000)
-    # app.run(debug=False, host='0.0.0.0', port=5000)
-
+    app.run(debug=False, host='0.0.0.0', port=5000) # dev
 
     return app
 
-if __name__ == "__main__":
-    app = create_app()
-    # app.run(debug=True, host='0.0.0.0', port=5000)
-    app.run(debug=False, host='0.0.0.0', port=5000)
+app = create_app()

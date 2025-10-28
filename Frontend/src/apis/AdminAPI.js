@@ -92,14 +92,26 @@ export default {
     }
   },
 
-  async addStudentToAdvisor(advisorId, studentId) {
-    const formData = new FormData();
-    formData.append('advisorid', advisorId);
-    formData.append('studentid', studentId);
-    return axios.post('/Student/Advisor', formData);
+  async addStudentToAdvisor(advisorid, studentid) {
+    try {
+      const formData = new FormData();
+      formData.append('advisorid', advisorid);
+      formData.append('studentid', studentid);
+      const response = await axios.post('/Admin/Student/Advisor', formData);
+      return response.data;
+    } catch (err) {
+      console.error('Add Student to Advisor Error:', err);
+      throw err;
+    }
   },
 
-  async removeStudentFromAdvisor(studentId, advisorId) {
-    return axios.get(`/Student/Advisor/${studentId}/${advisorId}`);
+  async removeStudentFromAdvisor(studentid, advisorid) {
+    try {
+      const response = await axios.get(`/Admin/Student/Advisor/${studentid}/${advisorid}`);
+      return response.data;
+    } catch (err) {
+      console.error('Remove Student from Advisor Error:', err);
+      throw err;
+    }
   },
 };

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 until pg_isready -h db -p 5432 -U postgres; do
@@ -13,4 +13,5 @@ echo "Running Advising-encrypt..."
 Advising-encrypt || true
 
 echo "Starting server..."
-exec python Advising/app.py
+# Advising || true
+exec gunicorn "Advising.app:app" --bind 0.0.0.0:5000

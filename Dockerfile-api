@@ -26,8 +26,8 @@ RUN chmod +x /api-entrypoint.sh
 EXPOSE 5000
 
 # Production (gunicorn)
-# CMD ["gunicorn", "Advising/app.py", "--bind", "0.0.0.0:5000"]
+# CMD ["gunicorn", "Advising", "--bind", "0.0.0.0:5000"]
 
 # Development (Flask server)
-# CMD ["python", "Advising/app.py"]
+# CMD ["python", "Advising"]
 ENTRYPOINT ["/api-entrypoint.sh"]
