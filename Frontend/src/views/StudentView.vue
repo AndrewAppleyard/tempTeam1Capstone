@@ -26,26 +26,49 @@ const userMenu = ref(false)
 const currentDialog = ref(false)
 const nextDialog = ref(false)
 
-// Example data placeholders (6 rows)
-const currentSchedule = ref(
-  Array.from({ length: 6 }, () => ({ number: '', name: '' }))
-)
-const nextSchedule = ref(
-  Array.from({ length: 6 }, () => ({ number: '', name: '' }))
-)
+/**
+ * Filled from the catalog block:
+ * - Current semester = Fall Y4
+ * - Next semester    = Spring Y4
+ * Keep 6 display rows; unused rows show em dashes for clean layout.
+ */
 
-const currentPopupRows = ref(
-  Array.from({ length: 5 }, () => ({
-    number: '', course: '', time: '', location: '', professor: '',
-    availability: '', waitlist: ''
-  }))
-)
-const nextPopupRows = ref(
-  Array.from({ length: 5 }, () => ({
-    number: '', course: '', time: '', location: '', professor: '',
-    availability: '', waitlist: ''
-  }))
-)
+// CURRENT (Fall Y4)
+const currentSchedule = ref([
+  { number: 'CS 4303',  name: 'Cybersecurity Fundamentals' },
+  { number: 'CS 4403',  name: 'Artificial Intelligence' },
+  { number: 'CS 4983',  name: 'Senior Capstone I' },
+  { number: 'COMM 1303',name: 'Oral Communication' },
+  { number: '—',        name: '—' },
+  { number: '—',        name: '—' },
+])
+
+// NEXT (Spring Y4)
+const nextSchedule = ref([
+  { number: 'CS 4993',  name: 'Senior Capstone II' },
+  { number: 'CS 4103',  name: 'Computing Ethics & Law' },
+  { number: 'CS 4040',  name: 'CS Elective III' },
+  { number: 'FA 1003',  name: 'Fine Arts Gen Ed' },
+  { number: '—',        name: '—' },
+  { number: '—',        name: '—' },
+])
+
+// Popup tables (5 rows). Times/rooms/professors are placeholders (TBA).
+const currentPopupRows = ref([
+  { number: 'CS 4303',   course: 'Cybersecurity Fundamentals', time: 'TBA',    location: 'Baldor TBA', professor: 'TBA', availability: 'Open',      waitlist: '0' },
+  { number: 'CS 4403',   course: 'Artificial Intelligence',   time: 'TBA',    location: 'Baldor TBA', professor: 'TBA', availability: 'Open',      waitlist: '0' },
+  { number: 'CS 4983',   course: 'Senior Capstone I',         time: 'TBA',    location: 'Baldor TBA', professor: 'TBA', availability: 'By Permit',  waitlist: '—' },
+  { number: 'COMM 1303', course: 'Oral Communication',         time: 'TBA',    location: 'Campus TBA', professor: 'TBA', availability: 'Open',      waitlist: '0' },
+  { number: '',          course: '',                           time: '',       location: '',            professor: '',   availability: '',          waitlist: '' },
+])
+
+const nextPopupRows = ref([
+  { number: 'CS 4993',  course: 'Senior Capstone II',        time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'By Permit', waitlist: '—' },
+  { number: 'CS 4103',  course: 'Computing Ethics & Law',    time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open',      waitlist: '0' },
+  { number: 'CS 4040',  course: 'CS Elective III',           time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open',      waitlist: '0' },
+  { number: 'FA 1003',  course: 'Fine Arts Gen Ed',          time: 'TBA', location: 'Campus TBA', professor: 'TBA', availability: 'Open',      waitlist: '0' },
+  { number: '',         course: '',                          time: '',    location: '',            professor: '',   availability: '',          waitlist: '' },
+])
 
 // Greeting
 const greetingName = computed(() =>
@@ -54,6 +77,7 @@ const greetingName = computed(() =>
     : '[Student Name]'
 )
 </script>
+
 
 <template>
   <v-container fluid class="pa-4" style="max-width:1500px; background-color: #BDD5E7; border-radius:12px; border: 1px solid #002856;">
