@@ -18,8 +18,17 @@ def create_app():
     app.register_blueprint(AdminAPI.bp)
     app.register_blueprint(StudentAPI.bp)
 
-    app.run(debug=False, host='0.0.0.0', port=5000) # dev
-
     return app
 
 app = create_app()
+
+if __name__ == "__main__":
+    env = os.getenv("FLASK_ENV", "development")
+
+    if env == "production":
+        # Gunicorn
+        # gunicorn -w 4 -b 0.0.0.0:5000 app:create_app()
+        print("Production mode detected — run this app using Gunicorn.")
+    else:
+        # Flask
+        app.run(debug=True, host="0.0.0.0", port=5000)

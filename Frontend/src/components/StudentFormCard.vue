@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, defineProps, computed } from 'vue'
+import { ref, watch, defineProps, computed, onMounted } from 'vue'
 import AdminAPI from '../apis/AdminAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
@@ -15,6 +15,7 @@ const emits = defineEmits(['update:visible', 'close', 'saved'])
 const localVisible = ref(props.visible)
 const advisors = ref([])
 const selectedAdvisor = ref(null)
+const currentAdvisor = ref(null)
 
 const emailRule = value => {
   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -41,56 +42,6 @@ const form = ref({
   dateadvised: '' // needs to be null at first 
 })
 
-async function fetchAdvisors() {
-  try {
-    const response = await AdvisorAPI.getAllAdvisors()
-    const list = response?.data ?? response ?? []
-
-    advisors.value = (Array.isArray(list) ? list : []).map(a => ({
-      advisorid: Number(a.advisorid ?? a.id ?? 0),
-      fullname: `${a.firstname ?? ''} ${a.lastname ?? ''}`.trim()
-    }))
-
-    if (props.student?.advisorid) {
-      selectedAdvisor.value = Number(props.student.advisorid)
-    } else {
-      selectedAdvisor.value = null
-    }
-  } catch (err) {
-    console.error('Error fetching advisors:', err)
-    advisors.value = []
-  }
-}
-
-async function assignAdvisor(studentid) {
-  if (!selectedAdvisor.value || !studentid) return
-  try {
-    const advisorid = selectedAdvisor.value
-    await AdminAPI.addStudentToAdvisor(advisorid, studentid)
-    console.log('Adding studentid=' + studentid + ' to advisorid=' + advisorid)
-    alert('Advisor assigned successfully!')
-  } catch (err) {
-    console.error('Failed to assign advisor', err)
-    alert('Failed to assign advisor')
-  }
-}
-
-async function removeAdvisor() {
-  const studentid = props.student?.studentid
-  const advisorid = selectedAdvisor.value
-  if (!studentid || !advisorid) return
-  try {
-    await AdminAPI.removeStudentFromAdvisor(studentid, advisorid)
-    console.log('Removing studentid=' + studentid + ' from advisorid=' + advisorid)
-    alert('Advisor removed successfully.')
-    selectedAdvisor.value = null
-    await fetchAdvisors()
-  } catch (err) {
-    console.error('Failed to remove advisor', err)
-    alert('Failed to remove advisor')
-  }
-}
-
 async function save() {
   try {
     const studentid = props.student?.studentid
@@ -105,8 +56,8 @@ async function save() {
       studentid = response?.data?.studentid ?? response?.studentid ?? null
     }
 
-    if (studentid && selectedAdvisor.value) {
-      await assignAdvisor(studentid)
+    if (selectedAdvisor.value) {
+      await AdminAPI.addStudentToAdvisor(selectedAdvisor.value, studentid)
     }
 
     emits('saved')
@@ -140,33 +91,74 @@ function resetForm() { // need to reset id
   }
 }
 
+async function removeAdvisor() {
+  if (!props.student || !currentAdvisor.value) return
+  try {
+    await AdminAPI.removeStudentFromAdvisor(props.student.studentid, currentAdvisor.value.userid)
+    currentAdvisor.value = null
+    selectedAdvisor.value = null
+  } catch (err) {
+    console.error('Remove Advisor Error:', err)
+    alert('Failed to remove advisor.')
+  }
+}
+
 function close() {
   localVisible.value = false
   emits('close')
 }
 
-watch(() => props.visible, async (newVal) => {
-  localVisible.value = newVal
-  if (newVal) {
-    await fetchAdvisors()
-    if (props.student?.advisorid) {
-      selectedAdvisor.value = props.student.advisorid
-    } else {
-      selectedAdvisor.value = null
-    }
-  }
-})
 watch(localVisible, (val) => {
   emits('update:visible', val)
 })
-watch(() => props.student, (newStudent) => {
-  if (newStudent) {
-    Object.assign(form.value, newStudent)
-    selectedAdvisor.value = newStudent.advisorid ?? null
-  } else {
+watch(() => props.student, async (newStudent) => {
+  if (!newStudent) {
     resetForm()
+    return
   }
+
+  Object.assign(form.value, newStudent)
+  // currentAdvisor.value = null
+  // selectedAdvisor.value = null
+
+  // try {
+  //   const advisorsList = await AdvisorAPI.getAllAdvisors()
+  //   advisors.value = Array.isArray(advisorsList) ? advisorsList : advisorsList?.data || []
+
+  //   const results = await Promise.allSettled(
+  //     advisors.value.map(a => AdvisorAPI.getAdvisorStudents(a.userid))
+  //   )
+
+  //   for (let i = 0; i < results.length; i++) {
+  //     const r = results[i]
+  //     if (r.status === 'fulfilled') {
+  //       const students = Array.isArray(r.value) ? r.value : r.value?.data || []
+  //       const isMatch = students.some(s => s.userid === newStudent.studentid)
+  //       if (isMatch) {
+  //         currentAdvisor.value = advisors.value[i]
+  //         selectedAdvisor.value = advisors.value[i].userid
+  //         break
+  //       }
+  //     }
+  //   }
+
+  //   if (!currentAdvisor.value) {
+  //     console.log(`Student ${newStudent.studentid} has no advisor.`)
+  // //   }
+
+  // } catch (err) {
+  //   console.error('Error loading advisor relationship:', err)
+  // }
 }, { immediate: true })
+
+onMounted(async () => {
+  try {
+    const response = await AdvisorAPI.getAllAdvisors()
+    advisors.value = response?.data || []
+  } catch (err) {
+    console.error('Failed to load advisors:', err)
+  }
+})
 </script>
 
 <template>
@@ -220,30 +212,28 @@ watch(() => props.student, (newStudent) => {
             </v-col>
           </v-row>
 
-           <v-row>
-            <v-col cols="12">
+          <v-row>
+            <v-col>
               <v-select
                 v-model="selectedAdvisor"
                 :items="advisors"
                 item-title="fullname"
-                item-value="advisorid"
+                item-value="userid"
                 label="Advisor"
-                placeholder="Select Advisor"
-                persistent-placeholder 
-                clearable 
-                hide-details 
-                :menu-props="{ closeOnContentClick: true }"
-              ></v-select>
-            </v-col>
-          </v-row>
-          <v-row v-if="props.student && selectedAdvisor != null">
-            <v-col cols="12" class="d-flex justify-end">
-              <v-btn color="red" text @click="removeAdvisor">
-                Remove Advisor
-              </v-btn>
+                :disabled="!!currentAdvisor"
+                hint="Select Advisor"
+                persistent-hint
+              />
             </v-col>
           </v-row>
 
+          <v-row v-if="currentAdvisor">
+            <v-col cols="12" class="d-flex align-center justify-space-between">
+              <span>Current Advisor: <strong>{{ currentAdvisor.fullname }}</strong></span>
+              <v-btn color="error" text small @click="removeAdvisor">Remove</v-btn>
+            </v-col>
+          </v-row>
+           
         </v-container>
       </v-card-text>
 
