@@ -27,15 +27,18 @@ def create_app():
 
     return app
 
-app = create_app()
+def runDev():
+    app.run(host='0.0.0.0', port=5000)
 
-if __name__ == "__main__":
-    env = os.getenv("FLASK_ENV", "development")
+#app = create_app()
 
-    if env == "production":
+#if __name__ == "__main__":
+#    env = os.getenv("FLASK_ENV", "development")
+
+#    if env == "production":
         # Gunicorn
         # gunicorn -w 4 -b 0.0.0.0:5000 app:create_app()
-        print("Production mode detected — run this app using Gunicorn.")
-    else:
+#        print("Production mode detected — run this app using Gunicorn.")
+#    else:
         # Flask
-        app.run(debug=True, host="0.0.0.0", port=5000)
+#        app.run(debug=True, host="0.0.0.0", port=5000)
