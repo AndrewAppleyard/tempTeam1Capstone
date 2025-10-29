@@ -8,6 +8,7 @@ import traceback
 from datetime import datetime
 import os, sys
 from Advising.APIs import URL
+from flask_jwt_extended import jwt_required, get_jwt
 
 bp = Blueprint('StudentAPI', __name__, url_prefix="/Student")
 
@@ -189,3 +190,14 @@ def updateStudent(id: int, role: str) -> None:
         return "Student Update Failed"
     finally:
         session.close()
+
+@bp.route("", methods=['GET'])
+@jwt_required()
+def getStudents():
+    token = get_jwt()
+    if token["Role"] == "Student":
+        print("Student route here!")
+        return jsonify({"message":"Student route here!"}), 200
+    else:
+        print("Can't access with current role.")
+        return jsonify({"message":"Can't access with current role."}), 401
