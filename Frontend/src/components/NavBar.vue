@@ -41,7 +41,7 @@ const initials = computed(() => `${advisor.value.firstName[0]}${advisor.value.la
       <v-divider></v-divider>
 
       <!-- change so it goes to the specific user's profile -->
-      <v-list-item link :to="{ path: '/userProfile' }" @click="drawer = false">
+      <v-list-item link :to="{ path: '/UserProfilePage' }" @click="drawer = false">
         <v-list-item-title>Profile</v-list-item-title>
       </v-list-item>
 
