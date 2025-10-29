@@ -57,7 +57,9 @@ def getStudents():
                 s.school = student.school
                 s.gpa = student.gpa
                 s.major = student.major
+                s.majorconcentration = student.majorconcentration
                 s.minor = student.minor
+                s.classstanding = student.classstanding
                 s.registrationstatus = student.registrationstatus
                 s.advisingstatus = student.advisingstatus
                 s.dateadvised = student.dateadvised
@@ -97,7 +99,9 @@ def getStudentInfo(studentid: int):
             student.school = result.school
             student.gpa = result.gpa
             student.major = result.major
+            student.majorconcentration = result.majorconcentration
             student.minor = result.minor
+            student.classstanding = result.classstanding
             student.registrationstatus = result.registrationstatus
             student.advisingstatus = result.advisingstatus
             student.dateadvised = result.dateadvised
@@ -127,8 +131,12 @@ def updateStudent(id: int, role: str) -> None:
             elif (role.casefold() == 'advisor'):
                 if(request.form.get('major') != None):
                     student.major = request.form.get('major')
+                if(request.form.get('majorconcentration') != None):
+                    student.majorconcentration = request.form.get('majorconcentration')
                 if(request.form.get('minor') != None):
                     student.minor = request.form.get('minor')
+                if(request.form.get('classstanding') != None):
+                    student.classstanding = request.form.get('classstanding')
                 if(request.form.get('advisingstatus') != None):
                     if(request.form.get('advisingstatus').casefold() == true.casefold()):
                         student.advisingstatus = True
@@ -158,8 +166,12 @@ def updateStudent(id: int, role: str) -> None:
                     student.school = request.form.get('school')
                 if(request.form.get('major') != None):
                     student.major = request.form.get('major')
+                if(request.form.get('majorconcentration') != None):
+                    student.majorconcentration = request.form.get('majorconcentration')
                 if(request.form.get('minor') != None):
                     student.minor = request.form.get('minor')
+                if(request.form.get('classstanding') != None):
+                    student.classstanding = request.form.get('classstanding')
                 if(request.form.get('registrationstatus') != None):
                     if(request.form.get('registrationstatus').casefold() == true.casefold()):
                         student.registrationstatus = True
