@@ -5,14 +5,14 @@ services:
     container_name: uafs_ldap
     build:
       context: .
-      dockerfile: Dockerfile-api
+      dockerfile: Dockerfile-ldap
     ports:
       - "7389:3389"
       - "3636:3636"
     environment:
-      DS_DM_PASSWORD: ${DS_DM_PASSWORD}
-      DS_SUFFIX_NAME: ${DS_SUFFIX_NAME}
-      DS_BACKEND_NAME: ${DS_BACKEND_NAME}
+      DS_DM_PASSWORD: andrewandrew
+      DS_SUFFIX_NAME: dc=UAFS,dc=COM
+      DS_BACKEND_NAME: uafs
     volumes:
       - ./scripts/datas/initdb.d:/container-entrypoint-initdb.d
 
@@ -27,17 +27,6 @@ services:
       - "5173:5173" # "8080:80" for apache prod?
     depends_on:
       - backend
-
-  # Flask Backend
-  backend:
-    container_name: uafs_backend
-    build:
-      context: .
-      dockerfile: Dockerfile-api
-    ports:
-      - "5000:5000"
-    depends_on:
-      - db
 
   # PostgreSQL Database
   db:
@@ -54,6 +43,17 @@ services:
       - ./Backend/database.sql:/docker-entrypoint-initdb.d/database.sql
     ports:
       - "5433:5432"
+
+  # Flask Backend
+  backend:
+    container_name: uafs_backend
+    build:
+      context: .
+      dockerfile: Dockerfile-api
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
 
 volumes:
   pgdata:

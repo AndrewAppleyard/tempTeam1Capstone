@@ -24,15 +24,15 @@ databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config
 
 engine = create_engine(databaseURL)
 
-if not database_exists(engine.url):
-    create_database(engine.url)
-    print("Database has been created!\n")
+#if not database_exists(engine.url):
+#    create_database(engine.url)
+#    print("Database has been created!\n")
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 base = User.Base.getBase()
 
-base.metadata.create_all(bind=engine)
+#base.metadata.create_all(bind=engine)
 
 dateFormatString = "%Y-%m-%d"
 
@@ -205,7 +205,7 @@ def updateStudent(id: int, role: str) -> None:
 
 @bp.route("", methods=['GET'])
 @jwt_required()
-def getStudents():
+def getStudentsJWT():
     token = get_jwt()
     if token["Role"] == "Student":
         print("Student route here!")

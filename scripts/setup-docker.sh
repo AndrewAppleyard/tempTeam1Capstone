@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # check for root privileges
 if [[ $EUID -ne 0 ]]; then
@@ -17,6 +18,7 @@ sudo usermod -aG docker $USER
 
 sudo systemctl restart docker
 
+#sudo docker compose down -v
 echo "Starting Docker containers..."
 sudo docker-compose up -d
 sudo docker ps
