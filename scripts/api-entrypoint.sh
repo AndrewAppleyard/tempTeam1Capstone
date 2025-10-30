@@ -12,6 +12,8 @@ Advising-path || true
 echo "Running Advising-encrypt..."
 Advising-encrypt || true
 
-echo "Starting server..."
-# Advising || true
-exec gunicorn "Advising.app:app" --bind 0.0.0.0:5000
+echo "Starting production server..."
+Advising || true
+
+# echo "Starting development server..."
+# Advising-dev || true
