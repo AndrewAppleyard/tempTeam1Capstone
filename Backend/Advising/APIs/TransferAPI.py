@@ -17,7 +17,7 @@ current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, '..')
 sys.path.append(parent_dir)
 
-LDAP_HOST = "localhost"
+LDAP_HOST = "dirsrv"
 LDAP_PORT = 3389
 LDAP_USER = "cn=Directory Manager"
 LDAP_PASS = "andrewandrew"
@@ -25,7 +25,6 @@ BASE_DN = "dc=UAFS,dc=COM"
 
 @bp.route('/login', methods=['POST'])
 def login():
-    print("HELLOOOO")
     data = request.get_json()
 
     username = data.get("username")
