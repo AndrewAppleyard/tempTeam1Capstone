@@ -87,6 +87,9 @@ const initials = computed(() => `${advisor.value.firstName[0]}${advisor.value.la
       <v-list-item link :to="{ path: '/courseCatalog' }" @click="drawer = false">
         <v-list-item-title>Course Catalog</v-list-item-title>
       </v-list-item>
+      <v-list-item link :to="{ path: '/DegreePlanView' }" @click="drawer = false">
+        <v-list-item-title>Degree Plan</v-list-item-title>
+      </v-list-item>
       <v-list-item link :to="{ path: '/' }" @click="drawer = false">
         <v-list-item-title>Logout</v-list-item-title>
       </v-list-item>

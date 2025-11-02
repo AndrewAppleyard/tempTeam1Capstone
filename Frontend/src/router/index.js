@@ -6,6 +6,7 @@ import StudentView from '../views/StudentView.vue'
 import TranscriptView from '../views/TranscriptView.vue'
 import CourseCatalogView from '../views/CourseCatalogView.vue'
 import UserProfilePage from '../views/UserProfilePage.vue'
+import DegreePlanView from '../views/DegreePlanView.vue'
 
 const routes = [
   { path: '/', component: LoginView, },
@@ -17,6 +18,7 @@ const routes = [
   { path: '/transcript', component: TranscriptView }, //based on studentID
   { path: '/courseCatalog', component: CourseCatalogView },
   { path: '/UserProfilePage', component: UserProfilePage },
+  { path: '/DegreePlanView', component: DegreePlanView }
   // { path: '/adminDashboard', component: MainAdminView }, //crud
 ]
 

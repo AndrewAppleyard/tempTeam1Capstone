@@ -15,7 +15,8 @@ import NavBar from './components/NavBar.vue'
         <RouterLink to="/advisor">Advisor</RouterLink> |
         <RouterLink to="/student">Student</RouterLink> |
         <RouterLink to="/transcript">Transcript</RouterLink> |
-        <RouterLink to="/courseCatalog">Course Catalog</RouterLink>
+        <RouterLink to="/courseCatalog">Course Catalog</RouterLink> |
+        <RouterLink to="/DegreePlanView">Degree Plan</RouterLink>
       </nav>
       <router-view />
     </v-main>
