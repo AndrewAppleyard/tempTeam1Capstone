@@ -23,12 +23,12 @@ export default {
       }
   },
 
-  async updateStudent(studentid, role, updates) {
+  async updateStudent(studentid, updates) {
     try {
       const formData = new FormData();
         Object.keys(updates).forEach(key => formData.append(key, updates[key]));
     
-        const response = await axios.post(`/Student/Update/${studentid}/${role}`, formData);
+        const response = await axios.post(`/Student/Update/${studentid}`, formData);
         console.log('Student Updated:', response.data);
         return response.data;
     } catch (err) {
