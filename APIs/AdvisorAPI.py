@@ -1,15 +1,31 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Blueprint, url_for
 from sqlalchemy import Column, Integer, String, create_engine, select
 from sqlalchemy.orm import Mapped, mapped_column, sessionmaker, DeclarativeBase, Session
 from sqlalchemy_utils import database_exists, create_database
 from pymysql import install_as_MySQLdb
 import json
 import traceback
-from datetime import datetime
+import sys
+import os
+from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
+from functools import wraps
+
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.join(current_dir, '..')
+sys.path.append(parent_dir)
+
 from UserClasses import Advisor, User, Student, Admin
 
+bp = Blueprint('AdvisorAPI', __name__, url_prefix='/Advisor')
+
+#Needs to be updated to new databaseURL
 databaseURL = "mysql+pymysql://User:pass@localhost:3306/Test"
+
 engine = create_engine(databaseURL)
+
+LDAP_SERVER = "ldap://localhost:389"
+LDAP_BASE_DN = "dc=example,dc=com"
+LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
 
 if not database_exists(engine.url):
     create_database(engine.url)
@@ -21,9 +37,27 @@ base = User.Base.getBase()
 
 base.metadata.create_all(bind=engine)
 
-app = Flask(__name__)
+def role_required(*required_roles):
 
-@app.route("/Advisor/")
+    def decorator(fn):
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+
+            verify_jwt_in_request()
+            token = get_jwt()
+
+            if token.get("Role") not in required_roles:
+                return jsonify({"message": "Access denied!"}), 403
+            
+            return fn(*args, **kwargs)
+        
+        return wrapper
+    
+    return decorator
+
+@bp.route("/", methods=['GET'])
+@role_required("UAFS_ADMINS")
 def getAdvisors():
     try:
         with Session(engine) as session:
@@ -34,11 +68,11 @@ def getAdvisors():
 
             for advisor in results:
                 a = Advisor.Advisor()
-                a.userID = advisor.advisorID
-                a.firstName = advisor.firstName
-                a.lastName = advisor.lastName
+                a.userid = advisor.advisorid
+                a.firstname = advisor.firstname
+                a.lastname = advisor.lastname
                 a.email = advisor.email
-                a.phoneNumber = advisor.phoneNumber
+                a.phonenumber = advisor.phonenumber
                 a.role = advisor.role
                 a.school = advisor.school
 
@@ -52,19 +86,20 @@ def getAdvisors():
     finally:
         session.close()
 
-@app.route("/Advisor/<advisorID>", methods= ['GET', 'POST'] )
-def getAdvisor(advisorID: int):
+@bp.route("/<int:advisorid>", methods= ['GET'] )
+@role_required("UAFS_ADMINS")
+def getAdvisor(advisorid: int):
     try:
         with Session(engine) as session:
-            result = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap == advisorID).first()
+            result = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap.advisorid == advisorid).first()
             
             advisor = Advisor.Advisor()
 
-            advisor.advisorID = result.advisorID
-            advisor.firstName = result.firstName
-            advisor.lastName = result.lastName
+            advisor.advisorid = result.advisorid
+            advisor.firstname = result.firstname
+            advisor.lastname = result.lastname
             advisor.email = result.email
-            advisor.phoneNumber = result.phoneNumber
+            advisor.phonenumber = result.phonenumber
             advisor.role = result.role
             advisor.school = result.school
 
@@ -75,4 +110,42 @@ def getAdvisor(advisorID: int):
     finally:
         session.close()
 
-app.run(host="0.0.0.0", port=80)
+@bp.route("/Student/<int:advisorid>")
+@role_required("UAFS_STUDENTS")
+def getAdvisorStudents(advisorid: int):
+    try:
+        with Session(engine) as session:
+            statement = (
+            select(Student.StudentMap)
+            .join(Advisor.Advisor_And_StudentsMap, Student.StudentMap.studentid == Advisor.Advisor_And_StudentsMap.studentid)
+            .filter(Advisor.Advisor_And_StudentsMap.advisorid == advisorid)
+        )
+        results = session.scalars(statement).all()
+
+        students = []
+        for student in results:
+            s = Student.Student()
+            s.userid = student.studentid
+            s.firstname = student.firstname
+            s.lastname = student.lastname
+            s.email = student.email
+            s.role = student.role
+            s.school = student.school
+            s.gpa = student.gpa
+            s.major = student.major
+            s.minor = student.minor
+            s.registrationstatus = student.registrationstatus
+            s.advisingstatus = student.advisingstatus
+            s.dateadvised = student.dateadvised
+            s.financialhold = student.financialhold
+            s.advisinghold = student.advisinghold
+            s.academichold = student.academichold
+            students.append(s.__dict__)
+
+        return students
+            
+    except Exception as e:
+        traceback.print_exc()
+        return "Failed to Get Students"
+    finally:
+        session.close()

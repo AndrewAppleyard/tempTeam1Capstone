@@ -8,9 +8,10 @@ import traceback
 from datetime import datetime
 import os, sys
 from ldap3 import Server, Connection, ALL
-from flask_jwt_extended import jwt_required, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
+from functools import wraps
 
-bp = Blueprint('AdvisorAPI', __name__, url_prefix="/Student")
+bp = Blueprint('StudentAPI', __name__, url_prefix="/Student")
 
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, '..')
@@ -18,9 +19,9 @@ sys.path.append(parent_dir)
 
 from UserClasses import Advisor, User, Student, Admin
 
+#Needs to be updated to new databaseURL
 databaseURL = "mysql+pymysql://User:pass@localhost:3306/test"
-# Change User to user and test to Test when pushing
-# Chop Student off of any urls and convert to blueprint using the Robert isntructions from Discord
+
 engine = create_engine(databaseURL)
 
 LDAP_SERVER = "ldap://localhost:389"
@@ -37,20 +38,36 @@ base = User.Base.getBase()
 
 base.metadata.create_all(bind=engine)
 
-#app = Flask(__name__)
-
 dateFormatString = "%Y-%m-%d"
 
+def role_required(*required_roles):
+
+    def decorator(fn):
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+
+            verify_jwt_in_request()
+            token = get_jwt()
+
+            if token.get("Role") not in required_roles:
+                return jsonify({"message": "Access denied!"}), 403
+            
+            return fn(*args, **kwargs)
+        
+        return wrapper
+    
+    return decorator
+
 @bp.route("", methods=['GET'])
-@jwt_required()
+@role_required("UAFS_STUDENTS")
 def getStudents():
-    token = get_jwt()
+    '''token = get_jwt()
     if token["Role"] == "Student":
-        print("Student route here!")
-        return jsonify({"message":"Student route here!"}), 200
+        print("Access succesful!")
     else:
         print("Can't access with current role.")
-        return jsonify({"message":"Can't access with current role."}), 401
+        return jsonify({"message":"Can't access with current role."}), 401'''
     
     try:
         with Session(engine) as session:
@@ -90,7 +107,8 @@ def getStudents():
     finally:
         session.close()
 
-@bp.route("/<studentID>",methods = ['GET', 'POST'])
+@bp.route("/<int:studentID>",methods = ['GET', 'POST'])
+@role_required("UAFS_STUDENTS")
 def getStudentInfo(studentID: int):
 
     try:
@@ -127,66 +145,3 @@ def getStudentInfo(studentID: int):
     finally:
         session.close()
 
-@bp.route("/Admin/Update/<id>/<role>", methods = ['GET','POST'])
-def updateStudent(id: int, role: str) -> None:
-    try:
-        with Session(engine) as session:
-            false = "false"
-            true = "true"
-            student = session.query(Student.StudentMap).filter(Student.StudentMap.studentID == id).first()
-            if(request.form.get('firstName') != None):
-                student.firstName = request.form.get('firstName')
-            if(request.form.get('lastName') != None):
-                student.lastName = request.form.get('lastName')
-            if(request.form.get('email') != None):
-                student.email = request.form.get('email')
-            if(request.form.get('phoneNumber') != None):
-                student.phoneNumber = request.form.get('phoneNumber')
-            if(request.form.get('role') != None):
-                student.role = request.form.get('role')
-            if(request.form.get('school') != None):
-                student.school = request.form.get('school')
-            if(request.form.get('gpa') != None):
-                student.gpa = request.form.get('gpa')
-            if(request.form.get('major') != None):
-                student.major = request.form.get('major')
-            if(request.form.get('minor') != None):
-                student.minor = request.form.get('minor')
-            if(request.form.get('registrationStatus') != None):
-                if(request.form.get('registrationStatus').casefold() == true.casefold()):
-                    student.registrationStatus = True
-                elif(request.form.get('registrationStatus').casefold() == false.casefold()):
-                    student.registrationStatus = False
-            if(request.form.get('advisingStatus') != None):
-                if(request.form.get('advisingStatus').casefold() == true.casefold()):
-                    student.advisingStatus = True
-                elif(request.form.get('advisingStatus').casefold() == false.casefold()):
-                    student.advisingStatus = False
-            if(request.form.get('dateAdvised') != None):
-                date = datetime.strptime(request.form.get('dateAdvised'), dateFormatString)
-                student.dateAdvised = date
-            if(request.form.get('financialHold') != None):
-               if(request.form.get('financialHold').casefold() == true.casefold()):
-                    student.financialHold = True
-            elif(request.form.get('financialHold').casefold() == false.casefold()):
-                    student.financialHold = False
-            if(request.form.get('advisingHold') != None):
-                if(request.form.get('advisingHold').casefold() == true.casefold()):
-                    student.advisingHold = True
-                elif(request.form.get('advisingHold').casefold() == false.casefold()):
-                    student.advisingHold = False
-            if(request.form.get('academicHold') != None):
-                if(request.form.get('academicHold').casefold() == true.casefold()):
-                    student.academicHold = True
-                elif(request.form.get('academicHold').casefold() == false.casefold()):
-                    student.academicHold = False
-
-            session.commit()
-
-            return "Student Update Successful"
-    except Exception as e:
-        traceback.print_exc()
-        session.rollback()
-        return "Student Update Failed"
-    finally:
-        session.close()

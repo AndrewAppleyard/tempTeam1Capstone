@@ -1,15 +1,32 @@
-from flask import Flask, jsonify, request
-from sqlalchemy import Column, Integer, String, create_engine, select
+from flask import Flask, jsonify, request, Blueprint
+from sqlalchemy import Column, Integer, String, create_engine, select, text
 from sqlalchemy.orm import Mapped, mapped_column, sessionmaker, DeclarativeBase, Session
 from sqlalchemy_utils import database_exists, create_database
 from pymysql import install_as_MySQLdb
 import json
 import traceback
 from datetime import datetime
+#from cryptography.fernet import Fernet
+import sys
+import os
+from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
+from functools import wraps
+
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.join(current_dir, '..')
+sys.path.append(parent_dir)
+
 from UserClasses import Advisor, User, Student, Admin
 
+bp = Blueprint('AdminAPI', __name__, url_prefix='/Admin')
+
 databaseURL = "mysql+pymysql://User:pass@localhost:3306/Test"
+
 engine = create_engine(databaseURL)
+
+LDAP_SERVER = "ldap://localhost:389"
+LDAP_BASE_DN = "dc=example,dc=com"
+LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
 
 if not database_exists(engine.url):
     create_database(engine.url)
@@ -17,22 +34,39 @@ if not database_exists(engine.url):
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
 base = User.Base.getBase()
 
 base.metadata.create_all(bind=engine)
 
-app = Flask(__name__)
-
 dateFormatString = "%m-%d-%Y"
 
-@app.route("/Admin/Advisor/Insert", methods = ['POST'])
+def role_required(*required_roles):
+
+    def decorator(fn):
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+
+            verify_jwt_in_request()
+            token = get_jwt()
+
+            if token.get("Role") not in required_roles:
+                return jsonify({"message": "Access denied!"}), 403
+            
+            return fn(*args, **kwargs)
+        
+        return wrapper
+    
+    return decorator
+
+@bp.route("/Advisor/Insert", methods = ['POST'])
+@role_required("UAFS_ADMINS")
 def addAdvisor() -> None:
     advisor = Advisor.AdvisorMap()
-    advisor.firstName = request.form.get('firstName')
-    advisor.lastName = request.form.get('lastName')
+    advisor.firstname = request.form.get('firstname')
+    advisor.lastname = request.form.get('lastname')
     advisor.email = request.form.get('email')
-    advisor.phoneNumber = request.form.get('phoneNumber')
+    advisor.phonenumber = request.form.get('phonenumber')
     advisor.role = request.form.get('role')
     advisor.school = request.form.get('school')
 
@@ -52,12 +86,13 @@ def addAdvisor() -> None:
         session.close()
         
 
-@app.route("/Admin/Advisor/<id>")
+@bp.route("/Advisor/<int:id>", methods=['GET','POST'])
+@role_required("UAFS_ADMINS")
 def deleteAdvisor(id: int):
    
     try:
         with Session(engine) as session:
-            result = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap.advisorID == id).first()
+            result = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap.advisorid == id).first()
             session.delete(result)
             session.commit()
             return "Advisor Deleted"
@@ -68,19 +103,20 @@ def deleteAdvisor(id: int):
     finally:
         session.close()
 
-@app.route("/Admin/Advisor/Update/<id>", methods = ['GET', 'POST'])
+@bp.route("/Advisor/Update/<int:id>", methods = ['GET', 'POST'])
+@role_required("UAFS_ADMINS")
 def updateAdvisor(id: int) -> None:
     try:
         with Session(engine) as session:
-            advisor = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap.advisorID == id).first()
-            if(request.form.get('firstName') != None):
-                advisor.firstName = request.form.get('firstName')
-            if(request.form.get('lastName') != None):
-                advisor.lastName = request.form.get('lastName')
+            advisor = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap.advisorid == id).first()
+            if(request.form.get('firstname') != None):
+                advisor.firstname = request.form.get('firstname')
+            if(request.form.get('lastname') != None):
+                advisor.lastname = request.form.get('lastname')
             if(request.form.get('email') != None):
                 advisor.email = request.form.get('email')
-            if(request.form.get('phoneNumber') != None):
-                advisor.phoneNumber = request.form.get('phoneNumber')
+            if(request.form.get('phonenumber') != None):
+                advisor.phonenumber = request.form.get('phonenumber')
             if(request.form.get('role') != None):
                 advisor.role = request.form.get('role')
             if(request.form.get('school') != None):
@@ -96,45 +132,46 @@ def updateAdvisor(id: int) -> None:
     finally:
         session.close()
 
-@app.route("/Admin/Student/Insert", methods=['POST']) 
+@bp.route("/Student/Insert", methods=['POST']) 
+@role_required("UAFS_ADMINS")
 def addStudent():
     true = "True"
     false = "False"
 
     student = Student.StudentMap()
-    student.firstName = request.form.get('firstName')
-    student.lastName = request.form.get('lastName')
+    student.firstname = request.form.get('firstname')
+    student.lastname = request.form.get('lastname')
     student.email = request.form.get('email')
-    student.phoneNumber = request.form.get('phoneNumber')
+    student.phonenumber = request.form.get('phonenumber')
     student.role = request.form.get('role')
     student.school = request.form.get('school')
     student.gpa = request.form.get('gpa')
     student.major = request.form.get('major')
     student.minor = request.form.get('minor')
 
-    if(request.form.get('registrationStatus').casefold() == true.casefold()):
-        student.registrationStatus = True
-    elif(request.form.get('registrationStatus').casefold() == false.casefold()):
-        student.registrationStatus = False
-    if(request.form.get('advisingStatus').casefold() == true.casefold()):
-        student.advisingStatus = True
-    elif(request.form.get('advisingStatus').casefold() == false.casefold()):
-        student.advisingStatus = False
-    if(request.form.get('dateAdvised') != None):
-        date = datetime.strptime(request.form.get('dateAdvised'), dateFormatString)
-        student.dateAdvised = date
-    if(request.form.get('financialHold').casefold() == true.casefold()):
-        student.financialHold = True
-    elif(request.form.get('financialHold').casefold() == false.casefold()):
-        student.financialHold = False
-    if(request.form.get('advisingHold').casefold() == true.casefold()):
-        student.advisingHold = True
-    elif(request.form.get('advisingHold').casefold() == false.casefold()):
-        student.advisingHold = False
-    if(request.form.get('academicHold').casefold() == true.casefold()):
-        student.academicHold = True
-    elif(request.form.get('academicHold').casefold() == false.casefold()):
-        student.academicHold = False
+    if(request.form.get('registrationstatus').casefold() == true.casefold()):
+        student.registrationstatus = True
+    elif(request.form.get('registrationstatus').casefold() == false.casefold()):
+        student.registrationstatus = False
+    if(request.form.get('advisingstatus').casefold() == true.casefold()):
+        student.advisingstatus = True
+    elif(request.form.get('advisingstatus').casefold() == false.casefold()):
+        student.advisingstatus = False
+    if(request.form.get('dateadvised') != None):
+        date = datetime.strptime(request.form.get('dateadvised'), dateFormatString)
+        student.dateadvised = date
+    if(request.form.get('financialhold').casefold() == true.casefold()):
+        student.financialhold = True
+    elif(request.form.get('financialhold').casefold() == false.casefold()):
+        student.financialhold = False
+    if(request.form.get('advisinghold').casefold() == true.casefold()):
+        student.advisinghold = True
+    elif(request.form.get('advisinghold').casefold() == false.casefold()):
+        student.advisinghold = False
+    if(request.form.get('academichold').casefold() == true.casefold()):
+        student.academichold = True
+    elif(request.form.get('academichold').casefold() == false.casefold()):
+        student.academichold = False
 
     try:
         with Session(engine) as session:
@@ -150,12 +187,13 @@ def addStudent():
     finally:
         session.close()
 
-@app.route("/Admin/Student/<id>")
+@bp.route("/Student/<int:id>", methods=['POST'])
+@role_required("UAFS_ADMINS")
 def deleteStudent(id: int):
    
     try:
         with Session(engine) as session:
-            result = session.query(Student.StudentMap).filter(Student.StudentMap.studentID == id).first()
+            result = session.query(Student.StudentMap).filter(Student.StudentMap.studentid == id).first()
             session.delete(result)
             session.commit()
             return "Student Deleted"
@@ -166,11 +204,75 @@ def deleteStudent(id: int):
     finally:
         session.close()
 
-@app.route("/Admin/Student/Update/<id>/<role>", methods = ['GET', 'POST'])
+@bp.route("/<int:id>", methods=['GET','POST'])
+@role_required("UAFS_ADMINS")
+def getAdmin(id: int):
+    try:
+        with Session(engine) as session:
+            result = session.query(Admin.AdminMap).filter(Admin.AdminMap.adminid == id).first()
+            admin = Admin.Admin()
+
+            admin.adminid = result.adminid
+            admin.firstname = result.firstname
+            admin.lastname = result.lastname
+            admin.email = result.email
+            admin.phonenumber = result.phonenumber
+            admin.role = result.role
+            admin.school = result.school
+
+            return admin.__dict__
+    except Exception as e:
+        traceback.print_exc()
+        return "Failed to Find Admin"
+    finally:
+        session.close()
+
+@bp.route("/Student/Advisor", methods=['POST'])
+@role_required("UAFS_ADMINS")
+def addStudentToAdvisor():
+    advisorAndStudents = Advisor.Advisor_And_StudentsMap()
+    advisorAndStudents.advisorid = request.form.get('advisorid')
+    advisorAndStudents.studentid = request.form.get('studentid')
+
+    try:
+        with Session(engine) as session:
+            session.add(advisorAndStudents)
+            session.commit()
+            session.refresh(advisorAndStudents)
+
+            return "Student Added to Advisor"
+    except Exception as e:
+        traceback.print_exc()
+        session.rollback()
+        
+        return "Failed to Add Student to Advisor"
+    finally:
+        session.close()
+
+@bp.route("/Student/Advisor/<int:studentid>/<int:advisorid>", methods=['GET'])
+@role_required("UAFS_ADMINS")
+def removeStudentFromAdvisor(studentid: int, advisorid: int):
+    try:
+        with Session(engine) as session:
+            result = session.query(Advisor.Advisor_And_StudentsMap).filter(Advisor.Advisor_And_StudentsMap.advisorid == advisorid).filter(Advisor.Advisor_And_StudentsMap.studentid == studentid).first()
+            session.delete(result)
+            session.commit()
+            return "Student Removed From Advisor"
+    except Exception as e:
+        traceback.print_exc()
+        session.rollback()
+        return "Failed to Remove Student From Advisor"
+    finally:
+        session.close()
+
+@bp.route("Student/Update/<int:id>", methods = ['GET','POST'])
+@role_required("UAFS_ADVISORS")
 def updateStudent(id: int, role: str) -> None:
     try:
         with Session(engine) as session:
-            student = session.query(Student.StudentMap).filter(Student.StudentMap.StudentID == id).first()
+            false = "false"
+            true = "true"
+            student = session.query(Student.StudentMap).filter(Student.StudentMap.studentID == id).first()
             if(request.form.get('firstName') != None):
                 student.firstName = request.form.get('firstName')
             if(request.form.get('lastName') != None):
@@ -227,64 +329,3 @@ def updateStudent(id: int, role: str) -> None:
         return "Student Update Failed"
     finally:
         session.close()
-
-@app.route("/Admin/<id>")
-def getAdmin(id: int):
-    try:
-        with Session(engine) as session:
-            result = session.query(Admin.AdminMap).filter(Admin.AdminMap.adminID == id).first()
-            admin = Admin.Admin()
-
-            admin.adminID= result.adminID
-            admin.firstName = result.firstName
-            admin.lastName = result.lastName
-            admin.email = result.email
-            admin.phoneNumber = result.phoneNumber
-            admin.role = result.role
-            admin.school = result.school
-
-            return admin.__dict__
-    except Exception as e:
-        traceback.print_exc()
-        return "Failed to Find Admin"
-    finally:
-        session.close()
-
-
-@app.route("/Admin/Student/Advisor", methods=['POST'])
-def addStudentToAdvisor():
-    advisorAndStudents = Advisor.Advisor_And_StudentsMap()
-    advisorAndStudents.advisorID = request.form.get('advisorID')
-    advisorAndStudents.studentID = request.form.get('studentID')
-
-    try:
-        with Session(engine) as session:
-            session.add(advisorAndStudents)
-            session.commit()
-            session.refresh(advisorAndStudents)
-
-            return "Student Added to Advisor"
-    except Exception as e:
-        traceback.print_exc()
-        session.rollback()
-        
-        return "Failed to Add Student to Advisor"
-    finally:
-        session.close()
-
-@app.route("/Admin/Student/Advisor/<studentID>/<advisorID>")
-def removeStudentFromAdvisor(studentID: int, advisorID: int):
-    try:
-        with Session(engine) as session:
-            result = session.query(Advisor.Advisor_And_StudentsMap).filter(Advisor.Advisor_And_StudentsMap.advisorID == advisorID).filter(Advisor.Advisor_And_StudentsMap.studentID == studentID).first()
-            session.delete(result)
-            session.commit()
-            return "Student Removed From Advisor"
-    except Exception as e:
-        traceback.print_exc()
-        session.rollback()
-        return "Failed to Remove Student From Advisor"
-    finally:
-        session.close()
-
-app.run(host = "0.0.0.0", port=80)
