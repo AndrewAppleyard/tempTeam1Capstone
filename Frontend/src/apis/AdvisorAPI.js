@@ -37,7 +37,7 @@ export default {
 
 async function getAdvisorByStudent(studentid) {
   try {
-    const response = await axios.get(`http://localhost:5000/ByStudent/${studentid}`);
+    const response = await axios.get(`Advisor/ByStudent/${studentid}`);
     console.log("Advisor data:", response.data);
     return response.data;
   } catch (error) {
