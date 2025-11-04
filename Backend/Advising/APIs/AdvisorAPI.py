@@ -126,3 +126,36 @@ def getAdvisorStudents(advisorid: int):
         return "Failed to Get Students"
     finally:
         session.close()
+
+@bp.route("/ByStudent/<studentid>", methods=['GET'])
+def getAdvisorByStudent(studentid: int):
+    try:
+        with Session(engine) as session:
+            statement = (
+                select(Advisor.AdvisorMap)
+                .join(Advisor.Advisor_And_StudentsMap, Advisor.AdvisorMap.advisorid == Advisor.Advisor_And_StudentsMap.advisorid)
+                .filter(Advisor.Advisor_And_StudentsMap.studentid == studentid)
+            )
+
+            advisor_result = session.scalars(statement).first()
+
+            if not advisor_result:
+                return jsonify(None), 200
+
+            advisor = Advisor.Advisor()
+            advisor.userid = advisor_result.advisorid
+            advisor.firstname = advisor_result.firstname
+            advisor.lastname = advisor_result.lastname
+            advisor.email = advisor_result.email
+            advisor.phonenumber = advisor_result.phonenumber
+            advisor.role = advisor_result.role
+            advisor.school = advisor_result.school
+
+            return jsonify(advisor.__dict__), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": "Failed to find advisor for student"}), 500
+
+    finally:
+        session.close()

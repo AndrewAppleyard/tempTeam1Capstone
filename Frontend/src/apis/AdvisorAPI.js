@@ -33,19 +33,19 @@ export default {
       throw err;
     }
   },
-};
 
-async function getAdvisorByStudent(studentid) {
-  try {
-    const response = await axios.get(`http://localhost:5000/ByStudent/${studentid}`);
-    console.log("Advisor data:", response.data);
-    return response.data;
-  } catch (error) {
-    if (error.response) {
-      console.error("Error fetching advisor:", error.response.data);
-    } else {
-      console.error("Network or other error:", error.message);
+  async getAdvisorByStudent(studentid) {
+    try {
+      const response = await axios.get(`Advisor/ByStudent/${studentid}`);
+      console.log("Advisor data:", response.data);
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        console.error("Error fetching advisor:", error.response.data);
+      } else {
+        console.error("Network or other error:", error.message);
+      }
+      return null;
     }
-    return null;
-  }
+  },
 };

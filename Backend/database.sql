@@ -29,7 +29,6 @@ CREATE TABLE advisor
 CREATE TABLE student 
 (
     studentid BIGSERIAL PRIMARY KEY, --REFERENCES users(userid) ON DELETE CASCADE,
-    -- classes JSONB, 
     gpa FLOAT,
     major VARCHAR(50), 
     majorconcentration VARCHAR(50), 
@@ -42,6 +41,7 @@ CREATE TABLE student
     advisingstatus BOOLEAN DEFAULT FALSE, 
     activestatus BOOLEAN DEFAULT TRUE, -- get this done!!!
     dateadvised TIMESTAMP
+    classes JSONB
 ) INHERITS (users);
 
 -- CREATE TABLE admin_and_advisors 
