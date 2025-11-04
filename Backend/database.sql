@@ -70,6 +70,21 @@ CREATE TABLE transcript
 
 -- insertions --
 
+
+CREATE TABLE currentcourses (
+    currentcourseid BIGSERIAL PRIMARY KEY,
+    section VARCHAR(100),
+    courseavailability VARCHAR(15),
+    deliverymode VARCHAR(15),
+    meetingpattern VARCHAR(300),
+    courselocation VARCHAR(100),
+    instructor VARCHAR(50),
+    capacity VARCHAR(5),
+    enrolled VARCHAR(5),
+    academicperiod VARCHAR(100),
+    startdate VARCHAR(20)
+);
+
 INSERT INTO admin (firstname, lastname, email, phonenumber, role, school)
 VALUES ('TestAdmin', 'Test', 'ta@uafs.edu', 4445556666, 'admin', 'UAFS');
 
