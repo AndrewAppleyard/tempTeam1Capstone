@@ -3,12 +3,7 @@ import axios from 'axios';
 export default {
   async getAdmin(adminid) {
     try {
-      const token = sessionStorage.getItem("token");  
-      const response = await axios.get(`/Admin/${adminid}`,{
-          headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await axios.get(`/Admin/${adminid}`);
       console.log('Admin Data:', response.data);
       return response.data;
     } catch (err) {
@@ -27,14 +22,7 @@ export default {
       formData.append('role', advisor.role);
       formData.append('school', advisor.school);
 
-      const token = sessionStorage.getItem("token"); 
-      const response = await axios.post('/Admin/Advisor/Insert', formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const response = await axios.post('/Admin/Advisor/Insert', formData);
       console.log('Advisor Added:', response.data);
       return response.data;
     } catch (err) {
@@ -47,15 +35,7 @@ export default {
     try {
       const formData = new FormData();
       Object.keys(updates).forEach(key => formData.append(key, updates[key]));
-      const token = sessionStorage.getItem("token"); 
-
-      const response = await axios.post(`/Admin/Advisor/Update/${advisorid}`, formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const response = await axios.post(`/Admin/Advisor/Update/${advisorid}`, formData);
       console.log('Advisor Updated:', response.data);
       return response.data;
     } catch (err) {
@@ -66,12 +46,7 @@ export default {
 
   async deleteAdvisor(advisorid) {
     try {
-      const token = sessionStorage.getItem("token");
-      const response = await axios.get(`/Admin/Advisor/${advisorid}`,{
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await axios.get(`/Admin/Advisor/${advisorid}`);
       console.log('Advisor Deleted:', response.data);
       return response.data;
     } catch (err) {
@@ -84,12 +59,7 @@ export default {
     try {
       const formData = new FormData();
       Object.keys(student).forEach(key => formData.append(key, student[key]));
-      const token = sessionStorage.getItem("token");
-      const response = await axios.post('/Admin/Student/Insert', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await axios.post('/Admin/Student/Insert', formData);
       console.log('Student Added:', response.data);
       return response.data;
     } catch (err) {
@@ -98,15 +68,22 @@ export default {
     }
   },
 
+  async updateStudent(studentid, updates) {
+    try {
+      const formData = new FormData();
+      Object.keys(updates).forEach(key => formData.append(key, updates[key]));
+      const response = await axios.post(`/Admin/Student/Update/${studentid}`, formData);
+      console.log('Student Updated:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Update Student Error:', err);
+      throw err;
+    }
+  },
+
   async deleteStudent(studentid) {
     try {
-      const token = sessionStorage.getItem("token");
-      const response = await axios.get(`/Admin/Student/${studentid}`,{
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-      );
+      const response = await axios.get(`/Admin/Student/${studentid}`);
       console.log('Student Deleted:', response.data);
       return response.data;
     } catch (err) {
@@ -120,12 +97,7 @@ export default {
       const formData = new FormData();
       formData.append('advisorid', advisorid);
       formData.append('studentid', studentid);
-      const token = sessionStorage.getItem("token");
-      const response = await axios.post('/Admin/Student/Advisor', formData,{
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await axios.post('/Admin/Student/Advisor', formData);
       return response.data;
     } catch (err) {
       console.error('Add Student to Advisor Error:', err);
@@ -135,12 +107,7 @@ export default {
 
   async removeStudentFromAdvisor(studentid, advisorid) {
     try {
-      const token = sessionStorage.getItem("token");
-      const response = await axios.get(`/Admin/Student/Advisor/${studentid}/${advisorid}`,{
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await axios.get(`/Admin/Student/Advisor/${studentid}/${advisorid}`);
       return response.data;
     } catch (err) {
       console.error('Remove Student from Advisor Error:', err);

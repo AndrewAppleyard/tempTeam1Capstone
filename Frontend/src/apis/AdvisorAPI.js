@@ -3,12 +3,7 @@ import axios from 'axios';
 export default {
   async getAllAdvisors() {
     try {
-      const token = sessionStorage.getItem("token");
-      const response = await axios.get('/Advisor/',{
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await axios.get('/Advisor/');
       console.log('All Advisors:', response.data);
       return response.data;
     } catch (err) {
@@ -19,12 +14,7 @@ export default {
 
   async getAdvisorById(advisorid) {
     try {
-      const token = sessionStorage.getItem("token");
-      const response = await axios.get(`/Advisor/${advisorid}`,{
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await axios.get(`/Advisor/${advisorid}`);
       console.log('Advisor Data:', response.data);
       return response.data;
     } catch (err) {
@@ -35,12 +25,7 @@ export default {
 
   async getAdvisorStudents(advisorid) {
     try {
-      const token = sessionStorage.getItem("token");
-      const response = await axios.get(`/Advisor/Student/${advisorid}`,{
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await axios.get(`/Advisor/Student/${advisorid}`);
       console.log(`Students for Advisor ${advisorid}:`, response.data);
       return response.data;
     } catch (err) {
@@ -52,7 +37,7 @@ export default {
 
 async function getAdvisorByStudent(studentid) {
   try {
-    const response = await axios.get(`Advisor/ByStudent/${studentid}`);
+    const response = await axios.get(`http://localhost:5000/ByStudent/${studentid}`);
     console.log("Advisor data:", response.data);
     return response.data;
   } catch (error) {

@@ -1,11 +1,6 @@
 [build-system]
-<<<<<<< HEAD
-requires = ["setuptools>=61.0.0"]
-build-backend = "setuptools.build_meta"
-=======
 requires = ["flit_core>=3.12.0"]
 build-backend = "flit_core.buildapi"
->>>>>>> b2cb8a3dd49f141e150077986ee47be1bfec2304
 
 [project]
 name="Advising"
@@ -13,22 +8,6 @@ version="0.0.1"
 requires-python = ">=3.13"
 description="A package of our projects API files"
 authors=[{name="Robert Farrar"}, {name="Christopher Monterozza"}]
-<<<<<<< HEAD
-dependencies= ["blinker==1.9.0", "certifi>=2025.6.15", "charset-normalizer==3.4.3", "click==8.3.0",
-"Flask==3.1.2", "greenlet==3.2.4", "idna==3.10", "itsdangerous==2.2.0", "Jinja2==3.1.6", "MarkupSafe==3.0.3",
-"mysql-connector-python==9.4.0", "pip==25.2", "PyMySQL==1.1.2", "requests==2.32.5", "SQLAlchemy==2.0.43",
-"SQLAlchemy-Utils==0.42.0", "typing_extensions==4.15.0", "urllib3==2.5.0", "Werkzeug==3.1.3", "psycopg2-binary==2.9.10"]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OpenSuse Tumbleweed 15.5"
-]
-
-[tool.setuptools]
-package-dir = {""="src"}
-packages = ["APIs", "UserClasses"]
-
-cmd 
-=======
 dependencies= ["blinker==1.9.0", "certifi>=2025.6.15", "charset-normalizer==3.4.3", "click==8.3.0", "docutils == 0.22.2",
 "Flask==3.1.2", "greenlet==3.2.4", "idna==3.10", "itsdangerous==2.2.0", "Jinja2==3.1.6", "MarkupSafe==3.0.3",
 "mysql-connector-python==9.4.0", "pip==25.2", "PyMySQL==1.1.2", "requests==2.32.5", "SQLAlchemy==2.0.43",
@@ -44,4 +23,3 @@ Advising = "Advising.wsgi:run"
 Advising-dev = "Advising.app:runDev"
 Advising-path = "Advising.Aux:findFilePath"
 Advising-encrypt = "Advising.Aux:encryptURL"
->>>>>>> b2cb8a3dd49f141e150077986ee47be1bfec2304
