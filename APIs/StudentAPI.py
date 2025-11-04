@@ -145,3 +145,83 @@ def getStudentInfo(studentID: int):
     finally:
         session.close()
 
+@bp.route("/Update/<int:id>", methods = ['GET','POST'])
+@role_required("UAFS_ADMINS,UAFS_STUDENTS,UAFS_ADVISORS")
+def updateStudent(id: int) -> None:
+    token = get_jwt()
+    try:
+        with Session(engine) as session:
+            false = "false"
+            true = "true"
+            student = session.query(Student.StudentMap).filter(Student.StudentMap.studentid == id).first()
+
+            if (token["Role"] == 'UAFS_STUDENTS'):
+                if(request.form.get('phonenumber') != None):
+                    student.phonenumber = request.form.get('phonenumber')
+                    
+            elif (token["Role"] == 'UAFS_ADVISORS'):
+                if(request.form.get('major') != None):
+                    student.major = request.form.get('major')
+                if(request.form.get('minor') != None):
+                    student.minor = request.form.get('minor')
+                if(request.form.get('advisingstatus') != None):
+                    if(request.form.get('advisingstatus').casefold() == true.casefold()):
+                        student.advisingstatus = True
+                    elif(request.form.get('advisingstatus').casefold() == false.casefold()):
+                        student.advisingstatus = False
+                if(request.form.get('dateadvised') != None):
+                    date = datetime.strptime(request.form.get('dateadvised'), dateFormatString)
+                    student.dateadvised = date
+                if(request.form.get('advisinghold') != None):
+                    if(request.form.get('advisinghold').casefold() == true.casefold()):
+                        student.advisinghold = True
+                    elif(request.form.get('advisinghold').casefold() == false.casefold()):
+                        student.advisinghold = False
+
+            elif (token["Role"] == 'UAFS_ADMINS'):
+                if(request.form.get('firstname') != None):
+                    student.firstname = request.form.get('firstname')
+                if(request.form.get('lastname') != None):
+                    student.lastname = request.form.get('lastname')
+                if(request.form.get('email') != None):
+                    student.email = request.form.get('email')
+                if(request.form.get('role') != None):
+                    student.role = request.form.get('role')
+                if(request.form.get('phonenumber') != None):
+                    student.phonenumber = request.form.get('phonenumber')
+                if(request.form.get('school') != None):
+                    student.school = request.form.get('school')
+                if(request.form.get('major') != None):
+                    student.major = request.form.get('major')
+                if(request.form.get('minor') != None):
+                    student.minor = request.form.get('minor')
+                if(request.form.get('registrationstatus') != None):
+                    if(request.form.get('registrationstatus').casefold() == true.casefold()):
+                        student.registrationstatus = True
+                    elif(request.form.get('registrationstatus').casefold() == false.casefold()):
+                        student.registrationstatus = False
+                if(request.form.get('financialhold') != None):
+                    if(request.form.get('financialhold').casefold() == true.casefold()):
+                        student.financialhold = True
+                    elif(request.form.get('financialhold').casefold() == false.casefold()):
+                        student.financialhold = False
+                if(request.form.get('advisinghold') != None):
+                    if(request.form.get('advisinghold').casefold() == true.casefold()):
+                        student.advisinghold = True
+                    elif(request.form.get('advisinghold').casefold() == false.casefold()):
+                        student.advisinghold = False
+                if(request.form.get('academichold') != None):
+                    if(request.form.get('academichold').casefold() == true.casefold()):
+                        student.academichold = True
+                    elif(request.form.get('academichold').casefold() == false.casefold()):
+                        student.academichold = False
+            
+            session.commit()
+
+            return "Student Update Successful"
+    except Exception as e:
+        traceback.print_exc()
+        session.rollback()
+        return "Student Update Failed"
+    finally:
+        session.close()

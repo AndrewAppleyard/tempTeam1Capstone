@@ -57,7 +57,7 @@ def role_required(*required_roles):
     return decorator
 
 @bp.route("/", methods=['GET'])
-@role_required("UAFS_ADMINS")
+@role_required("UAFS_ADVISORS")
 def getAdvisors():
     try:
         with Session(engine) as session:
@@ -87,7 +87,7 @@ def getAdvisors():
         session.close()
 
 @bp.route("/<int:advisorid>", methods= ['GET'] )
-@role_required("UAFS_ADMINS")
+@role_required("UAFS_ADVISORS")
 def getAdvisor(advisorid: int):
     try:
         with Session(engine) as session:
@@ -111,7 +111,7 @@ def getAdvisor(advisorid: int):
         session.close()
 
 @bp.route("/Student/<int:advisorid>")
-@role_required("UAFS_STUDENTS")
+@role_required("UAFS_ADVISORS")
 def getAdvisorStudents(advisorid: int):
     try:
         with Session(engine) as session:
@@ -147,5 +147,38 @@ def getAdvisorStudents(advisorid: int):
     except Exception as e:
         traceback.print_exc()
         return "Failed to Get Students"
+    finally:
+        session.close()
+
+@bp.route("/ByStudent/<studentid>")
+@role_required("UAFS_ADVISORS")
+def getAdvisorByStudent(studentid: int):
+    try:
+        with Session(engine) as session:
+            statement = (
+            select(Advisor.AdvisorMap)
+            .join(Advisor.Advisor_And_StudentsMap, Advisor.AdvisorMap.advisorid == Advisor.Advisor_And_StudentsMap.advisorid)
+            .filter(Advisor.Advisor_And_StudentsMap.studentid == studentid)
+            )
+
+            result = session.scalars(statement).first()
+
+            if not result:
+                return jsonify({"message": f"No advisor found for student {studentid}"}), 404
+
+            advisor = Advisor.Advisor()
+            advisor.userid = result.advisorid
+            advisor.firstname = result.firstname
+            advisor.lastname = result.lastname
+            advisor.email = result.email
+            advisor.phonenumber = result.phonenumber
+            advisor.role = result.role
+            advisor.school = result.school
+
+            return advisor.__dict__
+
+    except Exception as e:
+        traceback.print_exc()
+        return "Failed to Get Advisor", 500
     finally:
         session.close()
