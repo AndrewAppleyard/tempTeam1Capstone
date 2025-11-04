@@ -47,14 +47,17 @@ async function save() {
     let studentid = null
     if (props.student) {
       studentid = props.student.studentid
-      console.log('Updating student ID:', studentid)
-      const userRole = 'admin' // hardcoding for now
+      const userRole = "admin" // remove with jwt
       await StudentAPI.updateStudent(studentid, userRole, form.value)
+      
     } else {
       form.value.role = 'student'
       form.value.dateadvised = '2025-01-01' // should be empty
       const response = await AdminAPI.addStudent(form.value)
-      studentid = response?.data?.studentid ?? null
+
+      studentid = response.data.studentid
+
+      console.log('AddStudent response:', response);
     }
 
     if (selectedAdvisor.value) {
@@ -88,7 +91,7 @@ function resetForm() { // need to reset id
     registrationstatus: false,
     advisingstatus: false,
     activestatus: true,
-    dateadvised: '' // needs to be null at first 
+    dateadvised: '' // needs to be null until set
   }
 }
 

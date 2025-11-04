@@ -45,3 +45,5 @@ class StudentMap(User.Base):
     advisingstatus: Mapped[bool] = mapped_column(Boolean, default=False)
     activestatus: Mapped[bool] = mapped_column(Boolean, default=True)
     dateadvised: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+    classes: Mapped[dict] = mapped_column(JSON, default={})

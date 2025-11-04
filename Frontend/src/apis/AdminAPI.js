@@ -68,19 +68,6 @@ export default {
     }
   },
 
-  async updateStudent(studentid, updates) {
-    try {
-      const formData = new FormData();
-      Object.keys(updates).forEach(key => formData.append(key, updates[key]));
-      const response = await axios.post(`/Admin/Student/Update/${studentid}`, formData);
-      console.log('Student Updated:', response.data);
-      return response.data;
-    } catch (err) {
-      console.error('Update Student Error:', err);
-      throw err;
-    }
-  },
-
   async deleteStudent(studentid) {
     try {
       const response = await axios.get(`/Admin/Student/${studentid}`);
