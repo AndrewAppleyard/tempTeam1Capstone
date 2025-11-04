@@ -48,7 +48,7 @@ async function save() {
     if (props.student) {
       console.log('Updating student ID:', studentid)
       const userRole = 'admin' // hardcoding for now
-      await StudentAPI.updateStudent(studentid, form.value)
+      await StudentAPI.updateStudent(studentid, userRole, form.value)
     } else {
       form.value.role = 'student'
       form.value.dateadvised = '2025-01-01' // should be empty

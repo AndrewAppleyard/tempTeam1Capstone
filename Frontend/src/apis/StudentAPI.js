@@ -3,12 +3,7 @@ import axios from 'axios';
 export default {
   async getAllStudents() {
     try {
-      const token = sessionStorage.getItem("token");
-      const response = await axios.get('/Student/',{
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await axios.get('/Student/');
       console.log('All Students:', response.data);
       return response.data;
     } catch (err) {
@@ -19,12 +14,7 @@ export default {
 
   async getStudentById(studentid) {
       try {
-        const token = sessionStorage.getItem("token");
-        const response = await axios.get(`/Student/${studentid}`,{
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const response = await axios.get(`/Student/${studentid}`);
         console.log('Student Data:', response.data);
         return response.data;
       } catch (err) {
@@ -33,16 +23,12 @@ export default {
       }
   },
 
-  async updateStudent(studentid, updates) {
+  async updateStudent(studentid, role, updates) {
     try {
       const formData = new FormData();
         Object.keys(updates).forEach(key => formData.append(key, updates[key]));
-        const token = sessionStorage.getItem("token");
-        const response = await axios.post(`/Student/Update/${studentid}`, formData,{
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+    
+        const response = await axios.post(`/Student/Update/${studentid}/${role}`, formData);
         console.log('Student Updated:', response.data);
         return response.data;
     } catch (err) {
