@@ -10,9 +10,12 @@ import NavBar from './components/NavBar.vue'
     
     <v-main>
       <nav>
+        <RouterLink to="/UserProfilePage">User Profile</RouterLink> |
         <RouterLink to="/admin">Admin</RouterLink> |
         <RouterLink to="/advisor">Advisor</RouterLink> |
-        <RouterLink to="/student">Student</RouterLink>
+        <RouterLink to="/student">Student</RouterLink> |
+        <RouterLink to="/transcript">Transcript</RouterLink> |
+        <RouterLink to="/courseCatalog">Course Catalog</RouterLink>
       </nav>
       <router-view />
     </v-main>

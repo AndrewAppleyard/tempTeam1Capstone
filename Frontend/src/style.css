@@ -59,11 +59,7 @@ button:focus-visible {
 }
 
 #app {
-<<<<<<< HEAD
-  max-width: 1280px;
-=======
   width: 1500px;
->>>>>>> e72111a5f021171a4006959efc236c6eaad9fdfb
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
@@ -81,10 +77,7 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
-<<<<<<< HEAD
-=======
 
 /* ^^^ default vue */
 /* vvv yash css */
 
->>>>>>> e72111a5f021171a4006959efc236c6eaad9fdfb

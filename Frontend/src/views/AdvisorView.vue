@@ -1,25 +1,43 @@
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import Test from '../components/test.vue'
+import axios from 'axios'
 
 const router = useRouter()
+const loading = ref(true)
+const error = ref(null)
 
-const studentList = ref({
-    name: ref("")
-})
+// const students = [
+//   { studentid: 1, firstname: 'Yash', lastname: 'Patel' },
+//   { studentid: 2, firstname: 'Andrew', lastname: 'Appleyard' },
+//   { studentid: 3, firstname: 'Robert', lastname: 'Farrar' },
+//   { studentid: 4, firstname: 'Christopher', lastname: 'Monterroza' },
+//   { studentid: 5, firstname: 'Sophia', lastname: 'Praphan' }
+// ]
 
-const students = [
-  { studentID: 1, firstName: 'Yash', lastName: 'Patel' },
-  { studentID: 2, firstName: 'Andrew', lastName: 'Appleyard' },
-  { studentID: 3, firstName: 'Robert', lastName: 'Farrar' },
-  { studentID: 4, firstName: 'Christopher', lastName: 'Monterroza' },
-  { studentID: 5, firstName: 'Sophia', lastName: 'Praphan' }
-]
+const students = ref([]) 
 
-function goToStudent(studentID) {
-  // router.push(`/student/${studentID}`)
+async function fetchStudents() {
+  loading.value = true
+  error.value = null
+  try {
+    const response = await axios.get('/Advisor/Student/1') // change based off of advisor id
+    students.value = response.data
+  } catch (err) {
+    console.error('Error fetching students:', err)
+    error.value = 'Failed to load students.'
+  } finally {
+    loading.value = false
+  }
 }
+
+function goToStudent(studentid) {
+  router.push(`/student/${studentid}`)
+}
+
+onMounted(() => {
+  fetchStudents()
+})
 </script>
 
 <template>
@@ -44,7 +62,7 @@ function goToStudent(studentID) {
             <v-row>
               <v-col
                 v-for="student in students"
-                :key="student.studentID"
+                :key="student.studentid"
                 cols="12"
                 sm="6"
                 md="4"
@@ -53,10 +71,10 @@ function goToStudent(studentID) {
                   class="pa-2 text-center student-card"
                   flat
                   style="background-color: transparent; border: 1px solid #002856; border-radius: 8px;"
-                  @click="goToStudent(student.studentID)"
+                  @click="goToStudent(student.studentid)"
                 >
                   <v-card-title class="text-subtitle-3 font-weight-medium">
-                    {{ student.firstName }} {{ student.lastName }}
+                    {{ student.firstname }} {{ student.lastname }}
                   </v-card-title>
                 </v-card>
               </v-col>
