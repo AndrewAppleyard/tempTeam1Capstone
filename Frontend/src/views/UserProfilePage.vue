@@ -40,8 +40,8 @@
                 <v-avatar size="96" color="#002856">
                   <span class="text-h5" style="color:white">{{ initials(profile.firstName, profile.lastName) }}</span>
                 </v-avatar>
-                <div class="ml-4">
-                  <div class="text-h6 mb-1" style="color:#002856;text-align:left;">{{ fullName }}</div>
+                <div class="ml-4" style="text-align:left;">
+                  <div class="text-h6 mb-1" style="color:#002856;">{{ fullName }}</div>
                   <div class="text-body-2">ID: <strong>{{ profile.studentID }}</strong></div>
                   <div class="text-body-2">Level: <strong>{{ profile.level }}</strong></div>
                 </div>
@@ -142,6 +142,10 @@
           <!-- Tabs -->
           <v-card class="pa-2" style="background-color:rgba(255,255,255,.6);border:1px solid #002856;">
             <v-tabs v-model="tab" bg-color="transparent" class="px-2">
+              <!-- Back to Students tab -->
+              <v-tab value="students">
+                <v-icon start>mdi-arrow-left</v-icon>Students
+              </v-tab>
               <v-tab value="overview"><v-icon start>mdi-view-dashboard</v-icon>Overview</v-tab>
               <v-tab value="academics"><v-icon start>mdi-school</v-icon>Academics</v-tab>
               <v-tab value="involvement"><v-icon start>mdi-account-group</v-icon>Involvement</v-tab>
@@ -152,7 +156,7 @@
               <!-- Overview -->
               <v-window-item value="overview">
                 <v-card flat class="pa-4">
-                  <div class="text-subtitle-1 mb-3" style="color:#002856;">Recent Activity</div>
+                  <div class="text-subtitle-1 mb-3" style="color:#002856; text-align: left;">Recent Activity</div>
                   <v-timeline align="start" density="compact">
                     <v-timeline-item v-for="item in activity" :key="item.id" :dot-color="item.color" :icon="item.icon">
                       <div class="mb-1"><strong>{{ item.title }}</strong></div>
@@ -174,12 +178,18 @@
                 </v-card>
               </v-window-item>
 
-              <!-- Involvement -->
+              <!-- Involvement (forced left alignment) -->
               <v-window-item value="involvement">
                 <v-card flat class="pa-4">
-                  <div class="text-subtitle-1 mb-3" style="color:#002856;">Organizations & Roles</div>
-                  <v-list lines="two">
-                    <v-list-item v-for="org in orgs" :key="org.id" :title="org.name" :subtitle="org.role + ' • ' + org.since" prepend-icon="mdi-shield-account"/>
+                  <div class="text-subtitle-1 mb-3" style="color:#002856; text-align:left;">Organizations & Roles</div>
+                  <v-list lines="two" class="text-left" style="text-align:left;">
+                    <v-list-item
+                      v-for="org in orgs"
+                      :key="org.id"
+                      :title="org.name"
+                      :subtitle="org.role + ' • ' + org.since"
+                      prepend-icon="mdi-shield-account"
+                    />
                   </v-list>
                 </v-card>
               </v-window-item>
@@ -190,7 +200,9 @@
                   <div class="text-subtitle-1 mb-3" style="color:#002856;">Files</div>
                   <v-data-table :headers="docHeaders" :items="documents" item-key="id" class="elevation-0">
                     <template #item.actions="{ item }">
-                      <v-btn variant="text" size="small" @click="downloadDoc(item)"><v-icon start>mdi-download</v-icon>Download</v-btn>
+                      <v-btn variant="text" size="small" @click="downloadDoc(item)">
+                        <v-icon start>mdi-download</v-icon>Download
+                      </v-btn>
                     </template>
                   </v-data-table>
                 </v-card>
@@ -224,10 +236,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-// GPA map reused from transcript page for consistency
+// GPA map
 const GPA_POINTS: Record<string, number> = {
   'A': 4.0, 'A-': 3.7,
   'B+': 3.3, 'B': 3.0, 'B-': 2.7,
@@ -241,13 +253,6 @@ const gradePoint = (g: string) => GPA_POINTS[g] ?? 0
 const route = useRoute()
 const router = useRouter()
 const studentIdParam = route.params.studentID as string | undefined
-
-// Mock Student Directory (replace with API)
-const directory = [
-  { studentID: 'S1001', firstName: 'Andrew', lastName: 'Mackey', level: 'Undergraduate', major: 'Computer Science', minor: 'Mathematics' },
-  { studentID: 'S1002', firstName: 'Yash', lastName: 'Patel', level: 'Undergraduate', major: 'Computer Science', minor: 'Mathematics' },
-  { studentID: 'S1003', firstName: 'Jay', lastName: 'Patel', level: 'Undergraduate', major: 'Nursing' },
-]
 
 // Profile data
 const profile = reactive({
@@ -291,7 +296,7 @@ const activity = ref([
   { id: 'a3', title: 'Enrolled in Spring 2026', when: 'Oct 10, 2025', icon: 'mdi-calendar-plus', color: 'primary' },
 ])
 
-// Recent courses section (read-only snapshot)
+// Recent courses section
 interface CourseRow { id: string; term: string; code: string; title: string; credits: number; grade: string }
 const recentCourses = ref<CourseRow[]>([
   { id: 'r1', term: 'Fall 2025', code: 'CS 4013', title: 'Operating Systems', credits: 3, grade: 'A' },
@@ -332,8 +337,20 @@ const docHeaders = [
   { title: '', key: 'actions', align: 'end' },
 ]
 
-// Tabs
-const tab = ref<'overview' | 'academics' | 'involvement' | 'documents'>('overview')
+// Tabs + back-to-students behavior
+type RealTab = 'overview' | 'academics' | 'involvement' | 'documents'
+type AnyTab = RealTab | 'students'
+const tab = ref<AnyTab>('overview')
+const lastRealTab = ref<RealTab>('overview')
+
+watch(tab, (next) => {
+  if (next === 'students') {
+    goBack()
+    tab.value = lastRealTab.value
+  } else {
+    lastRealTab.value = next as RealTab
+  }
+})
 
 // Edit dialog state
 const openEdit = ref(false)
@@ -354,7 +371,19 @@ function goBack() {
 function printPage() { window.print() }
 
 function downloadVCF() {
-  const vcf = `BEGIN:VCARD\nVERSION:3.0\nN:${profile.lastName};${profile.firstName};;;\nFN:${fullName.value}\nEMAIL;TYPE=INTERNET:${profile.email}\nTEL;TYPE=CELL:${profile.phone}\nADR;TYPE=HOME:;;${profile.address};;;;\nORG:UAFS\nTITLE:Student\nEND:VCARD`;
+  const vcf = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `N:${profile.lastName};${profile.firstName};;;`,
+    `FN:${fullName.value}`,
+    `EMAIL;TYPE=INTERNET:${profile.email}`,
+    `TEL;TYPE=CELL:${profile.phone}`,
+    `ADR;TYPE=HOME:;;${profile.address};;;;`,
+    'ORG:UAFS',
+    'TITLE:Student',
+    'END:VCARD'
+  ].join('\n')
+
   const blob = new Blob([vcf], { type: 'text/vcard;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -365,7 +394,7 @@ function downloadVCF() {
 }
 
 function downloadDoc(item: DocRow) {
-  // Placeholder: implement real download with backend URL
+  // Placeholder: wire up to your backend/download URL
   alert(`Downloading: ${item.name}`)
 }
 

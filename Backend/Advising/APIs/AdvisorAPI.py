@@ -27,15 +27,19 @@ LDAP_SERVER = "ldap://localhost:389"
 LDAP_BASE_DN = "dc=example,dc=com"
 LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
 
-if not database_exists(engine.url):
-    create_database(engine.url)
-    print("Database has been created!\n")
+LDAP_SERVER = "ldap://localhost:389"
+LDAP_BASE_DN = "dc=example,dc=com"
+LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
+
+#if not database_exists(engine.url):
+#    create_database(engine.url)
+#    print("Database has been created!\n")
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 base = User.Base.getBase()
 
-base.metadata.create_all(bind=engine)
+#base.metadata.create_all(bind=engine)
 
 def role_required(*required_roles):
 
@@ -156,29 +160,30 @@ def getAdvisorByStudent(studentid: int):
     try:
         with Session(engine) as session:
             statement = (
-            select(Advisor.AdvisorMap)
-            .join(Advisor.Advisor_And_StudentsMap, Advisor.AdvisorMap.advisorid == Advisor.Advisor_And_StudentsMap.advisorid)
-            .filter(Advisor.Advisor_And_StudentsMap.studentid == studentid)
+                select(Advisor.AdvisorMap)
+                .join(Advisor.Advisor_And_StudentsMap, Advisor.AdvisorMap.advisorid == Advisor.Advisor_And_StudentsMap.advisorid)
+                .filter(Advisor.Advisor_And_StudentsMap.studentid == studentid)
             )
 
-            result = session.scalars(statement).first()
+            advisor_result = session.scalars(statement).first()
 
-            if not result:
-                return jsonify({"message": f"No advisor found for student {studentid}"}), 404
+            if not advisor_result:
+                return jsonify(None), 200
 
             advisor = Advisor.Advisor()
-            advisor.userid = result.advisorid
-            advisor.firstname = result.firstname
-            advisor.lastname = result.lastname
-            advisor.email = result.email
-            advisor.phonenumber = result.phonenumber
-            advisor.role = result.role
-            advisor.school = result.school
+            advisor.userid = advisor_result.advisorid
+            advisor.firstname = advisor_result.firstname
+            advisor.lastname = advisor_result.lastname
+            advisor.email = advisor_result.email
+            advisor.phonenumber = advisor_result.phonenumber
+            advisor.role = advisor_result.role
+            advisor.school = advisor_result.school
 
-            return advisor.__dict__
+            return jsonify(advisor.__dict__), 200
 
     except Exception as e:
         traceback.print_exc()
-        return "Failed to Get Advisor", 500
+        return jsonify({"error": "Failed to find advisor for student"}), 500
+
     finally:
         session.close()

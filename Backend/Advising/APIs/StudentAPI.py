@@ -28,15 +28,19 @@ LDAP_SERVER = "ldap://localhost:389"
 LDAP_BASE_DN = "dc=example,dc=com"
 LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
 
-if not database_exists(engine.url):
-    create_database(engine.url)
-    print("Database has been created!\n")
+LDAP_SERVER = "ldap://localhost:389"
+LDAP_BASE_DN = "dc=example,dc=com"
+LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
+
+#if not database_exists(engine.url):
+#    create_database(engine.url)
+#    print("Database has been created!\n")
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 base = User.Base.getBase()
 
-base.metadata.create_all(bind=engine)
+#base.metadata.create_all(bind=engine)
 
 dateFormatString = "%Y-%m-%d"
 
@@ -225,3 +229,4 @@ def updateStudent(id: int) -> None:
         return "Student Update Failed"
     finally:
         session.close()
+

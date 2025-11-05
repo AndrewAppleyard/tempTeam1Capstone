@@ -36,7 +36,7 @@ sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 base = User.Base.getBase()
 
-base.metadata.create_all(bind=engine)
+#base.metadata.create_all(bind=engine)
 
 dateFormatString = "%m-%d-%Y"
 

@@ -44,16 +44,20 @@ const form = ref({
 
 async function save() {
   try {
-    const studentid = props.student?.studentid
+    let studentid = null
     if (props.student) {
-      console.log('Updating student ID:', studentid)
-      const userRole = 'admin' // hardcoding for now
-      await StudentAPI.updateStudent(studentid, form.value)
+      studentid = props.student.studentid
+      const userRole = "admin" // remove with jwt
+      await StudentAPI.updateStudent(studentid, userRole, form.value)
+      
     } else {
       form.value.role = 'student'
       form.value.dateadvised = '2025-01-01' // should be empty
-      await AdminAPI.addStudent(form.value)
-      studentid = response?.data?.studentid ?? response?.studentid ?? null
+      const response = await AdminAPI.addStudent(form.value)
+
+      studentid = response.data.studentid
+
+      console.log('AddStudent response:', response);
     }
 
     if (selectedAdvisor.value) {
@@ -87,7 +91,7 @@ function resetForm() { // need to reset id
     registrationstatus: false,
     advisingstatus: false,
     activestatus: true,
-    dateadvised: '' // needs to be null at first 
+    dateadvised: '' // needs to be null until set
   }
 }
 
@@ -108,53 +112,47 @@ function close() {
   emits('close')
 }
 
+watch(() => props.visible, (newVal) => {
+  localVisible.value = newVal
+})
 watch(localVisible, (val) => {
   emits('update:visible', val)
 })
 watch(() => props.student, async (newStudent) => {
   if (!newStudent) {
     resetForm()
+    currentAdvisor.value = null
+    selectedAdvisor.value = null
     return
   }
 
   Object.assign(form.value, newStudent)
-  // currentAdvisor.value = null
-  // selectedAdvisor.value = null
+  
+  try {
+    const response = await AdvisorAPI.getAdvisorByStudent(newStudent.studentid)
+    const advisor = response || null
 
-  // try {
-  //   const advisorsList = await AdvisorAPI.getAllAdvisors()
-  //   advisors.value = Array.isArray(advisorsList) ? advisorsList : advisorsList?.data || []
-
-  //   const results = await Promise.allSettled(
-  //     advisors.value.map(a => AdvisorAPI.getAdvisorStudents(a.userid))
-  //   )
-
-  //   for (let i = 0; i < results.length; i++) {
-  //     const r = results[i]
-  //     if (r.status === 'fulfilled') {
-  //       const students = Array.isArray(r.value) ? r.value : r.value?.data || []
-  //       const isMatch = students.some(s => s.userid === newStudent.studentid)
-  //       if (isMatch) {
-  //         currentAdvisor.value = advisors.value[i]
-  //         selectedAdvisor.value = advisors.value[i].userid
-  //         break
-  //       }
-  //     }
-  //   }
-
-  //   if (!currentAdvisor.value) {
-  //     console.log(`Student ${newStudent.studentid} has no advisor.`)
-  // //   }
-
-  // } catch (err) {
-  //   console.error('Error loading advisor relationship:', err)
-  // }
+    if (advisor) {
+      currentAdvisor.value = advisor
+      selectedAdvisor.value = advisor.userid
+      console.log("current advisor : " + currentAdvisor.value.firstname + " " + currentAdvisor.value.lastname)
+    } else {
+      currentAdvisor.value = null
+      selectedAdvisor.value = null
+    }
+  } catch (err) {
+    console.error('Error fetching student advisor:', err)
+    currentAdvisor.value = null
+  }
 }, { immediate: true })
 
 onMounted(async () => {
   try {
     const response = await AdvisorAPI.getAllAdvisors()
-    advisors.value = response?.data || []
+    advisors.value = response.map(a => ({
+      fullname: a.firstname + ' ' + a.lastname,
+      userid: a.userid
+    }))
   } catch (err) {
     console.error('Failed to load advisors:', err)
   }
@@ -210,6 +208,8 @@ onMounted(async () => {
             <v-col cols="6">
               <v-text-field v-model="form.classstanding" label="Class Standing" />
             </v-col>
+
+            <v-spacer></v-spacer>
           </v-row>
 
           <v-row>
@@ -220,21 +220,20 @@ onMounted(async () => {
                 item-title="fullname"
                 item-value="userid"
                 label="Advisor"
-                :disabled="!!currentAdvisor"
-                hint="Select Advisor"
-                persistent-hint
+                placeholder="Select Advisor"
+                persistent-placeholder
               />
             </v-col>
           </v-row>
 
-          <v-row v-if="currentAdvisor">
-            <v-col cols="12" class="d-flex align-center justify-space-between">
-              <span>Current Advisor: <strong>{{ currentAdvisor.fullname }}</strong></span>
+          <v-row v-if="currentAdvisor" class="text-right" no-gutters>
+            <v-col cols="12">
               <v-btn color="error" text small @click="removeAdvisor">Remove</v-btn>
             </v-col>
           </v-row>
            
         </v-container>
+
       </v-card-text>
 
       <v-card-actions>
@@ -242,6 +241,7 @@ onMounted(async () => {
         <v-btn color="grey" text @click="close">Cancel</v-btn>
         <v-btn color="primary" @click="save">{{ props.student ? 'Update' : 'Add' }}</v-btn>
       </v-card-actions>
+
     </v-card>
   </v-dialog>
 </template>
