@@ -22,7 +22,14 @@ from sqlalchemy_utils import database_exists, create_database
 from pymysql import install_as_MySQLdb
 import json
 from selenium.common.exceptions import TimeoutException
+from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
+from functools import wraps
 
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.join(current_dir, '..')
+sys.path.append(parent_dir)
+
+bp = Blueprint('CurrentCourseAPI', __name__, url_prefix='/CurrentCourses')
 
 app = Flask(__name__)
 
@@ -84,11 +91,30 @@ def pullCourses():
         if driver is not None:
             driver.quit()
 
+def role_required(*required_roles):
+
+    def decorator(fn):
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+
+            verify_jwt_in_request()
+            token = get_jwt()
+
+            if token.get("Role") not in required_roles:
+                return jsonify({"message": "Access denied!"}), 403
+            
+            return fn(*args, **kwargs)
+        
+        return wrapper
+    
+    return decorator
+
 @app.route("/AddCourses", methods=["POST"])
+@role_required("UAFS_ADMINS")
 def addCourses():
     courses = []
     role = request.form.get('role')
     if role.casefold() == "admin":
         courses = pullCourses()
     return courses
-

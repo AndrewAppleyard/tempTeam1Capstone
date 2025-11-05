@@ -1,19 +1,20 @@
 from UserClasses import User
 from datetime import datetime
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Integer, String, Float, Boolean, DateTime, JSON
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import Integer, DateTime, String, Float, Boolean
 
 class Student(User.User):
+    classes: list[str]
     grades: list[str]
     gpa: float
     major: str
     minor: str
-    registrationstatus: bool
-    advisingstatus: bool
-    dateadvised: datetime
-    financialhold: bool
-    advisinghold: bool
-    academichold: bool
+    registrationStatus: bool
+    advisingStatus: bool
+    dateAdvised: datetime
+    financialHold: bool
+    advisingHold: bool
+    academicHold: bool
 
     def __init__(self):
         pass
@@ -22,26 +23,22 @@ class Student(User.User):
         return self
 
 class StudentMap(User.Base):
-    __tablename__ = "student"
+    __tablename__="Student"
 
-    studentid: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    
-    firstname: Mapped[str] = mapped_column(String(50))
-    lastname: Mapped[str] = mapped_column(String(50))
+    studentID: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    firstName: Mapped[str] = mapped_column(String(50))
+    lastName: Mapped[str] = mapped_column(String(50))
     email: Mapped[str] = mapped_column(String(50))
-    phonenumber: Mapped[int] = mapped_column(Integer)
+    phoneNumber: Mapped[int] = mapped_column(Integer)
     role: Mapped[str] = mapped_column(String(10))
     school: Mapped[str] = mapped_column(String(50))
-
     gpa: Mapped[float] = mapped_column(Float)
     major: Mapped[str] = mapped_column(String(50))
-    majorconcentration: Mapped[str] = mapped_column(String(50), default="")
-    minor: Mapped[str] = mapped_column(String(50), default="")
-    classstanding: Mapped[str] = mapped_column(String(50), default="")
-    financialhold: Mapped[bool] = mapped_column(Boolean, default=False)
-    advisinghold: Mapped[bool] = mapped_column(Boolean, default=False)
-    academichold: Mapped[bool] = mapped_column(Boolean, default=False)
-    registrationstatus: Mapped[bool] = mapped_column(Boolean, default=False)
-    advisingstatus: Mapped[bool] = mapped_column(Boolean, default=False)
-    activestatus: Mapped[bool] = mapped_column(Boolean, default=True)
-    dateadvised: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    minor: Mapped[str] = mapped_column(String(50))
+    registrationStatus: Mapped[bool] = mapped_column(Boolean)
+    advisingStatus: Mapped[bool] = mapped_column(Boolean)
+    dateAdvised: Mapped[datetime] = mapped_column(DateTime)
+    financialHold: Mapped[bool] = mapped_column(Boolean)
+    advisingHold: Mapped[bool] = mapped_column(Boolean)
+    academicHold: Mapped[bool] = mapped_column(Boolean)
+

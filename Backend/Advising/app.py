@@ -1,45 +1,26 @@
-from flask import Flask, Blueprint, url_for
+from flask import Flask
 from APIs.StudentAPI import bp as student_bp
 from APIs.TransferAPI import bp as transfer_bp
-from Advising.APIs import AdvisorAPI, AdminAPI, StudentAPI
+from APIs.AdvisorAPI import bp as advisor_bp
+from APIs.AdminAPI import bp as admin_bp
+from APIs.CurrentCourseAPI import bp as current_course_bp
 from extensions import jwt
 from flask_cors import CORS
-import os
-import sys
 
-def create_app():
-    app = Flask(__name__, instance_relative_config=True)
+app = Flask(__name__)
+CORS(app)
 
-    CORS(app)
+app.config["JWT_SECRET_KEY"] = "e90$2kj@#dju78)"
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 3600
 
-    app.config["JWT_SECRET_KEY"] = "e90$2kj@#dju78)"
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 3600
+jwt.init_app(app)
 
-    jwt.init_app(app)
-
-    app.register_blueprint(transfer_bp)
-    app.register_blueprint(student_bp)
-
-    try:
-        os.makedirs(app.instance_path)
-    except OSError:
-        pass
-
-    app.register_blueprint(AdvisorAPI.bp)
-    app.register_blueprint(AdminAPI.bp)
-    app.register_blueprint(StudentAPI.bp)
-
-    return app
-
-app = create_app()
+app.register_blueprint(transfer_bp)
+app.register_blueprint(student_bp)
+app.register_blueprint(advisor_bp)
+app.register_blueprint(admin_bp)
+app.register_blueprint(current_course_bp)
 
 if __name__ == "__main__":
-    env = os.getenv("FLASK_ENV", "development")
 
-    if env == "production":
-        # Gunicorn
-        # gunicorn -w 4 -b 0.0.0.0:5000 app:create_app()
-        print("Production mode detected — run this app using Gunicorn.")
-    else:
-        # Flask
-        app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(host="127.0.0.1", port=5000, debug=True)

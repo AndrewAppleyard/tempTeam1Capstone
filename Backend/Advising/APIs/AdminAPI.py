@@ -6,37 +6,61 @@ from pymysql import install_as_MySQLdb
 import json
 import traceback
 from datetime import datetime
+#from cryptography.fernet import Fernet
+import sys
+import os
+from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
+from functools import wraps
+
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.join(current_dir, '..')
+sys.path.append(parent_dir)
+
 from UserClasses import Advisor, User, Student, Admin
-from UserClasses.User import Base
-from cryptography.fernet import Fernet
-import os, sys
-from Advising.APIs import URL
 
 bp = Blueprint('AdminAPI', __name__, url_prefix='/Admin')
 
-path = os.path.abspath(__file__)
-directory = os.path.dirname(path)
-
-databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config/.gitignore.key")
+databaseURL = "mysql+pymysql://User:pass@localhost:3306/Test"
 
 engine = create_engine(databaseURL)
+
+LDAP_SERVER = "ldap://localhost:389"
+LDAP_BASE_DN = "dc=example,dc=com"
+LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
 
 if not database_exists(engine.url):
     create_database(engine.url)
     print("Database has been created!\n")
-
+    
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 
 base = User.Base.getBase()
 
 base.metadata.create_all(bind=engine)
 
-app = Flask(__name__)
+dateFormatString = "%m-%d-%Y"
 
-dateFormatString = "%Y-%m-%d"
+def role_required(*required_roles):
+
+    def decorator(fn):
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+
+            verify_jwt_in_request()
+            token = get_jwt()
+
+            if token.get("Role") not in required_roles:
+                return jsonify({"message": "Access denied!"}), 403
+            
+            return fn(*args, **kwargs)
+        
+        return wrapper
+    
+    return decorator
 
 @bp.route("/Advisor/Insert", methods = ['POST'])
+@role_required("UAFS_ADMINS")
 def addAdvisor() -> None:
     advisor = Advisor.AdvisorMap()
     advisor.firstname = request.form.get('firstname')
@@ -62,7 +86,8 @@ def addAdvisor() -> None:
         session.close()
         
 
-@bp.route("/Advisor/<int:id>")
+@bp.route("/Advisor/<int:id>", methods=['GET','POST'])
+@role_required("UAFS_ADMINS")
 def deleteAdvisor(id: int):
    
     try:
@@ -79,6 +104,7 @@ def deleteAdvisor(id: int):
         session.close()
 
 @bp.route("/Advisor/Update/<int:id>", methods = ['GET', 'POST'])
+@role_required("UAFS_ADMINS")
 def updateAdvisor(id: int) -> None:
     try:
         with Session(engine) as session:
@@ -107,6 +133,7 @@ def updateAdvisor(id: int) -> None:
         session.close()
 
 @bp.route("/Student/Insert", methods=['POST']) 
+@role_required("UAFS_ADMINS")
 def addStudent():
     true = "True"
     false = "False"
@@ -121,7 +148,6 @@ def addStudent():
     student.gpa = request.form.get('gpa')
     student.major = request.form.get('major')
     student.minor = request.form.get('minor')
-    student.classstanding = request.form.get('classstanding')
 
     if(request.form.get('registrationstatus').casefold() == true.casefold()):
         student.registrationstatus = True
@@ -161,7 +187,8 @@ def addStudent():
     finally:
         session.close()
 
-@bp.route("/Student/<int:id>")
+@bp.route("/Student/<int:id>", methods=['POST'])
+@role_required("UAFS_ADMINS")
 def deleteStudent(id: int):
    
     try:
@@ -177,7 +204,8 @@ def deleteStudent(id: int):
     finally:
         session.close()
 
-@bp.route("/<int:id>")
+@bp.route("/<int:id>", methods=['GET','POST'])
+@role_required("UAFS_ADMINS")
 def getAdmin(id: int):
     try:
         with Session(engine) as session:
@@ -199,8 +227,8 @@ def getAdmin(id: int):
     finally:
         session.close()
 
-
 @bp.route("/Student/Advisor", methods=['POST'])
+@role_required("UAFS_ADMINS")
 def addStudentToAdvisor():
     advisorAndStudents = Advisor.Advisor_And_StudentsMap()
     advisorAndStudents.advisorid = request.form.get('advisorid')
@@ -221,7 +249,8 @@ def addStudentToAdvisor():
     finally:
         session.close()
 
-@bp.route("/Student/Advisor/<studentid>/<advisorid>")
+@bp.route("/Student/Advisor/<int:studentid>/<int:advisorid>", methods=['GET'])
+@role_required("UAFS_ADMINS")
 def removeStudentFromAdvisor(studentid: int, advisorid: int):
     try:
         with Session(engine) as session:

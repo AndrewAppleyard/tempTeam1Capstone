@@ -7,8 +7,9 @@ import json
 import traceback
 from datetime import datetime
 import os, sys
-from Advising.APIs import URL
-from flask_jwt_extended import jwt_required, get_jwt
+from ldap3 import Server, Connection, ALL
+from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
+from functools import wraps
 
 bp = Blueprint('StudentAPI', __name__, url_prefix="/Student")
 
@@ -18,11 +19,14 @@ sys.path.append(parent_dir)
 
 from UserClasses import Advisor, User, Student, Admin
 
-path = os.path.abspath(__file__)
-directory = os.path.dirname(path)
-databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config/.gitignore.key")
+#Needs to be updated to new databaseURL
+databaseURL = "mysql+pymysql://User:pass@localhost:3306/test"
 
 engine = create_engine(databaseURL)
+
+LDAP_SERVER = "ldap://localhost:389"
+LDAP_BASE_DN = "dc=example,dc=com"
+LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
 
 if not database_exists(engine.url):
     create_database(engine.url)
@@ -36,8 +40,35 @@ base.metadata.create_all(bind=engine)
 
 dateFormatString = "%Y-%m-%d"
 
-@bp.route("/", methods=['GET'])
+def role_required(*required_roles):
+
+    def decorator(fn):
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+
+            verify_jwt_in_request()
+            token = get_jwt()
+
+            if token.get("Role") not in required_roles:
+                return jsonify({"message": "Access denied!"}), 403
+            
+            return fn(*args, **kwargs)
+        
+        return wrapper
+    
+    return decorator
+
+@bp.route("", methods=['GET'])
+@role_required("UAFS_STUDENTS")
 def getStudents():
+    '''token = get_jwt()
+    if token["Role"] == "Student":
+        print("Access succesful!")
+    else:
+        print("Can't access with current role.")
+        return jsonify({"message":"Can't access with current role."}), 401'''
+    
     try:
         with Session(engine) as session:
 
@@ -48,66 +79,64 @@ def getStudents():
             for student in results:
                 
                 s = Student.Student()
-                s.studentid = student.studentid
-                s.firstname = student.firstname
-                s.lastname = student.lastname
+                s.studentID = student.studentID
+                s.firstName = student.firstName
+                s.lastName = student.lastName
                 s.email = student.email
-                s.phonenumber = student.phonenumber
+                s.phoneNumber = student.phoneNumber
                 s.role = student.role
                 s.school = student.school
                 s.gpa = student.gpa
                 s.major = student.major
-                s.majorconcentration = student.majorconcentration
                 s.minor = student.minor
-                s.classstanding = student.classstanding
-                s.registrationstatus = student.registrationstatus
-                s.advisingstatus = student.advisingstatus
-                s.dateadvised = student.dateadvised
-                s.financialhold = student.financialhold
-                s.advisinghold = student.advisinghold
-                s.academichold = student.academichold
+                s.registrationStatus = student.registrationStatus
+                s.advisingStatus = student.advisingStatus
+                s.dateAdvised = student.dateAdvised
+                s.financialHold = student.financialHold
+                s.advisingHold = student.advisingHold
+                s.academicHold = student.academicHold
 
                 studentList.append(s.__dict__)
 
             return studentList
         
     except Exception as e:
+        
         traceback.print_exc()
         return "Failed to Execute Search"
     finally:
         session.close()
 
-@bp.route("/<studentid>",methods = ['GET', 'POST'])
-def getStudentInfo(studentid: int):
+@bp.route("/<int:studentID>",methods = ['GET', 'POST'])
+@role_required("UAFS_STUDENTS")
+def getStudentInfo(studentID: int):
 
     try:
         with Session(engine) as session:
             studentData = Student.Student()
 
             result = session.query(Student.StudentMap) \
-                    .filter(Student.StudentMap.studentid == studentid) \
+                    .filter(Student.StudentMap.studentID == studentID) \
                     .first()
 
             student = Student.Student()
 
-            student.studentid = result.studentid
-            student.firstname = result.firstname
-            student.lastname = result.lastname
+            student.studentID = result.studentID
+            student.firstName = result.firstName
+            student.lastName = result.lastName
             student.email = result.email
-            student.phonenumber = result.phonenumber
+            student.phoneNumber = result.phoneNumber
             student.role = result.role
             student.school = result.school
             student.gpa = result.gpa
             student.major = result.major
-            student.majorconcentration = result.majorconcentration
             student.minor = result.minor
-            student.classstanding = result.classstanding
-            student.registrationstatus = result.registrationstatus
-            student.advisingstatus = result.advisingstatus
-            student.dateadvised = result.dateadvised
-            student.finanicalHold = result.financialhold
-            student.advisinghold = result.advisinghold
-            student.academichold = result.academichold
+            student.registrationStatus = result.registrationStatus
+            student.advisingStatus = result.advisingStatus
+            student.dateAdvised = result.dateAdvised
+            student.finanicalHold = result.financialHold
+            student.advisingHold = result.advisingHold
+            student.academicHold = result.academicHold
 
             return student.__dict__
     except Exception as e:
@@ -116,27 +145,25 @@ def getStudentInfo(studentid: int):
     finally:
         session.close()
 
-@bp.route("/Update/<int:id>/<role>", methods = ['GET','POST'])
-def updateStudent(id: int, role: str) -> None:
+@bp.route("/Update/<int:id>", methods = ['GET','POST'])
+@role_required("UAFS_ADMINS,UAFS_STUDENTS,UAFS_ADVISORS")
+def updateStudent(id: int) -> None:
+    token = get_jwt()
     try:
         with Session(engine) as session:
             false = "false"
             true = "true"
             student = session.query(Student.StudentMap).filter(Student.StudentMap.studentid == id).first()
 
-            if (role.casefold() == 'student'):
+            if (token["Role"] == 'UAFS_STUDENTS'):
                 if(request.form.get('phonenumber') != None):
                     student.phonenumber = request.form.get('phonenumber')
                     
-            elif (role.casefold() == 'advisor'):
+            elif (token["Role"] == 'UAFS_ADVISORS'):
                 if(request.form.get('major') != None):
                     student.major = request.form.get('major')
-                if(request.form.get('majorconcentration') != None):
-                    student.majorconcentration = request.form.get('majorconcentration')
                 if(request.form.get('minor') != None):
                     student.minor = request.form.get('minor')
-                if(request.form.get('classstanding') != None):
-                    student.classstanding = request.form.get('classstanding')
                 if(request.form.get('advisingstatus') != None):
                     if(request.form.get('advisingstatus').casefold() == true.casefold()):
                         student.advisingstatus = True
@@ -151,7 +178,7 @@ def updateStudent(id: int, role: str) -> None:
                     elif(request.form.get('advisinghold').casefold() == false.casefold()):
                         student.advisinghold = False
 
-            elif (role.casefold() == 'admin'):
+            elif (token["Role"] == 'UAFS_ADMINS'):
                 if(request.form.get('firstname') != None):
                     student.firstname = request.form.get('firstname')
                 if(request.form.get('lastname') != None):
@@ -166,12 +193,8 @@ def updateStudent(id: int, role: str) -> None:
                     student.school = request.form.get('school')
                 if(request.form.get('major') != None):
                     student.major = request.form.get('major')
-                if(request.form.get('majorconcentration') != None):
-                    student.majorconcentration = request.form.get('majorconcentration')
                 if(request.form.get('minor') != None):
                     student.minor = request.form.get('minor')
-                if(request.form.get('classstanding') != None):
-                    student.classstanding = request.form.get('classstanding')
                 if(request.form.get('registrationstatus') != None):
                     if(request.form.get('registrationstatus').casefold() == true.casefold()):
                         student.registrationstatus = True
@@ -202,14 +225,3 @@ def updateStudent(id: int, role: str) -> None:
         return "Student Update Failed"
     finally:
         session.close()
-
-@bp.route("", methods=['GET'])
-@jwt_required()
-def getStudents():
-    token = get_jwt()
-    if token["Role"] == "Student":
-        print("Student route here!")
-        return jsonify({"message":"Student route here!"}), 200
-    else:
-        print("Can't access with current role.")
-        return jsonify({"message":"Can't access with current role."}), 401

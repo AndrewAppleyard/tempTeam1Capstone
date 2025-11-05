@@ -11,12 +11,12 @@ class Admin(User.User):
         pass
 
 class AdminMap(User.Base):
-    __tablename__="admin"
+    __tablename__="Admin"
 
-    adminid: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    firstname: Mapped[str] = mapped_column(String(50))
-    lastname: Mapped[str] = mapped_column(String(50))
+    adminID: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    firstName: Mapped[str] = mapped_column(String(50))
+    lastName: Mapped[str] = mapped_column(String(50))
     email: Mapped[str] = mapped_column(String(50))
-    phonenumber: Mapped[int] = mapped_column(Integer)
+    phoneNumber: Mapped[int] = mapped_column(Integer)
     role: Mapped[str] = mapped_column(String(10))
     school: Mapped[str] = mapped_column(String(50))

@@ -5,23 +5,27 @@ from sqlalchemy_utils import database_exists, create_database
 from pymysql import install_as_MySQLdb
 import json
 import traceback
-import os, sys
+import sys
+import os
+from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
+from functools import wraps
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, '..')
 sys.path.append(parent_dir)
 
 from UserClasses import Advisor, User, Student, Admin
-from Advising.APIs import URL
 
 bp = Blueprint('AdvisorAPI', __name__, url_prefix='/Advisor')
 
-path = os.path.abspath(__file__)
-directory = os.path.dirname(path)
-
-databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config/.gitignore.key")
-
+#Needs to be updated to new databaseURL
+databaseURL = "mysql+pymysql://User:pass@localhost:3306/Test"
 
 engine = create_engine(databaseURL)
+
+LDAP_SERVER = "ldap://localhost:389"
+LDAP_BASE_DN = "dc=example,dc=com"
+LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
 
 if not database_exists(engine.url):
     create_database(engine.url)
@@ -29,14 +33,31 @@ if not database_exists(engine.url):
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
 base = User.Base.getBase()
 
 base.metadata.create_all(bind=engine)
 
-app = Flask(__name__)
+def role_required(*required_roles):
 
-@bp.route("/")
+    def decorator(fn):
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+
+            verify_jwt_in_request()
+            token = get_jwt()
+
+            if token.get("Role") not in required_roles:
+                return jsonify({"message": "Access denied!"}), 403
+            
+            return fn(*args, **kwargs)
+        
+        return wrapper
+    
+    return decorator
+
+@bp.route("/", methods=['GET'])
+@role_required("UAFS_ADVISORS")
 def getAdvisors():
     try:
         with Session(engine) as session:
@@ -47,7 +68,7 @@ def getAdvisors():
 
             for advisor in results:
                 a = Advisor.Advisor()
-                a.userid = advisor.advisorid # a.userid = advisor.advisorid
+                a.userid = advisor.advisorid
                 a.firstname = advisor.firstname
                 a.lastname = advisor.lastname
                 a.email = advisor.email
@@ -65,7 +86,8 @@ def getAdvisors():
     finally:
         session.close()
 
-@bp.route("/<advisorid>", methods= ['GET'] )
+@bp.route("/<int:advisorid>", methods= ['GET'] )
+@role_required("UAFS_ADVISORS")
 def getAdvisor(advisorid: int):
     try:
         with Session(engine) as session:
@@ -88,7 +110,8 @@ def getAdvisor(advisorid: int):
     finally:
         session.close()
 
-@bp.route("/Student/<advisorid>")
+@bp.route("/Student/<int:advisorid>")
+@role_required("UAFS_ADVISORS")
 def getAdvisorStudents(advisorid: int):
     try:
         with Session(engine) as session:
@@ -128,6 +151,7 @@ def getAdvisorStudents(advisorid: int):
         session.close()
 
 @bp.route("/ByStudent/<studentid>")
+@role_required("UAFS_ADVISORS")
 def getAdvisorByStudent(studentid: int):
     try:
         with Session(engine) as session:
