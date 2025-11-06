@@ -6,18 +6,11 @@ from pymysql import install_as_MySQLdb
 import json
 import traceback
 from datetime import datetime
-#from cryptography.fernet import Fernet
 import sys
 import os
 from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
 from functools import wraps
 from Advising.APIs import URL
-
-
-current_dir = os.path.dirname(__file__)
-parent_dir = os.path.join(current_dir, '..')
-sys.path.append(parent_dir)
-
 from UserClasses import Advisor, User, Student, Admin
 
 bp = Blueprint('AdminAPI', __name__, url_prefix='/Admin')
@@ -28,16 +21,10 @@ directory = os.path.dirname(path)
 databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config/.gitignore.key")
 
 engine = create_engine(databaseURL)
-
-#if not database_exists(engine.url):
-#    create_database(engine.url)
-#    print("Database has been created!\n")
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-#base = User.Base.getBase()
-
-#base.metadata.create_all(bind=engine)
+app = Flask(__name__)
 
 dateFormatString = "%m-%d-%Y"
 

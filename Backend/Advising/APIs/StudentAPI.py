@@ -21,23 +21,13 @@ sys.path.append(parent_dir)
 
 from UserClasses import Advisor, User, Student, Admin
 
-#Needs to be updated to new databaseURL
 path = os.path.abspath(__file__)
 directory = os.path.dirname(path)
-
 databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config/.gitignore.key")
 
 engine = create_engine(databaseURL)
-
-#if not database_exists(engine.url):
-#    create_database(engine.url)
-#    print("Database has been created!\n")
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-#base = User.Base.getBase()
-
-#base.metadata.create_all(bind=engine)
 
 dateFormatString = "%Y-%m-%d"
 
@@ -80,22 +70,24 @@ def getStudents():
             for student in results:
                 
                 s = Student.Student()
-                s.studentID = student.studentID
-                s.firstName = student.firstName
-                s.lastName = student.lastName
+                s.studentid = student.studentid
+                s.firstname = student.firstname
+                s.lastname = student.lastname
                 s.email = student.email
-                s.phoneNumber = student.phoneNumber
+                s.phonenumber = student.phonenumber
                 s.role = student.role
                 s.school = student.school
                 s.gpa = student.gpa
                 s.major = student.major
+                s.majorconcentration = student.majorconcentration
                 s.minor = student.minor
-                s.registrationStatus = student.registrationStatus
-                s.advisingStatus = student.advisingStatus
-                s.dateAdvised = student.dateAdvised
-                s.financialHold = student.financialHold
-                s.advisingHold = student.advisingHold
-                s.academicHold = student.academicHold
+                s.classstanding = student.classstanding
+                s.registrationstatus = student.registrationstatus
+                s.advisingstatus = student.advisingstatus
+                s.dateadvised = student.dateadvised
+                s.financialhold = student.financialhold
+                s.advisinghold = student.advisinghold
+                s.academichold = student.academichold
 
                 studentList.append(s.__dict__)
 
@@ -108,36 +100,38 @@ def getStudents():
     finally:
         session.close()
 
-@bp.route("/<int:studentID>",methods = ['GET', 'POST'])
+@bp.route("/<int:studentid>",methods = ['GET', 'POST'])
 @role_required("UAFS_STUDENTS")
-def getStudentInfo(studentID: int):
+def getStudentInfo(studentid: int):
 
     try:
         with Session(engine) as session:
             studentData = Student.Student()
 
             result = session.query(Student.StudentMap) \
-                    .filter(Student.StudentMap.studentID == studentID) \
+                    .filter(Student.StudentMap.studentid == studentid) \
                     .first()
 
             student = Student.Student()
 
-            student.studentID = result.studentID
-            student.firstName = result.firstName
-            student.lastName = result.lastName
+            student.studentid = result.studentid
+            student.firstname = result.firstname
+            student.lastname = result.lastname
             student.email = result.email
-            student.phoneNumber = result.phoneNumber
+            student.phonenumber = result.phonenumber
             student.role = result.role
             student.school = result.school
             student.gpa = result.gpa
             student.major = result.major
+            student.majorconcentration = result.majorconcentration
             student.minor = result.minor
-            student.registrationStatus = result.registrationStatus
-            student.advisingStatus = result.advisingStatus
-            student.dateAdvised = result.dateAdvised
-            student.finanicalHold = result.financialHold
-            student.advisingHold = result.advisingHold
-            student.academicHold = result.academicHold
+            student.classstanding = result.classstanding
+            student.registrationstatus = result.registrationstatus
+            student.advisingstatus = result.advisingstatus
+            student.dateadvised = result.dateadvised
+            student.finanicalHold = result.financialhold
+            student.advisinghold = result.advisinghold
+            student.academichold = result.academichold
 
             return student.__dict__
     except Exception as e:
@@ -163,8 +157,12 @@ def updateStudent(id: int) -> None:
             elif (token["Role"] == 'UAFS_ADVISORS'):
                 if(request.form.get('major') != None):
                     student.major = request.form.get('major')
+                if(request.form.get('majorconcentration') != None):
+                    student.majorconcentration = request.form.get('majorconcentration')
                 if(request.form.get('minor') != None):
                     student.minor = request.form.get('minor')
+                if(request.form.get('classstanding') != None):
+                    student.classstanding = request.form.get('classstanding')
                 if(request.form.get('advisingstatus') != None):
                     if(request.form.get('advisingstatus').casefold() == true.casefold()):
                         student.advisingstatus = True
@@ -194,8 +192,12 @@ def updateStudent(id: int) -> None:
                     student.school = request.form.get('school')
                 if(request.form.get('major') != None):
                     student.major = request.form.get('major')
+                if(request.form.get('majorconcentration') != None):
+                    student.majorconcentration = request.form.get('majorconcentration')
                 if(request.form.get('minor') != None):
                     student.minor = request.form.get('minor')
+                if(request.form.get('classstanding') != None):
+                    student.classstanding = request.form.get('classstanding')
                 if(request.form.get('registrationstatus') != None):
                     if(request.form.get('registrationstatus').casefold() == true.casefold()):
                         student.registrationstatus = True

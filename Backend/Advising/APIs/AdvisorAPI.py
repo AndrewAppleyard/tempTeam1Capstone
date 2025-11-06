@@ -25,17 +25,9 @@ directory = os.path.dirname(path)
 databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config/.gitignore.key")
 
 engine = create_engine(databaseURL)
-
-
-#if not database_exists(engine.url):
-#    create_database(engine.url)
-#    print("Database has been created!\n")
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-#base = User.Base.getBase()
-
-#base.metadata.create_all(bind=engine)
 
 def role_required(*required_roles):
 
@@ -161,19 +153,19 @@ def getAdvisorByStudent(studentid: int):
                 .filter(Advisor.Advisor_And_StudentsMap.studentid == studentid)
             )
 
-            advisor_result = session.scalars(statement).first()
+            result = session.scalars(statement).first()
 
             if not advisor_result:
                 return jsonify(None), 200
 
             advisor = Advisor.Advisor()
-            advisor.userid = advisor_result.advisorid
-            advisor.firstname = advisor_result.firstname
-            advisor.lastname = advisor_result.lastname
-            advisor.email = advisor_result.email
-            advisor.phonenumber = advisor_result.phonenumber
-            advisor.role = advisor_result.role
-            advisor.school = advisor_result.school
+            advisor.userid = result.advisorid
+            advisor.firstname = result.firstname
+            advisor.lastname = result.lastname
+            advisor.email = result.email
+            advisor.phonenumber = result.phonenumber
+            advisor.role = result.role
+            advisor.school = result.school
 
             return jsonify(advisor.__dict__), 200
 

@@ -13,10 +13,10 @@ class Admin(User.User):
 class AdminMap(User.Base):
     __tablename__="Admin"
 
-    adminID: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    firstName: Mapped[str] = mapped_column(String(50))
-    lastName: Mapped[str] = mapped_column(String(50))
+    adminid: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    firstname: Mapped[str] = mapped_column(String(50))
+    lastname: Mapped[str] = mapped_column(String(50))
     email: Mapped[str] = mapped_column(String(50))
-    phoneNumber: Mapped[int] = mapped_column(Integer)
+    phonenumber: Mapped[int] = mapped_column(Integer)
     role: Mapped[str] = mapped_column(String(10))
     school: Mapped[str] = mapped_column(String(50))

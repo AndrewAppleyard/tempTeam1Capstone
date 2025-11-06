@@ -5,11 +5,11 @@ from sqlalchemy import Integer, String
 
 @dataclass
 class User:
-    userID: int
-    firstName: str
-    lastName: str
+    userid: int
+    firstname: str
+    lastname: str
     email: str
-    phoneNumber: int
+    phonenumber: int
     role: str
     school: str
 
