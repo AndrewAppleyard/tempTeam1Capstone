@@ -3,7 +3,8 @@ FROM node:20-alpine AS dev
 WORKDIR /app
 COPY Frontend/package.json .
 COPY Frontend/ .
-RUN npm install
+RUN rm -rf node_modules package-lock.json \
+    && npm install
 EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host"]
 
@@ -11,7 +12,9 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY Frontend/package.json .
 COPY Frontend/ .
-RUN npm install && npm run build
+RUN rm -rf node_modules package-lock.json \
+    && npm install \
+    && npm run build
 
 # Production (Apache) 
 FROM httpd:2.4-alpine
