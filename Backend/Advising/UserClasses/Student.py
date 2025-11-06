@@ -2,6 +2,7 @@ from UserClasses import User
 from datetime import datetime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, DateTime, String, Float, Boolean
+from sqlalchemy.dialects.postgresql import JSONB
 
 class Student(User.User):
     classes: list[str]
@@ -45,4 +46,4 @@ class StudentMap(User.Base):
     activestatus: Mapped[bool] = mapped_column(Boolean, default=True)
     dateadvised: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
-    classes: Mapped[dict] = mapped_column(JSON, default={})
+    classes: Mapped[dict] = mapped_column(JSONB, default={})

@@ -9,6 +9,7 @@ import sys
 import os
 from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
 from functools import wraps
+from Advising.APIs import URL
 
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, '..')
@@ -18,18 +19,13 @@ from UserClasses import Advisor, User, Student, Admin
 
 bp = Blueprint('AdvisorAPI', __name__, url_prefix='/Advisor')
 
-#Needs to be updated to new databaseURL
-databaseURL = "mysql+pymysql://User:pass@localhost:3306/Test"
+path = os.path.abspath(__file__)
+directory = os.path.dirname(path)
+
+databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config/.gitignore.key")
 
 engine = create_engine(databaseURL)
 
-LDAP_SERVER = "ldap://localhost:389"
-LDAP_BASE_DN = "dc=example,dc=com"
-LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
-
-LDAP_SERVER = "ldap://localhost:389"
-LDAP_BASE_DN = "dc=example,dc=com"
-LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
 
 #if not database_exists(engine.url):
 #    create_database(engine.url)
@@ -37,7 +33,7 @@ LDAP_USER_DN_FORMAT = "uid={}, ou=People," + LDAP_BASE_DN
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-base = User.Base.getBase()
+#base = User.Base.getBase()
 
 #base.metadata.create_all(bind=engine)
 
