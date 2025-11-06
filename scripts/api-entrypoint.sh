@@ -14,5 +14,3 @@ Advising-encrypt || true
 
 echo "Starting server..."
 Advising || true
-#exec gunicorn "Advising.app:create_app()" --bind 0.0.0.0:5000
-

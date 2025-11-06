@@ -21,7 +21,6 @@ sudo docker-compose up -d dirsrv
 
 sleep 15
 
-#sudo docker compose down -v
 echo "Starting Docker containers..."
 sudo docker-compose up -d
 sudo docker ps
