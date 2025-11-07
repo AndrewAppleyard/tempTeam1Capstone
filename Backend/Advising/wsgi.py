@@ -2,6 +2,9 @@ import multiprocessing
 
 from gunicorn.app.wsgiapp import WSGIApplication
 from Advising import app
+from app import create_app
+
+app = create_app()
 
 class StandaloneApplication(WSGIApplication):
     def __init__(self, app_uri, options=None):
@@ -24,4 +27,4 @@ def run():
         "bind": "0.0.0.0:5000",
         "workers": (multiprocessing.cpu_count() * 2) + 1
     }
-    StandaloneApplication("Advising.app:create_app", options).run()
+    StandaloneApplication("wsgi:app", options).run()
