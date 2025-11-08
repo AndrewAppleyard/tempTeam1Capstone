@@ -22,9 +22,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-frontend
-      target: dev  # dev for dev server, builder for prod 
+      target: prod # dev  # dev for dev server, builder for prod 
     ports:
-      - "5173:5173" # "8080:80" for apache prod?
+      - 8080:80 # "5173:5173" # "8080:80" for apache prod
     depends_on:
       - backend
 

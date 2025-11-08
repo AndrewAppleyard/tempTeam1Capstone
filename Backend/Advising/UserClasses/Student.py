@@ -15,6 +15,7 @@ class Student(User.User):
     financialhold: bool
     advisinghold: bool
     academichold: bool
+    classes: JSONB
 
     def __init__(self):
         pass
@@ -23,7 +24,7 @@ class Student(User.User):
         return self
 
 class StudentMap(User.Base):
-    __tablename__="Student"
+    __tablename__="student"
 
     studentid: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     
@@ -47,4 +48,4 @@ class StudentMap(User.Base):
     activestatus: Mapped[bool] = mapped_column(Boolean, default=True)
     dateadvised: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     
-    classes: Mapped[dict] = mapped_column(JSONB, default={})
+    classes: Mapped[dict] = mapped_column(JSONB, default={}, nullable=True)

@@ -11,7 +11,7 @@ class Admin(User.User):
         pass
 
 class AdminMap(User.Base):
-    __tablename__="Admin"
+    __tablename__="admin"
 
     adminid: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     firstname: Mapped[str] = mapped_column(String(50))
