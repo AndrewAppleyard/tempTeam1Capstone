@@ -1,22 +1,9 @@
 <script setup>
-import { ref, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref } from 'vue'
+// import { useRouter } from 'vue-router'
 import axios from "axios"
-// import Test from '../components/test.vue'
 
-// const testRef = ref();
-
-// async function openAndFocus() {
-//   dialog.value = true;
-//   await nextTick();
-//   if (testRef.value) {
-//     testRef.value.focusInput();
-//   }
-// }
-
-// const dialog = ref(false); // Example to show nextTick usage
-
-const router = useRouter()
+// const router = useRouter()
 
 const username = ref(null);
 const password = ref(null);
@@ -42,28 +29,28 @@ async function login() {
   }
 }
 
-async function route() {
+// async function route() {
 
-  const token = sessionStorage.getItem("token")
+//   const token = sessionStorage.getItem("token")
 
-  try {
+//   try {
 
-    const response = await axios.get("http://127.0.0.1:5000/Student", {
+//     const response = await axios.get("http://127.0.0.1:5000/Student", {
 
-      headers: {
+//       headers: {
 
-        Authorization: `Bearer ${token}`,
-      },
-    })
+//         Authorization: `Bearer ${token}`,
+//       },
+//     })
 
-    alert("Route accessed!")
-  }
-  catch(e) {
+//     alert("Route accessed!")
+//   }
+//   catch(e) {
 
-    alert("No access")
-    console.log(e)
-  }
-}
+//     alert("No access")
+//     console.log(e)
+//   }
+// }
 
 </script>
 
@@ -100,7 +87,7 @@ async function route() {
 
           <div class="pa-4">
             <v-btn style="align-content: center; background-color: #0032A0; color: #F5F5F5" @click="login">Log in</v-btn>
-            <v-btn style="align-content: center; background-color: #0032A0; color: #F5F5F5" @click="route">Route</v-btn>
+            <!-- <v-btn style="align-content: center; background-color: #0032A0; color: #F5F5F5" @click="route">Route</v-btn> -->
             <p class="pa-2" style="text-align: center;">Forgot Password</p>
           </div>
 
