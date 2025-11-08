@@ -40,7 +40,7 @@ CREATE TABLE student
     registrationstatus BOOLEAN DEFAULT FALSE, 
     advisingstatus BOOLEAN DEFAULT FALSE, 
     activestatus BOOLEAN DEFAULT TRUE, -- get this done!!!
-    dateadvised TIMESTAMP
+    dateadvised TIMESTAMP,
     classes JSONB
 ) INHERITS (users);
 
