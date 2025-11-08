@@ -18,7 +18,9 @@ parent_dir = os.path.join(current_dir, '..')
 sys.path.append(parent_dir)
 
 LDAP_HOST = "dirsrv"
-LDAP_PORT = 7389
+# 3389 for connection through containers 
+# 7389 for connection through host
+LDAP_PORT = 3389
 LDAP_USER = "cn=Directory Manager"
 LDAP_PASS = "andrewandrew"
 BASE_DN = "dc=UAFS,dc=COM"
