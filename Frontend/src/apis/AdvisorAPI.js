@@ -100,5 +100,6 @@ async getAdvisorByStudent(studentid) {
     return response.data;
   } catch (error) {
     console.error("Error fetching advisor:", error.response.data);
+    throw err;
   }
 };
