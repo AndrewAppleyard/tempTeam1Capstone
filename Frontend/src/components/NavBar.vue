@@ -99,6 +99,11 @@ const initials = computed(() => `${advisor.value.firstName[0]}${advisor.value.la
   <v-app-bar app color="#002856" class="pr-4">
     <v-app-bar-nav-icon color="#F5F5F5" @click="drawer = !drawer"></v-app-bar-nav-icon>
 
+    <!-- NUMA ADVISING text -->
+    <span class="ml-3 font-weight-bold text-white" style="font-size: 20px; font-weight: 700;">
+      NUMA ADVISING
+    </span>
+
     <v-spacer />
 
     <v-card flat class="px-4 py-2 mr-4">

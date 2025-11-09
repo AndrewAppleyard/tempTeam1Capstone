@@ -16,7 +16,7 @@
             <v-col cols="12" md="6" class="d-flex justify-end align-center gap-2">
               <v-btn variant="outlined" :ripple="false" class="mr-2" color="#002856" @click="goBack">
                 <v-icon start>mdi-arrow-left</v-icon>
-                Back to Students
+                Back
               </v-btn>
               <v-btn variant="outlined" color="#002856" class="mr-2" @click="printPage">
                 <v-icon start>mdi-printer</v-icon>
@@ -47,8 +47,8 @@
                 </div>
               </v-col>
 
-              <v-col cols="12" md="6">
-                <v-row class="gap-4">
+              <v-col cols="12" md="6" style="color:#002856; text-align: left;">
+                <v-row class="gap-6">
                   <v-col cols="12" sm="6" class="py-1">
                     <div class="text-caption mb-1">Major</div>
                     <div class="text-body-1"><strong>{{ profile.major || '—' }}</strong></div>
@@ -91,7 +91,7 @@
 
           <!-- Quick Info -->
           <v-row class="mb-4">
-            <v-col cols="12" md="4">
+            <v-col cols="12" md="4" style="color:#002856; text-align: left;">
               <v-card class="pa-4" style="background-color:rgba(255,255,255,.6);border:1px solid #002856;">
                 <div class="text-subtitle-1 mb-3" style="color:#002856;">Contact</div>
                 <div class="d-flex align-center mb-2">
@@ -113,7 +113,7 @@
               </v-card>
             </v-col>
 
-            <v-col cols="12" md="4">
+            <v-col cols="12" md="4" style="color:#002856; text-align: left;">
               <v-card class="pa-4" style="background-color:rgba(255,255,255,.6);border:1px solid #002856;">
                 <div class="text-subtitle-1 mb-3" style="color:#002856;">Advisor</div>
                 <div class="mb-1"><strong>{{ advisor.name }}</strong></div>
@@ -129,7 +129,7 @@
               </v-card>
             </v-col>
 
-            <v-col cols="12" md="4">
+            <v-col cols="12" md="4" style="color:#002856; text-align: left;">
               <v-card class="pa-4" style="background-color:rgba(255,255,255,.6);border:1px solid #002856;">
                 <div class="text-subtitle-1 mb-3" style="color:#002856;">Tags & Badges</div>
                 <div class="d-flex flex-wrap gap-2">
@@ -154,7 +154,7 @@
 
             <v-window v-model="tab">
               <!-- Overview -->
-              <v-window-item value="overview">
+              <v-window-item value="overview" style="color:#002856; text-align: left;">
                 <v-card flat class="pa-4">
                   <div class="text-subtitle-1 mb-3" style="color:#002856; text-align: left;">Recent Activity</div>
                   <v-timeline align="start" density="compact">
@@ -167,7 +167,7 @@
               </v-window-item>
 
               <!-- Academics -->
-              <v-window-item value="academics">
+              <v-window-item value="academics" style="color:#002856; text-align: left;">
                 <v-card flat class="pa-4">
                   <div class="text-subtitle-1 mb-3" style="color:#002856;">Current & Recent Courses</div>
                   <v-data-table :headers="courseHeaders" :items="recentCourses" item-key="id" class="elevation-0">
@@ -195,7 +195,7 @@
               </v-window-item>
 
               <!-- Documents -->
-              <v-window-item value="documents">
+              <v-window-item value="documents" style="color:#002856; text-align: left;">
                 <v-card flat class="pa-4">
                   <div class="text-subtitle-1 mb-3" style="color:#002856;">Files</div>
                   <v-data-table :headers="docHeaders" :items="documents" item-key="id" class="elevation-0">
