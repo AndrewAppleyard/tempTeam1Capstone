@@ -99,11 +99,6 @@ async getAdvisorByStudent(studentid) {
     console.log("Advisor data:", response.data);
     return response.data;
   } catch (error) {
-    if (error.response) {
-      console.error("Error fetching advisor:", error.response.data);
-    } else {
-      console.error("Network or other error:", error.message);
-    }
-    return null;
+    console.error("Error fetching advisor:", error.response.data);
   }
 };
