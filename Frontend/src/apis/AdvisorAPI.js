@@ -88,18 +88,19 @@ export default {
     }
   },
 
-async getAdvisorByStudent(studentid) {
-  try {
-    const token = sessionStorage.getItem("token");
-    const response = await axios.get(`Advisor/ByStudent/${studentid}`,{
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    console.log("Advisor data:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching advisor:", error.response.data);
-    throw err;
-  }
+  async getAdvisorByStudent(studentid) {
+    try {
+      const token = sessionStorage.getItem("token");
+      const response = await axios.get(`Advisor/ByStudent/${studentid}`,{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log("Advisor data:", response.data);
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching advisor:", err);
+      throw err;
+    }
+  }  
 };
