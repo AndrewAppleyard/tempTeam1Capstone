@@ -26,7 +26,7 @@ sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app = Flask(__name__)
 
-dateFormatString = "%m-%d-%Y"
+dateFormatString = "%Y-%d-%m"
 
 def role_required(*required_roles):
 
