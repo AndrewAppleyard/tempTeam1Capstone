@@ -50,7 +50,7 @@ def role_required(*required_roles):
     
     return decorator
 
-@bp.route("", methods=['GET'])
+@bp.route("/", methods=['GET'])
 @role_required("UAFS_ADMINS")
 def getStudents():
     '''token = get_jwt()
@@ -88,6 +88,7 @@ def getStudents():
                 s.financialhold = student.financialhold
                 s.advisinghold = student.advisinghold
                 s.academichold = student.academichold
+                s.classes = student.classes
 
                 studentList.append(s.__dict__)
 
@@ -132,6 +133,7 @@ def getStudentInfo(studentid: int):
             student.finanicalHold = result.financialhold
             student.advisinghold = result.advisinghold
             student.academichold = result.academichold
+            student.classes = result.classes
 
             return student.__dict__
     except Exception as e:
@@ -141,7 +143,7 @@ def getStudentInfo(studentid: int):
         session.close()
 
 @bp.route("/Update/<int:id>", methods = ['GET','POST'])
-@role_required("UAFS_ADMINS,UAFS_STUDENTS,UAFS_ADVISORS")
+@role_required("UAFS_ADMINS", "UAFS_STUDENTS", "UAFS_ADVISORS")
 def updateStudent(id: int) -> None:
     token = get_jwt()
     try:
