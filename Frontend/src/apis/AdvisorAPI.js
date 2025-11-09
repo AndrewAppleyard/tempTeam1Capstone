@@ -87,11 +87,15 @@ export default {
       throw err;
     }
   },
-};
 
-async function getAdvisorByStudent(studentid) {
+async getAdvisorByStudent(studentid) {
   try {
-    const response = await axios.get(`Advisor/ByStudent/${studentid}`);
+    const token = sessionStorage.getItem("token");
+    const response = await axios.get(`Advisor/ByStudent/${studentid}`,{
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     console.log("Advisor data:", response.data);
     return response.data;
   } catch (error) {
