@@ -72,13 +72,13 @@ def login():
             
             conn.unbind()
             if "UAFS_ADMINS" in group:
-                token = create_access_token(identity=username, additional_claims={"Role":"Admin"})
+                token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADMINS"})
                 return jsonify({'message':'User authenticated successfully!', "Token":token}), 200
             elif "UAFS_STUDENTS" in group:
-                token = create_access_token(identity=username, additional_claims={"Role":"Student"})
+                token = create_access_token(identity=username, additional_claims={"Role":"UAFS_STUDENTS"})
                 return jsonify({'message':'User authenticated successfully!', "Token":token}), 200
             elif "UAFS_ADVISORS" in group:
-                token = create_access_token(identity=username, additional_claims={"Role":"Advisor"})
+                token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADVISORS"})
                 return jsonify({'message':'User authenticated successfully!', "Token":token}), 200
             else:
                 print("User found but user is assigned to a group we aren't handling.")

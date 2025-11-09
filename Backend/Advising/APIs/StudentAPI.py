@@ -51,7 +51,7 @@ def role_required(*required_roles):
     return decorator
 
 @bp.route("", methods=['GET'])
-@role_required("UAFS_STUDENTS")
+@role_required("UAFS_ADMINS")
 def getStudents():
     '''token = get_jwt()
     if token["Role"] == "Student":
@@ -101,7 +101,7 @@ def getStudents():
         session.close()
 
 @bp.route("/<int:studentid>",methods = ['GET', 'POST'])
-@role_required("UAFS_STUDENTS")
+@role_required("UAFS_STUDENTS", "UAFS_ADVISORS")
 def getStudentInfo(studentid: int):
 
     try:

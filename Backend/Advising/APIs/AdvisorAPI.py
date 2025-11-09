@@ -10,6 +10,7 @@ import os
 from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
 from functools import wraps
 from Advising.APIs import URL
+import requests
 
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, '..')
@@ -38,7 +39,7 @@ def role_required(*required_roles):
 
             verify_jwt_in_request()
             token = get_jwt()
-
+            
             if token.get("Role") not in required_roles:
                 return jsonify({"message": "Access denied!"}), 403
             
@@ -49,7 +50,7 @@ def role_required(*required_roles):
     return decorator
 
 @bp.route("/", methods=['GET'])
-@role_required("UAFS_ADVISORS")
+@role_required("UAFS_ADMINS")
 def getAdvisors():
     try:
         with Session(engine) as session:
@@ -79,7 +80,7 @@ def getAdvisors():
         session.close()
 
 @bp.route("/<int:advisorid>", methods= ['GET'] )
-@role_required("UAFS_ADVISORS")
+@role_required("UAFS_ADVISORS", "UAFS_ADMINS")
 def getAdvisor(advisorid: int):
     try:
         with Session(engine) as session:
@@ -103,7 +104,7 @@ def getAdvisor(advisorid: int):
         session.close()
 
 @bp.route("/Student/<int:advisorid>")
-@role_required("UAFS_ADVISORS")
+@role_required("UAFS_ADVISORS", "UAFS_ADMINS")
 def getAdvisorStudents(advisorid: int):
     try:
         with Session(engine) as session:
@@ -143,7 +144,7 @@ def getAdvisorStudents(advisorid: int):
         session.close()
 
 @bp.route("/ByStudent/<studentid>")
-@role_required("UAFS_ADVISORS")
+@role_required("UAFS_ADVISORS", "UAFS_ADMINS", "UAFS_STUDENTS")
 def getAdvisorByStudent(studentid: int):
     try:
         with Session(engine) as session:

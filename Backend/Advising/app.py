@@ -4,6 +4,7 @@ from extensions import jwt
 from flask_cors import CORS
 import os
 import sys
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt
 
 def create_app():
 
@@ -14,18 +15,34 @@ def create_app():
     except OSError:
         pass
 
-    CORS(app)
+    CORS(app, resources = {r"/*": {
+        #"origins": "http://uafs_frontend:8080",
+        "allow_headers": ["Authorization", "Content-Type"],
+        "expose_headers": ["Authorization"],
+        "methods" : ["GET", "POST", "OPTIONS", "PUT", "DELETE"]
+    }})
 
     app.config["JWT_SECRET_KEY"] = "e90$2kj@#dju78)"
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 3600
 
     jwt.init_app(app)
 
+
     app.register_blueprint(TransferAPI.bp)
     app.register_blueprint(StudentAPI.bp)
     app.register_blueprint(AdvisorAPI.bp)
     app.register_blueprint(AdminAPI.bp)
     app.register_blueprint(CurrentCourseAPI.bp)
+
+    @app.route('/<path:path>', methods=['OPTIONS'])
+    def handle_options():
+        """ Handle OPTIONS requests for CORS preflight """
+        response = Response()
+        response.status_code = 200
+        response.headers['Access-Control-Allow-Origin'] = 'http://uafs_frontend:8080'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+        response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
+        return response
 
     return app
 
