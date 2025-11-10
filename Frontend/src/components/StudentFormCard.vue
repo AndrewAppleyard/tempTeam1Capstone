@@ -47,8 +47,7 @@ async function save() {
     let studentid = null
     if (props.student) {
       studentid = props.student.studentid
-      const userRole = "admin" // remove with jwt
-      await StudentAPI.updateStudent(studentid, userRole, form.value)
+      await StudentAPI.updateStudent(studentid, form.value)
       
     } else {
       form.value.role = 'student'
