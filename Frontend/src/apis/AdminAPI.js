@@ -140,7 +140,7 @@ export default {
   async deleteStudent(studentid) {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.get(`/Admin/Student/${studentid}`,{
+      const response = await axios.post(`/Admin/Student/${studentid}`,{
         headers: {
           Authorization: `Bearer ${token}`
         }
