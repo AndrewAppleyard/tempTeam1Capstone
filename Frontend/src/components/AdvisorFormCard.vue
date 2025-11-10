@@ -21,6 +21,11 @@ const form = ref({
 
 const localVisible = ref(props.visible)
 
+const emailRule = value => {
+  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(value) || 'Please enter a valid email';
+}
+  
 async function save() {
   try {
     if (props.advisor) {
@@ -88,7 +93,7 @@ watch(() => props.advisor, (newAdvisor) => {
           </v-row>
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model="form.email" label="Email" />
+              <v-text-field v-model="form.email" label="Email" :rules="[emailRule]" />
             </v-col>
             <v-col cols="6">
               <v-text-field v-model="form.phonenumber" label="Phone Number" />
