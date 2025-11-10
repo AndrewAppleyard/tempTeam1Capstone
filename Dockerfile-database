@@ -1,3 +1,13 @@
 FROM postgres:15-alpine
 
+COPY ./Backend/postgres.sh /docker-entrypoint-initdb.d/postgres.sh
+COPY ./Backend/database.sql /docker-entrypoint-initdb.d/database.sql
+
+RUN chown postgres:postgres /docker-entrypoint-initdb.d/* && \
+    chmod 755 /docker-entrypoint-initdb.d/postgres.sh && \
+    chmod 755 /docker-entrypoint-initdb.d/database.sql
+
+#RUN /docker-entrypoint-initdb.d/postgres.sh
+# RUN /docker-entrypoint-initdb.d/database.sql
+
 EXPOSE 5432

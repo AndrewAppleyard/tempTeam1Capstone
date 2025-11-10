@@ -1,7 +1,8 @@
 -- script to build database
 
-SELECT 'CREATE DATABASE advising'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'advising')\gexec
+\if NOT EXISTS (SELECT FROM pg_database WHERE datname = 'advising')
+  CREATE DATABASE advising;
+\endif
 
 \c advising;
 
