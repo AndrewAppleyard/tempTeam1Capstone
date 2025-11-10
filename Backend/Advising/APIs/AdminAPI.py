@@ -135,7 +135,9 @@ def addStudent():
     student.school = request.form.get('school')
     student.gpa = request.form.get('gpa')
     student.major = request.form.get('major')
+    student.majorconcentration = request.form.get('majorconcentration')
     student.minor = request.form.get('minor')
+    student.classstanding = request.form.get('classstanding')
 
     if(request.form.get('registrationstatus').casefold() == true.casefold()):
         student.registrationstatus = True
