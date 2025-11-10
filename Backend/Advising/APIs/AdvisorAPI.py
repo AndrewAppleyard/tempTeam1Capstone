@@ -157,7 +157,7 @@ def getAdvisorByStudent(studentid: int):
 
             result = session.scalars(statement).first()
 
-            if not advisor_result:
+            if not result:
                 return jsonify(None), 200
 
             advisor = Advisor.Advisor()
