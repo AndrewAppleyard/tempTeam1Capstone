@@ -15,7 +15,8 @@ class Student(User.User):
     financialhold: bool
     advisinghold: bool
     academichold: bool
-    classes: JSONB
+    classes: list[dict]
+    transcript: list[dict]
 
     def __init__(self):
         pass
@@ -49,3 +50,4 @@ class StudentMap(User.Base):
     dateadvised: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     
     classes: Mapped[dict] = mapped_column(JSONB, default={}, nullable=True)
+    transcript: Mapped[dict] = mapped_column(JSONB, default={}, nullable=True)
