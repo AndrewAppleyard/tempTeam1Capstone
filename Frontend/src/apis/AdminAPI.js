@@ -43,7 +43,7 @@ export default {
   async getAdmin(adminid) {
     try {
       const token = sessionStorage.getItem("token");  
-      const response = await axios.get(`/Admin/${adminid}`,{
+      const response = await axios.get(`/Admin/${adminid}`, {
           headers: {
           Authorization: `Bearer ${token}`
         }
@@ -106,7 +106,7 @@ export default {
   async deleteAdvisor(advisorid) {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.get(`/Admin/Advisor/${advisorid}`,{
+      const response = await axios.get(`/Admin/Advisor/${advisorid}`, null, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -140,12 +140,11 @@ export default {
   async deleteStudent(studentid) {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.post(`/Admin/Student/${studentid}`,{
+      const response = await axios.post(`/Admin/Student/${studentid}`, null, {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         }
-      }
-      );
+      });
       console.log('Student Deleted:', response.data);
       return response.data;
     } catch (err) {
@@ -160,7 +159,7 @@ export default {
       formData.append('advisorid', advisorid);
       formData.append('studentid', studentid);
       const token = sessionStorage.getItem("token");
-      const response = await axios.post('/Admin/Student/Advisor', formData,{
+      const response = await axios.post('/Admin/Student/Advisor', formData, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -175,7 +174,7 @@ export default {
   async removeStudentFromAdvisor(studentid, advisorid) {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.get(`/Admin/Student/Advisor/${studentid}/${advisorid}`,{
+      const response = await axios.get(`/Admin/Student/Advisor/${studentid}/${advisorid}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

@@ -69,9 +69,9 @@ def getAdvisors():
                 a.role = advisor.role
                 a.school = advisor.school
 
-                advisorList.append(a)
+                advisorList.append(a.__dict__)
 
-            return advisorList
+            return jsonify(advisorList)
 
     except Exception as e:
         traceback.print_exc()

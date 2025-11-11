@@ -43,7 +43,7 @@ export default {
   async getAllStudents() {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.get('/Student/',{
+      const response = await axios.get('/Student/', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -59,7 +59,7 @@ export default {
   async getStudentById(studentid) {
       try {
         const token = sessionStorage.getItem("token");
-        const response = await axios.get(`/Student/${studentid}`,{
+        const response = await axios.get(`/Student/${studentid}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -77,7 +77,7 @@ export default {
       const formData = new FormData();
         Object.keys(updates).forEach(key => formData.append(key, updates[key]));
         const token = sessionStorage.getItem("token");
-        const response = await axios.post(`/Student/Update/${studentid}`, formData,{
+        const response = await axios.post(`/Student/Update/${studentid}`, formData, {
           headers: {
             Authorization: `Bearer ${token}`
           }

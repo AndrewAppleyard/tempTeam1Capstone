@@ -1,10 +1,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 import StudentFormCard from '../components/StudentFormCard.vue'
 import Popups from '../components/Popups.vue'
 import { VIcon } from 'vuetify/components'
+import AdvisorAPI from '../apis/AdvisorAPI'
 
 const router = useRouter()
 const loading = ref(true)
@@ -15,9 +15,10 @@ async function fetchStudents() {
   loading.value = true
   error.value = null
   try {
-    const response = await axios.get('/Advisor/Student/1') // change based off of advisor id
+    let advisorid = 1
+    const response = await AdvisorAPI.getAdvisorStudents(advisorid) // change based off of advisor id
     
-    students.value = response.data.sort((a, b) => {
+    students.value = response.sort((a, b) => {
       const now = new Date()
 
       const aHold = a.advisinghold || a.academichold || a.financialhold

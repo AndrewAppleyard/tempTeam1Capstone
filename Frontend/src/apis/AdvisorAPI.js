@@ -43,7 +43,7 @@ export default {
   async getAllAdvisors() {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.get('/Advisor/',{
+      const response = await axios.get('/Advisor/', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -59,7 +59,7 @@ export default {
   async getAdvisorById(advisorid) {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.get(`/Advisor/${advisorid}`,{
+      const response = await axios.get(`/Advisor/${advisorid}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -75,7 +75,7 @@ export default {
   async getAdvisorStudents(advisorid) {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.get(`/Advisor/Student/${advisorid}`,{
+      const response = await axios.get(`/Advisor/Student/${advisorid}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -91,7 +91,7 @@ export default {
   async getAdvisorByStudent(studentid) {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.get(`Advisor/ByStudent/${studentid}`,{
+      const response = await axios.get(`/Advisor/ByStudent/${studentid}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

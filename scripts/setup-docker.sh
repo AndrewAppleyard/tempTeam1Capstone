@@ -19,7 +19,7 @@ sudo systemctl restart docker
 
 sudo docker-compose up -d dirsrv
 
-sleep 15
+sleep 30
 
 echo "Starting Docker containers..."
 sudo docker-compose up -d

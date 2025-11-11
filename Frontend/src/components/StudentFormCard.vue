@@ -54,7 +54,7 @@ async function save() {
       form.value.dateadvised = '2025-01-01' // should be empty
       const response = await AdminAPI.addStudent(form.value)
 
-      studentid = response.data.studentid
+      studentid = response.data.studentid ?? null;
 
       console.log('AddStudent response:', response);
     }
