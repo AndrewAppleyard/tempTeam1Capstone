@@ -94,8 +94,8 @@ CREATE TABLE degreeplans (
     majorcode VARCHAR(10) NOT NULL,
     credithourstotal INTEGER,
     notes JSONB,
-    corecourses,
-    concentrations
+    corecourses JSONB,
+    concentrations JSONB
 );
 
 INSERT INTO admin (firstname, lastname, email, phonenumber, role, school)
