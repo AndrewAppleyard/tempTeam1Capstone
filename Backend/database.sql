@@ -63,10 +63,12 @@ CREATE TABLE transcript
 (
     transcriptid BIGSERIAL PRIMARY KEY, 
     studentid BIGINT REFERENCES student (studentid) ON DELETE CASCADE, 
+    program VARCHAR(100),
+    concentration VARCHAR(100),
+    year VARCHAR(50),
+    institution VARCHAR(150),
     coursemap JSONB, 
-    coursecode VARCHAR(15), 
-    subject VARCHAR(50), 
-    hours BIGINT
+    cumulative_gpa NUMERIC(3,2)
 );
 
 -- insertions --
@@ -84,6 +86,16 @@ CREATE TABLE currentcourses (
     enrolled VARCHAR(5),
     academicperiod VARCHAR(100),
     startdate VARCHAR(20)
+);
+
+CREATE TABLE degreeplans (
+    degree VARCHAR(50) PRIMARY KEY,
+    institution VARCHAR(50) NOT NULL,
+    majorcode VARCHAR(10) NOT NULL,
+    credithourstotal INTEGER,
+    notes JSONB,
+    corecourses,
+    concentrations
 );
 
 INSERT INTO admin (firstname, lastname, email, phonenumber, role, school)
@@ -163,3 +175,49 @@ VALUES ('TestAdmin', 'Test', 'ta@uafs.edu', 4445556666, 'admin', 'UAFS');
 
 -- INSERT INTO advisor_and_students (studentid, advisorid)
 -- VALUES (6, 2);
+
+-- INSERT INTO transcript (studentid, student_name, student_uid, program, concentration, year, institution, transcript, cumulative_gpa)
+/* VALUES (
+    1,
+    'B.S. in Computer Science',
+    'General',
+    'Junior',
+    'University of Arkansas - Fort Smith',
+    '[
+      {
+        "semester": "Freshman Fall",
+        "year": 2024,
+        "courses": [
+          { "code": "ENGL 1013", "title": "English Composition I", "credits": 3, "grade": "A" },
+          { "code": "MATH 2804", "title": "Calculus I", "credits": 4, "grade": "B+" },
+          { "code": "CS 1093", "title": "Computer Science Concepts", "credits": 3, "grade": "A-" },
+          { "code": "FA/HUM/SOCSCI 1103", "title": "Introduction to Humanities", "credits": 3, "grade": "B" },
+          { "code": "STEM 1001", "title": "College Prep for STEM Majors", "credits": 1, "grade": "A" }
+        ],
+        "semester_gpa": 3.55
+      },
+      {
+        "semester": "Freshman Spring",
+        "year": 2025,
+        "courses": [
+          { "code": "ENGL 1023", "title": "English Composition II", "credits": 3, "grade": "A-" },
+          { "code": "MATH 2854", "title": "Calculus II", "credits": 4, "grade": "B" },
+          { "code": "CS 1014", "title": "Foundations of Programming I", "credits": 4, "grade": "A" },
+          { "code": "CS 1044", "title": "Foundations of Networking", "credits": 4, "grade": "B+" }
+        ],
+        "semester_gpa": 3.65
+      },
+      {
+        "semester": "Sophomore Fall",
+        "year": 2025,
+        "courses": [
+          { "code": "PHYS 2054", "title": "General Physics I", "credits": 4, "grade": "B" },
+          { "code": "CS 2053", "title": "Foundations of CyberSecurity", "credits": 3, "grade": "A-" },
+          { "code": "CS 1024", "title": "Foundations of Programming II", "credits": 4, "grade": "A" },
+          { "code": "CS 2003", "title": "Data Structures", "credits": 3, "grade": "B+" }
+        ],
+        "semester_gpa": 3.55
+      }
+    ]',
+    3.61
+); */
