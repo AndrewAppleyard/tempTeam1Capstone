@@ -2,13 +2,13 @@
   <v-container fluid class="pa-1" style="background-color: transparent;">
     <v-row justify="center">
       <v-col cols="12">
-        <v-card class="pa-4" style="background-color: #BDD5E7; border: 1px solid #002856; border-radius: 12px;">
+        <v-card class="pa-4" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:12px;">
           <!-- Header / Title -->
           <v-row class="mb-3" text-align="center">
             <v-col cols="12" md="6">
               <v-card flat class="elevation-0" style="background: transparent;">
                 <v-card-title class="py-2 px-3"
-                  style="color:#002856; border: 1px solid #002856; border-radius: 4px;">
+                  style="color:#002856; border:1px solid #002856; border-radius:4px; font-weight:700; letter-spacing:.25px;">
                   TRANSCRIPT VIEW
                 </v-card-title>
               </v-card>
@@ -29,16 +29,17 @@
             </v-col>
           </v-row>
 
-          <!-- Student Summary Card -->
-          <v-card class="pa-3 mb-4" style="background-color: rgba(255,255,255,.6); border: 1px solid #002856;">
+          <!-- Student Summary Card (same look as degree-plan summary) -->
+          <v-card class="pa-3 mb-4"
+                  style="background-color:rgba(255,255,255,.6); border:1px solid #002856; text-align:left; border-radius:12px;">
             <v-row>
               <v-col cols="12" md="8">
-                <div class="text-h6 mb-2" style="color:#002856; text-align:left;">{{ student.fullName }}</div>
-                <div class="d-flex flex-wrap gap-4">
+                <div class="text-h6 mb-2" style="color:#002856;">{{ student.fullName }}</div>
+                <div class="d-flex flex-wrap" style="gap:16px;">
                   <div><strong>ID:</strong> {{ student.studentID }}</div>
                   <div><strong>Level:</strong> {{ student.level }}</div>
                   <div><strong>Major:</strong> {{ student.major }}</div>
-                  <div><strong>Minor:</strong> {{ student.minor }}</div>
+                  <div v-if="student.minor"><strong>Minor:</strong> {{ student.minor }}</div>
                 </div>
               </v-col>
               <v-col cols="12" md="4" class="d-flex align-end justify-end">
@@ -50,7 +51,7 @@
             </v-row>
           </v-card>
 
-          <!-- Controls Row -->
+          <!-- Controls Row (identical layout) -->
           <v-row class="mb-3" text-align="center">
             <v-col cols="12" md="6">
               <v-select
@@ -60,7 +61,6 @@
                 variant="outlined"
                 density="comfortable"
                 hide-details
-                style="--v-theme-primary:#002856"
               />
             </v-col>
             <v-col cols="12" md="6">
@@ -75,8 +75,9 @@
             </v-col>
           </v-row>
 
-          <!-- Courses Table -->
-          <v-card class="pa-2" style="background-color: rgba(255,255,255,.6); text-align: left; border: 1px solid #002856;">
+          <!-- Courses Table (same shell as degree plan) -->
+          <v-card class="pa-2"
+                  style="background-color:rgba(255,255,255,.6); text-align:left; border:1px solid #002856; border-radius:12px;">
             <v-data-table
               :headers="headers"
               :items="filteredCourses"
@@ -85,12 +86,22 @@
               class="elevation-0"
               :search="search"
             >
+              <template #item.credits="{ item }">
+                <span class="font-mono">{{ item.credits }}</span>
+              </template>
+
+              <template #item.grade="{ item }">
+                <v-chip size="small" :color="gradeColor(item.grade)" variant="flat">
+                  {{ item.grade }}
+                </v-chip>
+              </template>
+
               <template #item.points="{ item }">
-                <span>{{ (item.credits * gradePoint(item.grade)).toFixed(2) }}</span>
+                <span class="font-mono">{{ (item.credits * gradePoint(item.grade)).toFixed(2) }}</span>
               </template>
 
               <template #bottom>
-                <div class="d-flex flex-wrap justify-space-between align-center pa-4" style="border-top: 1px solid #002856;">
+                <div class="d-flex flex-wrap justify-space-between align-center pa-4" style="border-top:1px solid #002856;">
                   <div class="text-body-2"><strong>Term:</strong> {{ selectedTerm }}</div>
                   <div class="text-body-2">
                     <strong>Term Credits:</strong> {{ termSummary.credits }}
@@ -101,6 +112,11 @@
               </template>
             </v-data-table>
           </v-card>
+
+          <!-- Footer -->
+          <div class="text-center mt-6 brand-primary" style="color:#002856;">
+            © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
+          </div>
         </v-card>
       </v-col>
     </v-row>
@@ -111,7 +127,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-// --- Mock: grade → points map (4.0 scale) ---
+/* ===== GPA scale (4.0) ===== */
 const GPA_POINTS: Record<string, number> = {
   'A': 4.0, 'A-': 3.7,
   'B+': 3.3, 'B': 3.0, 'B-': 2.7,
@@ -120,14 +136,14 @@ const GPA_POINTS: Record<string, number> = {
   'F': 0.0, 'P': 0.0, 'W': 0.0, 'I': 0.0,
 }
 
-// --- Routing ---
+/* ===== Routing ===== */
 const route = useRoute()
 const router = useRouter()
 const studentIdParam = route.params.studentID as string | undefined
 
-// --- Mock Student Data (replace with API call) ---
+/* ===== Mock Student (swap with API) ===== */
 const students = [
-  { studentID: 'S1001', firstName: 'Andrew', lastName: 'Mackey', level: 'Undergraduate', major: 'Computer Science', minor: 'Mathematics'},
+  { studentID: 'S1001', firstName: 'Andrew', lastName: 'Mackey', level: 'Undergraduate', major: 'Computer Science', minor: 'Mathematics' },
   { studentID: 'S1002', firstName: 'Yash', lastName: 'Patel', level: 'Undergraduate', major: 'Mathematics' },
   { studentID: 'S1003', firstName: 'Jay', lastName: 'Patel', level: 'Undergraduate', major: 'Nursing' }
 ]
@@ -137,8 +153,7 @@ const student = computed(() => {
   return { ...s, fullName: `${s.firstName} ${s.lastName}` }
 })
 
-// --- Mock Transcript Data ---
-// In production, fetch by studentID and hydrate below reactive structure.
+/* ===== Transcript rows (swap with API) ===== */
 interface CourseRow {
   id: string
   term: string
@@ -149,38 +164,44 @@ interface CourseRow {
 }
 
 const transcript = ref<CourseRow[]>([
-  { id: '1', term: 'Fall 2024', code: 'CS 1013', title: 'Intro to CS', credits: 3, grade: 'A' },
-  { id: '2', term: 'Fall 2024', code: 'MATH 1404', title: 'Calculus I', credits: 4, grade: 'A' },
-  { id: '3', term: 'Fall 2024', code: 'ENGL 1213', title: 'Composition I', credits: 3, grade: 'B' },
-  { id: '4', term: 'Spring 2025', code: 'CS 2023', title: 'Data Structures', credits: 3, grade: 'A' },
-  { id: '5', term: 'Spring 2025', code: 'MATH 1454', title: 'Calculus II', credits: 4, grade: 'B' },
-  { id: '6', term: 'Spring 2025', code: 'PHYS 2054', title: 'Physics I', credits: 4, grade: 'B' },
-  { id: '7', term: 'Fall 2025', code: 'CS 3013', title: 'Algorithms', credits: 3, grade: 'A' },
-  { id: '8', term: 'Fall 2025', code: 'STAT 2503', title: 'Statistics', credits: 3, grade: 'B' },
-  { id: '9', term: 'Fall 2025', code: 'HIST 1113', title: 'US History', credits: 3, grade: 'A' },
+  { id: '1', term: 'Fall 2024', code: 'CS 1013',   title: 'Intro to CS',            credits: 3, grade: 'A'  },
+  { id: '2', term: 'Fall 2024', code: 'MATH 1404', title: 'Calculus I',             credits: 4, grade: 'A'  },
+  { id: '3', term: 'Fall 2024', code: 'ENGL 1213', title: 'Composition I',          credits: 3, grade: 'B'  },
+  { id: '4', term: 'Spring 2025', code: 'CS 2023', title: 'Data Structures',        credits: 3, grade: 'A'  },
+  { id: '5', term: 'Spring 2025', code: 'MATH 1454', title: 'Calculus II',          credits: 4, grade: 'B'  },
+  { id: '6', term: 'Spring 2025', code: 'PHYS 2054', title: 'Physics I',            credits: 4, grade: 'B'  },
+  { id: '7', term: 'Fall 2025', code: 'CS 3013',   title: 'Algorithms',             credits: 3, grade: 'A'  },
+  { id: '8', term: 'Fall 2025', code: 'STAT 2503', title: 'Statistics',             credits: 3, grade: 'B'  },
+  { id: '9', term: 'Fall 2025', code: 'HIST 1113', title: 'US History',             credits: 3, grade: 'A'  },
 ])
 
-// --- Table Headers ---
+/* ===== Headers (degree-plan style: simple titles) ===== */
 const headers = [
-  { title: 'Course #', key: 'code', sortable: true },
-  { title: 'Title', key: 'title', sortable: true },
-  { title: 'Credits', key: 'credits', sortable: true, align: 'end' },
-  { title: 'Grade', key: 'grade', sortable: true, align: 'center' },
-  { title: 'Points', key: 'points', sortable: false, align: 'end' },
+  { title: 'Term',    key: 'term',    sortable: true },
+  { title: 'Course #', key: 'code',   sortable: true },
+  { title: 'Title',    key: 'title',  sortable: true },
+  { title: 'Cr',       key: 'credits', sortable: true, align: 'end' },
+  { title: 'Grade',    key: 'grade',   sortable: true, align: 'center' },
+  { title: 'Points',   key: 'points',  sortable: false, align: 'end' },
 ]
 
-// --- Term Options & Selection ---
+/* ===== Filters ===== */
 const termOptions = computed(() => {
   const set = Array.from(new Set(transcript.value.map(t => t.term)))
   return ['All Terms', ...set]
 })
 const selectedTerm = ref<string>('All Terms')
-
-// --- Search ---
 const search = ref('')
 
-// --- Helpers ---
+/* ===== Helpers ===== */
 const gradePoint = (g: string) => GPA_POINTS[g] ?? 0
+function gradeColor(g: string) {
+  if (['A','A-'].includes(g)) return '#2e7d32'    // green-ish
+  if (['B+','B','B-'].includes(g)) return '#1565c0' // blue-ish
+  if (['C+','C','C-'].includes(g)) return '#6a1b9a' // purple-ish
+  if (['D+','D'].includes(g)) return '#ef6c00'      // orange-ish
+  return '#b00020'                                  // red for F/others
+}
 
 const filteredCourses = computed(() => {
   const base = selectedTerm.value === 'All Terms'
@@ -190,6 +211,7 @@ const filteredCourses = computed(() => {
   if (!search.value) return base
   const q = search.value.toLowerCase()
   return base.filter(c =>
+    c.term.toLowerCase().includes(q) ||
     c.code.toLowerCase().includes(q) ||
     c.title.toLowerCase().includes(q) ||
     c.grade.toLowerCase().includes(q)
@@ -199,17 +221,16 @@ const filteredCourses = computed(() => {
 function summarize(rows: CourseRow[]) {
   const graded = rows.filter(r => GPA_POINTS[r.grade] !== undefined && !['P','W','I'].includes(r.grade))
   const credits = graded.reduce((acc, r) => acc + r.credits, 0)
-  const points = graded.reduce((acc, r) => acc + r.credits * gradePoint(r.grade), 0)
+  const points  = graded.reduce((acc, r) => acc + r.credits * gradePoint(r.grade), 0)
   const gpa = credits > 0 ? points / credits : 0
   return { credits, points, gpa }
 }
 
 const termSummary = computed(() => summarize(filteredCourses.value))
-const cumulative = computed(() => summarize(transcript.value))
+const cumulative  = computed(() => summarize(transcript.value))
 
-// --- Actions ---
+/* ===== Actions ===== */
 function goBack() {
-  // Navigate back to student list route if available, else history back
   if (router && router.currentRoute.value.name !== 'students') {
     router.push({ name: 'students' }).catch(() => window.history.back())
   } else {
@@ -217,15 +238,22 @@ function goBack() {
   }
 }
 
-function printPage() {
-  window.print()
-}
+function printPage() { window.print() }
 
 function downloadCSV() {
-  const rows = selectedTerm.value === 'All Terms' ? transcript.value : transcript.value.filter(r => r.term === selectedTerm.value)
+  const rows = selectedTerm.value === 'All Terms'
+    ? transcript.value
+    : transcript.value.filter(r => r.term === selectedTerm.value)
+
   const header = ['Term','Course #','Title','Credits','Grade','Points']
-  const data = rows.map(r => [r.term, r.code, r.title, r.credits.toString(), r.grade, (r.credits * gradePoint(r.grade)).toFixed(2)])
-  const csv = [header, ...data].map(r => r.map(v => `"${String(v).replaceAll('"','""')}"`).join(',')).join('\n')
+  const data = rows.map(r => [
+    r.term, r.code, r.title, r.credits.toString(), r.grade,
+    (r.credits * gradePoint(r.grade)).toFixed(2),
+  ])
+  const csv = [header, ...data]
+    .map(r => r.map(v => `"${String(v).replaceAll('"','""')}"`).join(','))
+    .join('\n')
+
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -237,9 +265,7 @@ function downloadCSV() {
 </script>
 
 <style scoped>
-/* Keep the palette consistent with provided list view */
-.student-card { cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
-.student-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.15); }
+.font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
 
 @media print {
   .v-btn, .v-select, .v-text-field { display: none !important; }
