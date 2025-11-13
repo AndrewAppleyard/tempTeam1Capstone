@@ -35,6 +35,7 @@ def create_app():
     app.register_blueprint(CurrentCourseAPI.bp)
     app.register_blueprint(AgentAPI.bp)
     app.register_blueprint(DegreePlanAPI.bp)
+    app.register_blueprint(TranscriptAPI.bp)
 
     @app.route('/<path:path>', methods=['OPTIONS'])
     def handle_options():
