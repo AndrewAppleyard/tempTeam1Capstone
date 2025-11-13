@@ -9,7 +9,8 @@ from functools import wraps
 from Advising.APIs import URL
 from UserClasses import Student, User
 
-bp = Blueprint('ScheduleAPI', __name__, url_prefix="/Schedule")
+#TODO: Currently throws 500 error because theres something wrong with the logic
+bp = Blueprint('AgentAPI', __name__, url_prefix="/Schedule")
 
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, '..')
@@ -34,10 +35,11 @@ def role_required(*required_roles):
         return wrapper
     return decorator
 
+#put the student id after generate schedule
 @bp.route("/GenerateSchedule", methods=["POST"])
 @role_required("UAFS_STUDENTS")
 def generate_schedule():
-    try:
+    try:    
         #hardcoded, will be replaced with a agent component
         data = {
             "student_id": "1",

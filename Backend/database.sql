@@ -42,7 +42,7 @@ CREATE TABLE student
     advisingstatus BOOLEAN DEFAULT FALSE, 
     activestatus BOOLEAN DEFAULT TRUE, -- get this done!!!
     dateadvised TIMESTAMP,
-    classes JSONB
+    classes JSONB 
 ) INHERITS (users);
 
 -- CREATE TABLE admin_and_advisors 
@@ -68,7 +68,7 @@ CREATE TABLE transcript
     year VARCHAR(50),
     institution VARCHAR(150),
     coursemap JSONB, 
-    cumulative_gpa NUMERIC(3,2)
+    cumulativegpa NUMERIC(3,2)
 );
 
 -- insertions --

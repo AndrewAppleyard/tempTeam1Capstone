@@ -89,4 +89,20 @@ export default {
         throw err;
     }
   },
+
+    async addSchedule() {
+    try {
+      const token = sessionStorage.getItem("token");
+      const response = await axios.post(`/Schedule/GenerateSchedule`, null, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+      console.log('Schedule Generated:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Schedule Generated Error:', err);
+      throw err;
+    }
+  }
 };
