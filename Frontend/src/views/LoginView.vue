@@ -43,6 +43,24 @@ async function login () {
 
     sessionStorage.setItem('token', response.data.Token)
     successMsg.value = 'Login successful!'
+
+    if (userStore.isLoggedIn) {
+      switch (userStore.userRole) {
+        case 'student':
+          router.push('/student')
+          break
+        case 'advisor':
+          router.push('/advisor')
+          break
+        case 'admin':
+          router.push('/admin')
+          break
+        default:
+          router.push('/')
+      }
+    } else {
+      alert('Login failed. Check your email/password.')
+    }
   } catch (e) {
     console.log(e)
     errorMsg.value = 'Login failed. Please check your credentials and try again.'
