@@ -176,7 +176,7 @@ VALUES ('TestAdmin', 'Test', 'ta@uafs.edu', 4445556666, 'admin', 'UAFS');
 -- INSERT INTO advisor_and_students (studentid, advisorid)
 -- VALUES (6, 2);
 
--- INSERT INTO transcript (studentid, student_name, student_uid, program, concentration, year, institution, transcript, cumulative_gpa)
+-- INSERT INTO transcript (studentid, program, concentration, year, institution, transcript, cumulative_gpa)
 /* VALUES (
     1,
     'B.S. in Computer Science',

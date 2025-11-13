@@ -40,7 +40,7 @@ def generate_schedule():
     try:
         #hardcoded, will be replaced with a agent component
         data = {
-            "student_id": "ua104",
+            "student_id": "1",
             "name": "Andrew Appleyard",
             "semester": "Spring 2026",
             "courses": [
