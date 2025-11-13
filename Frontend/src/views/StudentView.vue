@@ -2,13 +2,17 @@
 import { ref, computed, onMounted, watch } from 'vue'
 
 /* =========================================================
-   1. DEGREE PLAN SOURCE (CS degree plan)
+   THEME — same palette, more respectful visuals (centralized)
 ========================================================= */
-interface DegreePlanCourse {
-  term: string
-  code: string
-  title: string
-}
+const COLOR_PRIMARY = '#002856'   // deep navy
+const COLOR_SURFACE = '#ffffff'   // white surface
+const COLOR_ACCENT_BG = '#BDD5E7' // soft blue page background
+const COLOR_PANEL_BG  = '#F3F8FD' // very light blue for info panels
+
+/* =========================================================
+   1) DEGREE PLAN SOURCE (unchanged content)
+========================================================= */
+interface DegreePlanCourse { term: string; code: string; title: string }
 
 const DEGREE_PLAN: DegreePlanCourse[] = [
   // Year 1
@@ -64,22 +68,15 @@ const DEGREE_PLAN: DegreePlanCourse[] = [
 ]
 
 /* =========================================================
-   2. STUDENT NAME (flattened – no nested ref)
+   2) STUDENT NAME (flattened)
 ========================================================= */
 const studentName = ref('')
-
-const greetingName = computed(() =>
-  studentName.value.trim() ? studentName.value : '[Student Name]'
-)
+const greetingName = computed(() => (studentName.value.trim() ? studentName.value : '[Student Name]'))
 
 /* =========================================================
-   3. CURRENT SEMESTER
+   3) CURRENT SEMESTER DATA
 ========================================================= */
-interface CurrentRow {
-  number: string
-  name: string
-}
-
+interface CurrentRow { number: string; name: string }
 interface CurrentPopupRow {
   number: string
   course: string
@@ -93,30 +90,26 @@ interface CurrentPopupRow {
 const currentDialog = ref(false)
 
 const currentSchedule = ref<CurrentRow[]>([
-  { number: 'CS 4303',  name: 'Cybersecurity Fundamentals' },
-  { number: 'CS 4403',  name: 'Artificial Intelligence' },
-  { number: 'CS 4983',  name: 'Senior Capstone I' },
-  { number: 'COMM 1303',name: 'Oral Communication' },
-  { number: '—',        name: '—' },
-  { number: '—',        name: '—' },
+  { number: 'CS 4303', name: 'Cybersecurity Fundamentals' },
+  { number: 'CS 4403', name: 'Artificial Intelligence' },
+  { number: 'CS 4983', name: 'Senior Capstone I' },
+  { number: 'COMM 1303', name: 'Oral Communication' },
+  { number: '—', name: '—' },
+  { number: '—', name: '—' }
 ])
 
 const currentPopupRows = ref<CurrentPopupRow[]>([
-  { number: 'CS 4303',   course: 'Cybersecurity Fundamentals', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open',     waitlist: '0' },
-  { number: 'CS 4403',   course: 'Artificial Intelligence',    time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open',     waitlist: '0' },
-  { number: 'CS 4983',   course: 'Senior Capstone I',          time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'By Permit', waitlist: '—' },
-  { number: 'COMM 1303', course: 'Oral Communication',         time: 'TBA', location: 'Campus TBA', professor: 'TBA', availability: 'Open',     waitlist: '0' },
-  { number: '',          course: '',                           time: '',    location: '',            professor: '',   availability: '',         waitlist: '' },
+  { number: 'CS 4303', course: 'Cybersecurity Fundamentals', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+  { number: 'CS 4403', course: 'Artificial Intelligence', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+  { number: 'CS 4983', course: 'Senior Capstone I', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'By Permit', waitlist: '—' },
+  { number: 'COMM 1303', course: 'Oral Communication', time: 'TBA', location: 'Campus TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+  { number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' }
 ])
 
 /* =========================================================
-   4. NEXT SEMESTER (editable + saved)
+   4) NEXT SEMESTER DATA (editable + saved)
 ========================================================= */
-interface NextCardRow {
-  number: string
-  name: string
-}
-
+interface NextCardRow { number: string; name: string }
 interface NextPopupRow {
   number: string
   course: string
@@ -128,134 +121,83 @@ interface NextPopupRow {
 }
 
 const nextDialog = ref(false)
-
-// terms available from degree plan
-const degreePlanTerms = Array.from(new Set(DEGREE_PLAN.map(c => c.term)))
-
-// default: you're planning the very last term
+const degreePlanTerms = computed(() => Array.from(new Set(DEGREE_PLAN.map(c => c.term))))
 const nextTerm = ref<string>('Spring Y4')
 
-// localStorage key
 const STORAGE_KEY = 'uafs-cs-next-semester-schedule'
 
-// main card (6 rows)
 const nextSchedule = ref<NextCardRow[]>([
-  { number: 'CSCE 40203',  name: 'Senior Capstone' },
-  { number: 'CSCE 40433',  name: 'Formal Languages' },
+  { number: 'CSCE 40203', name: 'Senior Capstone' },
+  { number: 'CSCE 40433', name: 'Formal Languages' },
   { number: 'Conc/Elective 4', name: 'Concentration / CS/MATH/STAT' },
-  { number: 'MATH/STAT UL',    name: 'Upper-Level Math/Stat' },
-  { number: '—',               name: '—' },
-  { number: '—',               name: '—' },
+  { number: 'MATH/STAT UL', name: 'Upper-Level Math/Stat' },
+  { number: '—', name: '—' },
+  { number: '—', name: '—' }
 ])
 
-// dialog rows (detailed)
 const nextPopupRows = ref<NextPopupRow[]>([
-  { number: 'CSCE 40203',  course: 'Senior Capstone',          time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'By Permit', waitlist: '—' },
-  { number: 'CSCE 40433',  course: 'Formal Languages',         time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open',      waitlist: '0' },
-  { number: 'Conc/Elective 4',  course: 'Concentration / CS/MATH/STAT', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open',      waitlist: '0' },
-  { number: 'MATH/STAT UL',  course: 'Upper-Level Math/Stat',  time: 'TBA', location: 'Campus TBA', professor: 'TBA', availability: 'Open',      waitlist: '0' },
-  { number: '',            course: '',                          time: '',    location: '',            professor: '',   availability: '',          waitlist: '' },
+  { number: 'CSCE 40203', course: 'Senior Capstone', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'By Permit', waitlist: '—' },
+  { number: 'CSCE 40433', course: 'Formal Languages', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+  { number: 'Conc/Elective 4', course: 'Concentration / CS/MATH/STAT', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+  { number: 'MATH/STAT UL', course: 'Upper-Level Math/Stat', time: 'TBA', location: 'Campus TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+  { number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' }
 ])
 
-// for the v-select in the dialog
 const selectedDegreeCourse = ref<string | null>(null)
-
 const filteredDegreeOptions = computed(() =>
-  DEGREE_PLAN
-    .filter(c => c.term === nextTerm.value)
-    .map(c => ({
-      label: `${c.code} — ${c.title}`,
-      value: c.code
-    }))
+  DEGREE_PLAN.filter(c => c.term === nextTerm.value).map(c => ({ label: `${c.code} — ${c.title}`, value: c.code }))
 )
 
 /* =========================================================
-   5. LOCALSTORAGE (load/save)
+   5) PERSISTENCE (load / save)
 ========================================================= */
 onMounted(() => {
-  const saved = localStorage.getItem(STORAGE_KEY)
-  if (!saved) return
   try {
-    const parsed = JSON.parse(saved)
-    if (parsed.nextSchedule) nextSchedule.value = parsed.nextSchedule
-    if (parsed.nextPopupRows) nextPopupRows.value = parsed.nextPopupRows
-    if (parsed.nextTerm) nextTerm.value = parsed.nextTerm
-  } catch (e) {
-    // ignore bad save
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed.nextSchedule)) nextSchedule.value = parsed.nextSchedule
+    if (Array.isArray(parsed.nextPopupRows)) nextPopupRows.value = parsed.nextPopupRows
+    if (typeof parsed.nextTerm === 'string') nextTerm.value = parsed.nextTerm
+  } catch {
+    // ignore invalid payloads
   }
-  // make sure card view matches dialog after load
   syncNextCardFromPopup()
 })
 
-watch(
-  [nextSchedule, nextPopupRows, nextTerm],
-  () => {
-    const payload = {
-      nextSchedule: nextSchedule.value,
-      nextPopupRows: nextPopupRows.value,
-      nextTerm: nextTerm.value
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
-  },
-  { deep: true }
-)
+watch([nextSchedule, nextPopupRows, nextTerm], () => {
+  const payload = { nextSchedule: nextSchedule.value, nextPopupRows: nextPopupRows.value, nextTerm: nextTerm.value }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+}, { deep: true })
 
 /* =========================================================
-   6. NEXT SEMESTER ACTIONS
+   6) ACTIONS
 ========================================================= */
 function syncNextCardFromPopup() {
-  const nonEmpty = nextPopupRows.value.filter(r => r.number && r.course).slice(0, 6)
-  while (nonEmpty.length < 6) {
-    nonEmpty.push({ number: '—', name: '—' } as unknown as NextPopupRow)
+  const present = nextPopupRows.value.filter(r => r.number && r.course).slice(0, 6)
+  while (present.length < 6) {
+    present.push({ number: '—', course: '—', time: '', location: '', professor: '', availability: '', waitlist: '' })
   }
-  nextSchedule.value = nonEmpty.map(r => ({
-    number: r.number,
-    name: r.course || r.number
-  }))
+  nextSchedule.value = present.map(r => ({ number: r.number, name: r.course || r.number }))
 }
 
 function addNextCourseFromPlan() {
   if (!selectedDegreeCourse.value) return
-
-  const course = DEGREE_PLAN.find(
-    c => c.term === nextTerm.value && c.code === selectedDegreeCourse.value
-  )
+  const course = DEGREE_PLAN.find(c => c.term === nextTerm.value && c.code === selectedDegreeCourse.value)
   if (!course) return
-
-  const newRow: NextPopupRow = {
-    number: course.code,
-    course: course.title,
-    time: 'TBA',
-    location: 'Baldor TBA',
-    professor: 'TBA',
-    availability: 'Open',
-    waitlist: '0'
-  }
-
+  const newRow: NextPopupRow = { number: course.code, course: course.title, time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' }
   const emptyIdx = nextPopupRows.value.findIndex(r => !r.number)
-  if (emptyIdx !== -1) {
-    nextPopupRows.value[emptyIdx] = newRow
-  } else {
-    nextPopupRows.value.push(newRow)
-  }
-
+  if (emptyIdx !== -1) nextPopupRows.value[emptyIdx] = newRow
+  else nextPopupRows.value.push(newRow)
   syncNextCardFromPopup()
   selectedDegreeCourse.value = null
 }
 
 function removeNextRow(index: number) {
+  if (index < 0 || index >= nextPopupRows.value.length) return
   nextPopupRows.value.splice(index, 1)
-  // keep 5 rows for layout
   while (nextPopupRows.value.length < 5) {
-    nextPopupRows.value.push({
-      number: '',
-      course: '',
-      time: '',
-      location: '',
-      professor: '',
-      availability: '',
-      waitlist: ''
-    })
+    nextPopupRows.value.push({ number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' })
   }
   syncNextCardFromPopup()
 }
@@ -264,143 +206,112 @@ function removeNextRow(index: number) {
 <template>
   <v-container
     fluid
-    class="pa-4"
-    style="max-width:1500px; background-color: #BDD5E7; border-radius:12px; border: 1px solid #002856;"
+    class="pa-6 respectful-shell"
+    :style="{ maxWidth: '1500px', backgroundColor: COLOR_ACCENT_BG, borderRadius: '16px', border: `1px solid ${COLOR_PRIMARY}` }"
   >
-    <!-- small greeting so greetingName is actually used -->
-    <div class="mb-4" style="color:#002856; font-weight:600;">
-      Welcome, {{ greetingName }}!
-    </div>
+    <!-- Header: Degree Planner LEFT (bold), Welcome centered -->
+    <header class="mb-4 layout-head">
+      <v-row align="center" class="header-grid">
+        <v-col cols="12" md="4" class="text-left">
+          <div class="planner-left" :style="{ color: COLOR_PRIMARY }">Degree Planner</div>
+        </v-col>
+        <v-col cols="12" md="4" class="text-center">
+          <h1 class="welcome-center" :style="{ color: COLOR_PRIMARY }">Welcome, {{ greetingName }}!</h1>
+        </v-col>
+        <v-col cols="12" md="4">&nbsp;</v-col>
+      </v-row>
+    </header>
 
     <v-row dense>
       <!-- CURRENT SEMESTER -->
       <v-col cols="12" md="6" class="pa-3">
-        <v-card
-          class="pa-0"
-          style="background-color:#ffffff; border:1px solid #002856; border-radius:12px;"
-        >
-          <v-card-title
-            class="py-3 px-4"
-            style="color:#002856; border-bottom:1px solid #002856;"
-          >
-            CURRENT SEMESTER SCHEDULE
+        <v-card class="panel-card ensure-fab-visibility">
+          <v-card-title class="panel-title">
+            <v-icon size="20" class="mr-2">mdi-calendar-month</v-icon>
+            Current Semester
           </v-card-title>
-
+          <v-divider />
           <v-card-text class="pa-0">
             <div class="table-wrap">
-              <v-table aria-label="Current Semester Schedule">
+              <v-table density="comfortable" class="zebra sticky-head align-left with-divider" aria-label="Current Semester Schedule">
                 <thead>
                   <tr>
-                    <th style="width:160px; border-bottom:1px solid #002856;">Course No.</th>
-                    <th style="border-left:1px solid #002856; border-bottom:1px solid #002856;">Course</th>
+                    <th class="th-narrow">Course No.</th>
+                    <th>Course</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(row, i) in currentSchedule" :key="'cur-'+i">
+                  <tr v-for="(row, i) in currentSchedule" :key="`cur-${i}`">
                     <td>{{ row.number }}</td>
-                    <td style="border-left:1px solid #002856;">{{ row.name }}</td>
+                    <td>{{ row.name }}</td>
                   </tr>
                 </tbody>
               </v-table>
             </div>
           </v-card-text>
-
-          <div class="card-fab" style="position:absolute; bottom:22px;">
-            <v-btn
-              icon
-              color="#002856"
-              class="elevate-fab"
-              aria-label="Add current course"
-              @click="currentDialog = true"
-            >
-              <v-icon>mdi-plus</v-icon>
-            </v-btn>
+          <div class="card-fab">
+            <v-tooltip text="View details">
+              <template #activator="{ props }">
+                <v-btn v-bind="props" icon class="fab-btn" :color="COLOR_PRIMARY" aria-label="Open current schedule details" @click="currentDialog = true">
+                  <v-icon>mdi-eye</v-icon>
+                </v-btn>
+              </template>
+            </v-tooltip>
           </div>
         </v-card>
       </v-col>
 
       <!-- NEXT SEMESTER -->
       <v-col cols="12" md="6" class="pa-3">
-        <v-card
-          class="pa-0"
-          style="background-color:#ffffff; border:1px solid #002856; border-radius:12px;"
-        >
-          <v-card-title
-            class="py-3 px-4 d-flex justify-space-between align-center"
-            style="color:#002856; border-bottom:1px solid #002856;"
-          >
-            <span>NEXT SEMESTER SCHEDULE</span>
-            <v-chip size="small" color="#002856" variant="flat">
-              {{ nextTerm }}
-            </v-chip>
+        <v-card class="panel-card ensure-fab-visibility">
+          <v-card-title class="panel-title">
+            <v-icon size="20" class="mr-2">mdi-calendar-edit</v-icon>
+            Next Semester
           </v-card-title>
-
+          <v-divider />
           <v-card-text class="pa-0">
             <div class="table-wrap">
-              <v-table aria-label="Next semester schedule">
+              <v-table density="comfortable" class="zebra sticky-head align-left with-divider" aria-label="Next semester schedule">
                 <thead>
                   <tr>
-                    <th style="width:160px; border-bottom:1px solid #002856;">Course No.</th>
-                    <th style="border-left:1px solid #002856; border-bottom:1px solid #002856;">Course</th>
+                    <th class="th-narrow">Course No.</th>
+                    <th>Course</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(row, i) in nextSchedule" :key="'next-'+i">
+                  <tr v-for="(row, i) in nextSchedule" :key="`next-${i}`">
                     <td>{{ row.number }}</td>
-                    <td style="border-left:1px solid #002856;">{{ row.name }}</td>
+                    <td>{{ row.name }}</td>
                   </tr>
                 </tbody>
               </v-table>
             </div>
           </v-card-text>
-
-          <div class="card-fab" style="position:absolute; bottom:22px;">
-            <v-btn
-              icon
-              color="#002856"
-              class="elevate-fab"
-              aria-label="Edit next course"
-              @click="nextDialog = true"
-            >
-              <v-icon>mdi-pencil</v-icon>
-            </v-btn>
+          <div class="card-fab">
+            <v-tooltip text="Edit next semester">
+              <template #activator="{ props }">
+                <v-btn v-bind="props" icon class="fab-btn" :color="COLOR_PRIMARY" aria-label="Edit next semester schedule" @click="nextDialog = true">
+                  <v-icon>mdi-pencil</v-icon>
+                </v-btn>
+              </template>
+            </v-tooltip>
           </div>
         </v-card>
       </v-col>
 
-      <!-- ADVISOR -->
-      <v-col cols="12" md="6" class="pa-3">
-        <v-card
-          class="pa-0"
-          style="background-color: #F3F8FD; border:1px solid #002856; border-radius:12px;"
-        >
-          <v-card-title class="pa-3" style="color: #002856; border-bottom: 1px solid #002856;">
-            ADVISOR INFORMATION
+      <!-- ADVISOR INFO -->
+      <v-col cols="12" md="6" class="pa-3" style="text-align: left;">
+        <v-card class="panel-card" :style="{ backgroundColor: COLOR_PANEL_BG}">
+          <v-card-title class="panel-title">
+            <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
+            Advisor Information
           </v-card-title>
-          <v-list
-            density="comfortable"
-            style="padding-left: 5px; text-align: left; background-color: transparent"
-          >
-            <v-list-item>
-              <v-list-item-title>
-                <strong>Name:</strong> Dr. Dave Stevens
-              </v-list-item-title>
-            </v-list-item>
-            <v-list-item>
-              <v-list-item-title>
-                <strong>Email:</strong> <a href="mailto:dsteve@uafs.edu">dsteve@uafs.edu</a>
-              </v-list-item-title>
-            </v-list-item>
-            <v-list-item>
-              <v-list-item-title>
-                <strong>Phone:</strong> (555) 123-4567
-              </v-list-item-title>
-            </v-list-item>
-            <v-list-item>
-              <v-list-item-title>
-                <strong>Office:</strong> Campus Center 201
-              </v-list-item-title>
-            </v-list-item>
+          <v-divider />
+          <v-list density="comfortable" class="info-list">
+            <v-list-item class="info-item"><strong>Name:</strong> Dr. Dave Stevens</v-list-item>
+            <v-list-item class="info-item"><strong>Email:</strong> <a href="mailto:dsteve@uafs.edu">dsteve@uafs.edu</a></v-list-item>
+            <v-list-item class="info-item"><strong>Phone:</strong> (555) 123-4567</v-list-item>
+            <v-list-item class="info-item"><strong>Office:</strong> Campus Center 201</v-list-item>
           </v-list>
         </v-card>
       </v-col>
@@ -408,18 +319,14 @@ function removeNextRow(index: number) {
 
     <!-- CURRENT: Dialog -->
     <v-dialog v-model="currentDialog" width="900" aria-label="Current Course Schedule Dialog">
-      <v-card>
-        <v-card-title class="d-flex align-center justify-space-between">
-          <span class="text-subtitle-1">Current Course Schedule</span>
-          <v-btn icon variant="text" aria-label="Close" @click="currentDialog = false">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
+      <v-card class="dialog-card">
+        <v-card-title class="dialog-title">
+          <v-icon size="18" class="mr-2">mdi-calendar-month-outline</v-icon>
+          Current Course Schedule
         </v-card-title>
-
         <v-divider />
-
         <v-card-text class="pa-0">
-          <v-table aria-label="Current courses grid">
+          <v-table class="zebra align-left with-divider">
             <thead>
               <tr>
                 <th>Course No.</th>
@@ -432,7 +339,7 @@ function removeNextRow(index: number) {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, i) in currentPopupRows" :key="'c-pop-'+i">
+              <tr v-for="(row, i) in currentPopupRows" :key="`c-pop-${i}`">
                 <td>{{ row.number }}</td>
                 <td>{{ row.course }}</td>
                 <td>{{ row.time }}</td>
@@ -444,7 +351,6 @@ function removeNextRow(index: number) {
             </tbody>
           </v-table>
         </v-card-text>
-
         <v-card-actions class="justify-end">
           <v-btn variant="text" @click="currentDialog = false">Close</v-btn>
         </v-card-actions>
@@ -453,25 +359,17 @@ function removeNextRow(index: number) {
 
     <!-- NEXT: Dialog -->
     <v-dialog v-model="nextDialog" width="1050" aria-label="Next Semester Course Schedule Dialog">
-      <v-card>
-        <v-card-title class="d-flex align-center justify-space-between">
-          <span class="text-subtitle-1">Next Semester Course Schedule</span>
-          <v-btn icon variant="text" aria-label="Close" @click="nextDialog = false">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
+      <v-card class="dialog-card">
+        <v-card-title class="dialog-title">
+          <v-icon size="18" class="mr-2;">mdi-calendar-edit</v-icon>
+          Next Semester Course Schedule
         </v-card-title>
-
         <v-divider />
 
         <v-card-text>
           <v-row class="mb-3" align="center" justify="space-between">
             <v-col cols="12" md="4">
-              <v-select
-                v-model="nextTerm"
-                :items="degreePlanTerms"
-                label="Term (from degree plan)"
-                density="comfortable"
-              />
+              <v-select v-model="nextTerm" :items="degreePlanTerms" label="Term (from degree plan)" density="comfortable" />
             </v-col>
             <v-col cols="12" md="5">
               <v-select
@@ -485,14 +383,14 @@ function removeNextRow(index: number) {
               />
             </v-col>
             <v-col cols="12" md="3" class="d-flex justify-end">
-              <v-btn color="primary" @click="addNextCourseFromPlan">
+              <v-btn color="primary" :disabled="!selectedDegreeCourse" @click="addNextCourseFromPlan">
                 <v-icon start>mdi-plus</v-icon>
                 Add to schedule
               </v-btn>
             </v-col>
           </v-row>
 
-          <v-table aria-label="Next semester editable courses grid">
+          <v-table class="zebra align-left with-divider">
             <thead>
               <tr>
                 <th style="width: 115px;">Course No.</th>
@@ -506,7 +404,7 @@ function removeNextRow(index: number) {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, i) in nextPopupRows" :key="'n-pop-'+i">
+              <tr v-for="(row, i) in nextPopupRows" :key="`n-pop-${i}`">
                 <td>{{ row.number }}</td>
                 <td>{{ row.course }}</td>
                 <td>{{ row.time }}</td>
@@ -515,16 +413,13 @@ function removeNextRow(index: number) {
                 <td>{{ row.availability }}</td>
                 <td>{{ row.waitlist }}</td>
                 <td>
-                  <v-btn
-                    v-if="row.number"
-                    icon
-                    size="small"
-                    variant="text"
-                    color="error"
-                    @click="removeNextRow(i)"
-                  >
-                    <v-icon>mdi-delete</v-icon>
-                  </v-btn>
+                  <v-tooltip text="Remove row">
+                    <template #activator="{ props }">
+                      <v-btn v-if="row.number" v-bind="props" icon size="small" variant="text" color="error" @click="removeNextRow(i)">
+                        <v-icon>mdi-delete</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
                 </td>
               </tr>
             </tbody>
@@ -536,27 +431,90 @@ function removeNextRow(index: number) {
         </v-card-actions>
       </v-card>
     </v-dialog>
+      <div class="text-center mt-4" style="color:#002856;">
+        © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
+      </div>
   </v-container>
 </template>
 
 <style scoped>
-.table-wrap {
-  overflow-x: auto;
+/* =========================================================
+   BASE IMPROVEMENTS — subtle, respectful, not flashy
+========================================================= */
+.respectful-shell {
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05) inset;
 }
 
-.card-fab {
-  position: relative;
-  width: 100%;
-  height: 0;
+/* Header layout */
+.planner-left { font-size: 1.35rem; font-weight: 800; letter-spacing: .02em; }
+.welcome-center { margin: 0; font-size: 1.35rem; font-weight: 800; }
+
+.panel-card {
+  background-color: #ffffff;
+  border: 1px solid #002856;
+  border-radius: 12px;
+  position: relative;           /* enable absolute FAB */
+  overflow: visible;            /* ensure FAB is not clipped */
+  padding-bottom: 16px;         /* space so bottom-right btn is fully visible */
 }
-.card-fab .v-btn {
-  position: absolute;
-  right: 12px;
-  top: -28px;
+.panel-title {
+  color: #002856;
+  padding: 12px 16px;
+  font-weight: 700;
+}
+
+.dialog-card {
+  border: 1px solid #002856;
+  border-radius: 12px;
+}
+.dialog-title {
+  color: #002856;
+  padding: 10px 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.term-chip {
+  border-width: 1px;
+  background: transparent;
+}
+
+/* Tables: sticky head + zebra rows + left align + vertical divider */
+.table-wrap { overflow-x: auto; }
+
+.sticky-head thead th {
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 1;
+}
+
+.zebra tbody tr:nth-child(odd) { background: #f7fbff; }
+
+.align-left th, .align-left td { text-align: left; }
+
+/* vertical divider between first and second columns */
+.with-divider th:first-child,
+.with-divider td:first-child {
+  border-right: 1px solid #c7d9ea; /* subtle line "in the middle to the left" */
+}
+
+/* narrow first column */
+.th-narrow { width: 160px; }
+
+/* FAB button placement — ensure visible at bottom-right inside card */
+.card-fab { position: absolute; right: 12px; bottom: 12px; }
+.fab-btn {
   border: 1px solid #002856;
   background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
 }
 
+/* Info list spacing */
+.info-list { padding-left: 6px; background: transparent; }
+.info-item { padding-left: 0; }
+
+/* Hover affordance for potential student cards (kept) */
 .student-card {
   transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.12s ease;
   cursor: pointer;
