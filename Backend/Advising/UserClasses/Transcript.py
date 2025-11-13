@@ -1,16 +1,17 @@
 from dataclasses import dataclass
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, JSONB, numeric
+from sqlalchemy import Integer, String, Numeric
+from sqlalchemy.dialects.postgresql import JSONB
 
 @dataclass
 class Transcript:
     studentid: int
+    coursemap: list[dict]
     program: str = ""
     concentration: str = ""
     year: str = ""
     institution: str = ""
-    coursemap: JSONB
-    cumulativegpa: numeric = 0.0
+    cumulativegpa: Numeric = 0.0
 
 class Base(DeclarativeBase):
     pass
@@ -28,4 +29,4 @@ class TranscriptMap(Base):
     year: Mapped[str] = mapped_column(String(50))
     institution: Mapped[str] = mapped_column(String(150))
     coursemap: Mapped[dict] = mapped_column(JSONB, default={}, nullable=True)
-    cumulativegpa: Mapped[numeric] = mapped_column(numeric)
+    cumulativegpa: Mapped[Numeric] = mapped_column(Numeric)

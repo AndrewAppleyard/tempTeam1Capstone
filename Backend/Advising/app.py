@@ -1,5 +1,5 @@
 from flask import Flask, Blueprint, url_for
-from Advising.APIs import AdvisorAPI, AdminAPI, StudentAPI, TransferAPI, CurrentCourseAPI, AgentAPI, DegreePlanAPI
+from Advising.APIs import AdvisorAPI, AdminAPI, StudentAPI, TransferAPI, CurrentCourseAPI, AgentAPI, DegreePlanAPI, TranscriptAPI
 from extensions import jwt
 from flask_cors import CORS
 import os
