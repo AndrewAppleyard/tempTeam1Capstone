@@ -24,7 +24,7 @@ const showNavBar = computed(() => {
       <NavBar v-if="showNavBar" />
 
       <v-main>
-        <nav>
+        <!-- <nav>
           <RouterLink to="/UserProfilePage">User Profile</RouterLink> |
           <RouterLink to="/admin">Admin</RouterLink> |
           <RouterLink to="/advisor">Advisor</RouterLink> |
@@ -32,7 +32,7 @@ const showNavBar = computed(() => {
           <RouterLink to="/transcript">Transcript</RouterLink> |
           <RouterLink to="/courseCatalog">Course Catalog</RouterLink> |
           <RouterLink to="/DegreePlanView">Degree Plan</RouterLink>
-        </nav>
+        </nav> -->
 
         <router-view />
 

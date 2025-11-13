@@ -81,11 +81,11 @@ export const router = createRouter({
   routes,
 })
 
-const roleRoutes = {
-  student: ['/student', '/student/', '/transcript', '/courseCatalog', '/DegreePlanView', '/UserProfilePage'],
-  advisor: ['/advisor', '/advisor/', '/UserProfilePage'],
-  admin: ['/admin', '/UserProfilePage']
-}
+// const roleRoutes = {
+//   UAFS_STUDENTS: ['/student', '/student/', '/transcript', '/courseCatalog', '/DegreePlanView', '/UserProfilePage'],
+//   UAFS_ADVISORS: ['/advisor', '/advisor/', '/UserProfilePage'],
+//   UAFS_ADMINS: ['/admin', '/UserProfilePage']
+// }
 
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
@@ -107,9 +107,10 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  const allowedRoutes = roleRoutes[userStore.userRole] || []
-  const pathMatches = allowedRoutes.some(r => to.path.startsWith(r))
-  if (userStore.isLoggedIn && !pathMatches) {
+  // const allowedRoutes = roleRoutes[userStore.userRole] || []
+  // const pathMatches = allowedRoutes.some(r => to.path.startsWith(r))
+  // if (userStore.isLoggedIn && pathMatches) {
+  if (userStore.isLoggedIn) {
     switch (userStore.userRole) {
       case 'UAFS_STUDENTS': return next('/student')
       case 'UAFS_ADVISORS': return next('/advisor')
