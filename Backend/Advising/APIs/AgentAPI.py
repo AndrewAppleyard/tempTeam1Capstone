@@ -36,14 +36,12 @@ def role_required(*required_roles):
     return decorator
 
 #put the student id after generate schedule
-@bp.route("/GenerateSchedule", methods=["POST"])
+@bp.route("/GenerateSchedule/<int:student_id>", methods=["POST"])
 @role_required("UAFS_STUDENTS")
-def generate_schedule():
+def generate_schedule(student_id):
     try:    
         #hardcoded, will be replaced with a agent component
         data = {
-            "student_id": "1",
-            "name": "Andrew Appleyard",
             "semester": "Spring 2026",
             "courses": [
                 {
@@ -106,7 +104,9 @@ def generate_schedule():
 
             return jsonify({
                 "message": "Successfully generated schedule.",
-                "studentid": student.studentid,
+                "student": {
+                    k: v for k, v in vars(student).items() if not k.startswith('_')
+                },
                 "num_courses": len(data["courses"]),
                 "timestamp": datetime.now().isoformat()
             }), 200

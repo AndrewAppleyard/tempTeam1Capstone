@@ -90,10 +90,10 @@ export default {
     }
   },
 
-    async addSchedule() {
+  async addSchedule(studentid) {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.post(`/Schedule/GenerateSchedule`, null, {
+      const response = await axios.post(`/Schedule/GenerateSchedule/${studentid}`, null, {
         headers: {
           Authorization: `Bearer ${token}`,
         }

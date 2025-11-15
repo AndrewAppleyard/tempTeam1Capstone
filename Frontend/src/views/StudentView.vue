@@ -206,7 +206,8 @@ import StudentAPI from '../apis/StudentAPI.js'
 
 async function generateSchedule() {
   try {
-    const data = await StudentAPI.addSchedule()
+    const studentid = 1
+    const data = await StudentAPI.addSchedule(studentid)
   } catch (err) {
     console.error('Generate Schedule error: ', err)
     alert('Failed to generate schedule.')
