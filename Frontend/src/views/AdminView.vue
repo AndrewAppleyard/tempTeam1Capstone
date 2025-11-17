@@ -127,6 +127,22 @@ function refreshList() {
   else fetchAdvisors()
 }
 
+async function updateDegreePlans() {
+  try {
+    let count = 2
+    const response = await AdminAPI.updateDegreePlans(count)
+    console.log("Degree Plan Updated:", response);
+    alert(`Generated ${response.programs.length} sample degree plans!`);
+    //console.log("Degree Plan Updated:", response)
+    //alert("Degree plan updated successfully!")
+  } catch (err) {
+    console.error("Degree Plan Update Error:", err);
+    alert("Failed to generate sample degree plans.");
+    //console.error("Degree Plan Update Error:", err)
+    //alert("Failed to update degree plan.")
+  }
+}
+
 /* =========================================================
    CARD LOGIC
 ========================================================= */
@@ -194,6 +210,7 @@ watch(
                   LIST OF {{ viewMode === 'students' ? 'STUDENTS' : 'ADVISORS' }}
                 </v-card-title>
               </v-card>
+              <v-btn @click="updateDegreePlans"> Update Degree Plans </v-btn>
             </v-col>
 
             <!-- (Optional) you can place a mini switch here to swap viewMode if needed -->
