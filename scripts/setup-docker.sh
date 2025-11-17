@@ -17,9 +17,9 @@ sudo usermod -aG docker $USER
 # newgrp docker
 sudo systemctl restart docker
 
-sudo docker-compose up -d dirsrv
+#sudo docker-compose up -d dirsrv
 
-sleep 30
+#sleep 30
 
 echo "Starting Docker containers..."
 sudo docker-compose up -d

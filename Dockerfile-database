@@ -10,4 +10,16 @@ RUN chown postgres:postgres /docker-entrypoint-initdb.d/* && \
 #RUN /docker-entrypoint-initdb.d/postgres.sh
 # RUN /docker-entrypoint-initdb.d/database.sql
 
+# Use root to edit configuration files
+USER root
+
+# Enable scram-sha-256 password encryption in postgresql.conf
+RUN echo "password_encryption = scram-sha-256" >> /usr/local/share/postgresql/postgresql.conf.sample
+
+# Replace any md5 or trust authentication with scram-sha-256 in pg_hba.conf
+RUN sed -i 's/\(host.*all.*all.*\)\(trust\|md5\)/\1scram-sha-256/' /usr/local/share/postgresql/pg_hba.conf.sample || true
+
+# Optionally enforce scram-sha-256 for all hosts
+RUN echo "host all all all scram-sha-256" >> /usr/local/share/postgresql/pg_hba.conf.sample
+
 EXPOSE 5432
