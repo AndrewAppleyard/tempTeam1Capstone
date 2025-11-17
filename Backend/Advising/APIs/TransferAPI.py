@@ -8,7 +8,9 @@ import traceback
 from datetime import datetime
 import os, sys
 from ldap3 import Server, Connection, ALL, SUBTREE
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt, \
+create_refresh_token, set_access_cookies, set_refresh_cookies, \
+get_jwt_identity, unset_jwt_cookies
 from extensions import jwt
 
 bp = Blueprint('TransferAPI', __name__, url_prefix="/Transfer")
@@ -72,17 +74,44 @@ def login():
             
             conn.unbind()
             if "UAFS_ADMINS" in group:
-                token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADMINS"})
-                return jsonify({'message':'User authenticated successfully!', "Token":token}), 200
+                access_token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADMINS"})
+                refresh_token = create_refresh_token(identity=username)
+                resp = jsonify({"login": True, "Role": "UAFS_ADMINS"})
+                set_access_cookies(resp, access_token)
+                set_refresh_cookies(resp, refresh_token)
+                return resp, 200
             elif "UAFS_STUDENTS" in group:
-                token = create_access_token(identity=username, additional_claims={"Role":"UAFS_STUDENTS"})
-                return jsonify({'message':'User authenticated successfully!', "Token":token}), 200
+                access_token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADMINS"})
+                refresh_token = create_refresh_token(identity=username)
+                resp = jsonify({"login": True, "Role": "UAFS_STUDENTS"})
+                set_access_cookies(resp, access_token)
+                set_refresh_cookies(resp, refresh_token)
+                return resp, 200
             elif "UAFS_ADVISORS" in group:
-                token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADVISORS"})
-                return jsonify({'message':'User authenticated successfully!', "Token":token}), 200
+                access_token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADMINS"})
+                refresh_token = create_refresh_token(identity=username)
+                resp = jsonify({"login": True, "Role": "UAFS_ADVISORS"})
+                set_access_cookies(resp, access_token)
+                set_refresh_cookies(resp, refresh_token)
+                return resp, 200
             else:
                 print("User found but user is assigned to a group we aren't handling.")
                 return jsonify({"message":"User found but user is assigned to a group we aren't handling."}), 401
             
     except Exception as e:
         print("error", e)
+
+@bp.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    identity = get_jwt_identity()
+    new_access = create_access_token(identity=identity, additional_claims={"Role": get_jwt().get("Role")})
+    resp = jsonify({"refresh": True})
+    set_access_cookies(resp, new_access)
+    return resp
+
+@bp.route("/logout", methods=["POST"])
+def logout():
+    resp = jsonify({"logout": True})
+    unset_jwt_cookies(resp)
+    return resp
