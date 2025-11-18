@@ -1,17 +1,18 @@
 <script setup>
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '../store/user.js'
 
 /* =========================
    STATE
 ========================= */
+const router = useRouter()
+const userStore = useUserStore()
+
 const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const loading = ref(false)
-
-const errorMsg = ref('')
-const successMsg = ref('')
 
 const form = ref(null)
 const valid = ref(false)
@@ -27,25 +28,40 @@ const rules = {
 /* =========================
    ACTIONS
 ========================= */
-async function login () {
+async function login() {
   const result = await form.value?.validate()
-  if (!result?.valid) return
-
+  if (!result?.valid) {
+    alert('Login failed. Please check your credentials.')
+    return
+  }
+  
   loading.value = true
-  errorMsg.value = ''
-  successMsg.value = ''
 
   try {
-    const response = await axios.post('http://127.0.0.1:5000/Transfer/login', {
-      username: username.value,
-      password: password.value
-    })
+    await userStore.login(username.value, password.value)
 
-    sessionStorage.setItem('token', response.data.Token)
-    successMsg.value = 'Login successful!'
+    if (userStore.isLoggedIn) {
+      alert('Login successful!')
+
+      switch (userStore.userRole) {
+        case 'UAFS_STUDENTS':
+          router.replace('/student')
+          break
+        case 'UAFS_ADVISORS':
+          router.replace('/advisor')
+          break
+        case 'UAFS_ADMINS':
+          router.replace('/admin')
+          break
+        default:
+          router.replace('/')
+      }
+    } else {
+      alert('Invalid credentials.')
+    }
   } catch (e) {
-    console.log(e)
-    errorMsg.value = 'Login failed. Please check your credentials and try again.'
+    console.error(e)
+    alert('Login failed. Please check your credentials.')
   } finally {
     loading.value = false
   }
@@ -134,13 +150,13 @@ const loginDisabled = computed(() => !valid.value || loading.value)
 
                 <v-col cols="12" class="mt-2">
                   <v-btn
+                    type="submit"
                     block
                     size="large"
                     :disabled="loginDisabled"
                     :loading="loading"
                     color="#0032A0"
                     style="color:#F5F5F5;"
-                    @click="login"
                   >
                     Log in
                   </v-btn>
