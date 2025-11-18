@@ -14,13 +14,20 @@ resource "docker_container" "docker_host" {
     name  = "docker-compose-host"
     image = "docker:dind" # Docker-in-Docker image
     privileged = true # Required for running Docker inside (gives sudo privileges)
+
+    ports{
+        internal=8080
+        external=8080
+        ip="0.0.0.0"
+        protocol="tcp"
+    }
 }
 
 resource "null_resource" "deploy_compose" {
     depends_on = [docker_container.docker_host] # Ensure host is ready
 
     provisioner "local-exec" {
-    command = "docker cp ${path.module}/compose.yaml ${docker_container.docker_host.name}:/"
+    command = "docker exec ${docker_container.docker_host.name} sh -c 'mkdir -p /app'; docker cp ${path.module}/compose.yaml ${docker_container.docker_host.name}:/app/"
     #source      = "${path.module}/compose.yaml"
     #destination = "/app/compose.yaml"
     connection {
@@ -30,23 +37,29 @@ resource "null_resource" "deploy_compose" {
 }
 
 provisioner "local-exec" {
-    command = "docker cp ./ ${docker_container.docker_host.name}:/"
-    connection {
-        host = docker_container.docker_host.name
-        type = "docker" #this would be changed to ssh for azure or aws
-        }
+    command = "docker cp ./ ${docker_container.docker_host.name}:/app"
     }
 }
 
+
 resource "null_resource" "start_compose" {
-    depends_on = [null_resource.deploy_compose]
+  depends_on = [null_resource.deploy_compose]
 
-    provisioner "local-exec" {
-        command =  "ls; cd ${docker_container.docker_host.name}/; docker compose -f ./compose.yaml up -d --build; pwd"
-        connection {
-          host = docker_container.docker_host.name
-          type = "docker"
+  provisioner "local-exec" {
+    command = <<EOT
+      echo "Installing Docker Compose inside container..."
+      docker exec ${docker_container.docker_host.name} sh -c "apk add --no-cache docker-cli-compose" 
 
-    }
-    }
+      echo "Starting docker compose services inside container..."
+      docker exec ${docker_container.docker_host.name} sh -c "
+        cd /app &&
+        ls -l &&
+        docker compose -f /app/compose.yaml -p advising up -d
+        docker compose -p advising down
+        docker compose -p advising up -d
+      "
+
+      echo "✅ Compose started successfully"
+    EOT
+  }
 }
