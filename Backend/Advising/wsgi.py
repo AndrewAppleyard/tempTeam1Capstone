@@ -25,6 +25,9 @@ class StandaloneApplication(WSGIApplication):
 def run():
     options = {
         "bind": "0.0.0.0:5000",
-        "workers": (multiprocessing.cpu_count() * 2) + 1
+        "workers": (multiprocessing.cpu_count() * 2) + 1,
+        "timeout": 500,
+        "graceful_timeout": 500,
+        "keepalive": 5
     }
     StandaloneApplication("wsgi:app", options).run()

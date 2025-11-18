@@ -127,6 +127,25 @@ function refreshList() {
   else fetchAdvisors()
 }
 
+async function updateDegreePlans() {
+  try {
+    let count = 2
+    const response = await AdminAPI.updateDegreePlans(count)
+    console.log("Degree Plan Updated:", response);
+  } catch (err) {
+    console.error("Degree Plan Update Error:", err);
+  }
+}
+
+async function updateCurrentCourses() {
+  try {
+    const response = await AdminAPI.updateCurrentCourses()
+    console.log("Current Courses Updated:", response);
+  } catch (err) {
+    console.error("Current Courses Update Error:", err);
+  }
+}
+
 /* =========================================================
    CARD LOGIC
 ========================================================= */
@@ -194,6 +213,8 @@ watch(
                   LIST OF {{ viewMode === 'students' ? 'STUDENTS' : 'ADVISORS' }}
                 </v-card-title>
               </v-card>
+              <v-btn @click="updateDegreePlans"> Update Degree Plans </v-btn>
+              <v-btn @click="updateCurrentCourses"> Update Current Courses </v-btn>
             </v-col>
 
             <!-- (Optional) you can place a mini switch here to swap viewMode if needed -->
