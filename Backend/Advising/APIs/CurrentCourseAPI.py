@@ -143,16 +143,17 @@ def addCourses():
 
     courses = pullCourses()
     return jsonify({
-        "Current courses succesfully added to database."
+        "Current courses addition completed."
     })
 
 
-@bp.route("/View", methods=["GET"])
+@bp.route("/View/", methods=["POST"])
 @role_required("UAFS_ADMINS", "UAFS_ADVISORS", "UAFS_STUDENTS")
-def view_current_courses():
+def getCurrentCourses():
     try:
+        semester = request.form.get('semester')
         with Session(engine) as session:
-            courses = session.query(CurrentCourse.CurrentCourseMap).all()
+            courses = session.query(CurrentCourse.CurrentCourseMap).filter(CurrentCourse.CurrentCourseMap.academicperiod.contains(semester)).all()
 
             result = []
             for c in courses:
