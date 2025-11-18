@@ -13,7 +13,6 @@ const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const loading = ref(false)
-const message = ref('')
 
 const form = ref(null)
 const valid = ref(false)
@@ -31,36 +30,38 @@ const rules = {
 ========================= */
 async function login() {
   const result = await form.value?.validate()
-  if (!result?.valid) return
-
+  if (!result?.valid) {
+    alert('Login failed. Please check your credentials.')
+    return
+  }
+  
   loading.value = true
-  message.value = ''
 
   try {
     await userStore.login(username.value, password.value)
 
     if (userStore.isLoggedIn) {
-      message.value = 'Login successful!'
+      alert('Login successful!')
 
       switch (userStore.userRole) {
-        case 'student':
+        case 'UAFS_STUDENTS':
           router.replace('/student')
           break
-        case 'advisor':
+        case 'UAFS_ADVISORS':
           router.replace('/advisor')
           break
-        case 'admin':
+        case 'UAFS_ADMINS':
           router.replace('/admin')
           break
         default:
           router.replace('/')
       }
     } else {
-      message.value = 'Invalid credentials.'
+      alert('Invalid credentials.')
     }
   } catch (e) {
     console.error(e)
-    message.value = 'Login failed. Please check your credentials.'
+    alert('Login failed. Please check your credentials.')
   } finally {
     loading.value = false
   }
@@ -149,13 +150,13 @@ const loginDisabled = computed(() => !valid.value || loading.value)
 
                 <v-col cols="12" class="mt-2">
                   <v-btn
+                    type="submit"
                     block
                     size="large"
                     :disabled="loginDisabled"
                     :loading="loading"
                     color="#0032A0"
                     style="color:#F5F5F5;"
-                    @click="login"
                   >
                     Log in
                   </v-btn>

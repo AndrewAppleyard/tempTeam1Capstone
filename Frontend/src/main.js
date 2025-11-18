@@ -17,9 +17,17 @@ const vuetify = createVuetify({
   directives,
 })
 
-const app = createApp(App)
-app.use(vuetify)
-app.use(router)
-app.use(createPinia())
+async function bootstrap() {
+  const app = createApp(App)
 
-app.mount('#app')
+  const pinia = createPinia()
+  app.use(pinia)
+  app.use(vuetify)
+
+  const userStore = useUserStore()
+  await userStore.restoreSession()
+
+  app.use(router)
+  app.mount('#app')
+}
+bootstrap()
