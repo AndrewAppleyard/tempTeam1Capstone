@@ -184,7 +184,7 @@ def generateDegreePlan(name):
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
         response_format={"type": "json_object"},
-        max_tokens=900,
+        max_tokens=1500,
         messages=[
             {"role": "system",
              "content": """Output only valid JSON. No intro, no explanation. If unsure about any information, use placeholders rather than expanding.
@@ -223,7 +223,22 @@ def generateDegreePlan(name):
                         "notes": ["string", "string", ...],
                         "core_courses": [
                             {{
-                            "year": "string",
+                            "semester": "Freshman Fall",
+                            "courses": [
+                                {{ "code": "string", "title": "string", "hours": int }},
+                                ...
+                            ]
+                            }},
+                            {{
+                            "semester": "Freshman Spring",
+                            "courses": [
+                                {{ "code": "string", "title": "string", "hours": int }},
+                                ...
+                            ]
+                            }},
+                            ...
+                            {{
+                            "semester": "Senior Fall",
                             "courses": [
                                 {{ "code": "string", "title": "string", "hours": int }},
                                 ...
@@ -236,7 +251,7 @@ def generateDegreePlan(name):
                             "code": "string",
                             "name": "string",
                             "required_hours": int,
-                            "courses": [],
+                            "courses": ["string", "string", ...],
                             "notes": "string"
                             }},
                             ...
@@ -365,6 +380,7 @@ def update_degree_plans(count):
                 except Exception as e:
                     print(f"Failed Insert: {degree} — {e}")
                     failedInserts.append({"degree": degree, "error": str(e)})
+                    session.rollback()
 
             session.commit()
 
