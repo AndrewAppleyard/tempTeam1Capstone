@@ -34,6 +34,11 @@ export default defineConfig({
         //  target: 'http://uafs_backend:5000', // docker container
         changeOrigin: true,
       },
+      '/Transcript': {
+        target: 'http://127.0.0.1:5000', // locally testing
+        //  target: 'http://uafs_backend:5000', // docker container
+        changeOrigin: true,
+      },
     },
   },
 })

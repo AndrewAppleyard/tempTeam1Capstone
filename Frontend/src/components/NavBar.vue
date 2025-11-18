@@ -2,13 +2,18 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useViewModeStore } from '../store/pinia.js'
+import { useUserStore } from '../store/user.js'
 const { viewMode, setViewMode } = useViewModeStore()
+const userStore = useUserStore();
 
 const drawer = ref(false)
 const route = useRoute()
 const router = useRouter()
 
-const isAdminRoute = computed(() => route.path.startsWith('/admin'))
+const mode = computed(() => userStore.storedRole)
+const isAdminRoute = computed(() => userStore.userRole === "UAFS_ADMINS")
+// const advisorView = computed(() => userStore.userRole.equals("UAFS_ADVISORS"))
+// const studentView = computed(() => userStore.userRole.equals("UAFS_STUDENTS"))
 
 function handleSetMode(mode) {
   console.log('Setting view mode to:', mode)
@@ -87,10 +92,13 @@ const initials = computed(() => `${advisor.value.firstName[0]}${advisor.value.la
       <v-list-item link :to="{ path: '/courseCatalog' }" @click="drawer = false">
         <v-list-item-title>Course Catalog</v-list-item-title>
       </v-list-item>
-      <v-list-item link :to="{ path: '/DegreePlanView' }" @click="drawer = false">
-        <v-list-item-title>Degree Plan</v-list-item-title>
-      </v-list-item>
-      <v-list-item link :to="{ path: '/' }" @click="drawer = false">
+      <template v-if="!isAdminRoute">
+        <v-list-item link :to="{ path: '/DegreePlanView' }" @click="drawer = false">
+          <v-list-item-title>Degree Plan</v-list-item-title>
+        </v-list-item>
+      </template>
+      <!-- <v-list-item link :to="{ path: '/' }" @click="drawer = false"> -->
+      <v-list-item @click="userStore.logout()">
         <v-list-item-title>Logout</v-list-item-title>
       </v-list-item>
     </v-list>
