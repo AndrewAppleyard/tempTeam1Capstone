@@ -10,10 +10,11 @@ services:
       - "7389:3389"
       - "3636:3636"
     environment:
-      DS_DM_PASSWORD: andrewandrew
-      DS_SUFFIX_NAME: dc=UAFS,dc=COM
-      DS_BACKEND_NAME: uafs
+      DS_DM_PASSWORD: ${DS_DM_PASSWORD}
+      DS_SUFFIX_NAME: ${DS_SUFFIX_NAME}
+      DS_BACKEND_NAME: ${DS_BACKEND_NAME}
     volumes:
+      - dirsrvdata:/data
       - ./scripts/datas/initdb.d:/container-entrypoint-initdb.d:Z
 
   # Vue Frontend
@@ -50,10 +51,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-api
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     ports:
       - "5000:5000"
     depends_on:
       - db
 
 volumes:
+  dirsrvdata:
   pgdata:

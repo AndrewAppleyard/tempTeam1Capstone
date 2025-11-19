@@ -201,6 +201,19 @@ function removeNextRow(index: number) {
   }
   syncNextCardFromPopup()
 }
+
+import StudentAPI from '../apis/StudentAPI.js'
+
+async function generateSchedule() {
+  try {
+    const studentid = 1
+    const data = await StudentAPI.addSchedule(studentid)
+  } catch (err) {
+    console.error('Generate Schedule error: ', err)
+    alert('Failed to generate schedule.')
+  }
+}
+
 </script>
 
 <template>
@@ -218,6 +231,7 @@ function removeNextRow(index: number) {
         <v-col cols="12" md="4" class="text-center">
           <h1 class="welcome-center" :style="{ color: COLOR_PRIMARY }">Welcome, {{ greetingName }}!</h1>
         </v-col>
+        <v-btn @click="generateSchedule">Generate Schedule</v-btn>
         <v-col cols="12" md="4">&nbsp;</v-col>
       </v-row>
     </header>

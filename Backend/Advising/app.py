@@ -1,5 +1,5 @@
-from flask import Flask, Blueprint, url_for, request, Response
-from Advising.APIs import AdvisorAPI, AdminAPI, StudentAPI, TransferAPI, CurrentCourseAPI
+from flask import Flask, Blueprint, url_for
+from Advising.APIs import AdvisorAPI, AdminAPI, StudentAPI, TransferAPI, CurrentCourseAPI, AgentAPI, DegreePlanAPI, TranscriptAPI
 from extensions import jwt
 from flask_cors import CORS
 import os
@@ -43,6 +43,9 @@ def create_app():
     app.register_blueprint(AdvisorAPI.bp)
     app.register_blueprint(AdminAPI.bp)
     app.register_blueprint(CurrentCourseAPI.bp)
+    app.register_blueprint(AgentAPI.bp)
+    app.register_blueprint(DegreePlanAPI.bp)
+    app.register_blueprint(TranscriptAPI.bp)
 
     @app.route('/<path:path>', methods=['OPTIONS'])
     def handle_options():

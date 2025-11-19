@@ -15,7 +15,7 @@ class Student(User.User):
     financialhold: bool
     advisinghold: bool
     academichold: bool
-    classes: JSONB
+    classes: list[dict]
 
     def __init__(self):
         pass

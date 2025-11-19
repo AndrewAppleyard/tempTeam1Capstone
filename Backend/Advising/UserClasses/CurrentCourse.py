@@ -5,16 +5,15 @@ from sqlalchemy import Integer, String
 @dataclass
 class CurrentCourse:
     section: str = ""
-    availability: str = ""
-    deliveryMode: str = ""
+    courseavailability: str = ""
+    deliverymode: str = ""
+    meetingpattern: str = ""
+    courselocation: str = ""
     instructor: str = ""
-    meetingPattern: str = ""
-    academicPeriod: str = ""
     capacity: str = ""
-    location: str = ""
-    startDate: str = ""
-    endDate: str = ""
     enrolled: str = ""
+    academicperiod: str = ""
+    startdate: str = ""
 
 
 class Base(DeclarativeBase):

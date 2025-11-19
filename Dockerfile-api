@@ -7,10 +7,30 @@ ENV PYTHONUNBUFFERED=1
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
-        postgresql-client && \
-    pip install --upgrade pip flit && \
-    rm -rf /var/lib/apt/lists/*
+        postgresql-client \
+        firefox-esr \
+        libgtk-3-0 \
+        libdbus-glib-1-2 \
+        libx11-xcb1 \
+        libxt6 \
+        libxcomposite1 \
+        libxdamage1 \
+        libasound2 \
+        libxrandr2 \
+        libxss1 \
+        libnss3 \
+        libxshmfence1 \
+        fontconfig \
+        libglib2.0-0 \
+        libgbm1 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y libxml2 libxslt1.1
+RUN pip install lxml
+
+RUN pip install --upgrade pip flit
 RUN pip install gunicorn
+
 
 WORKDIR /app
 COPY Backend/ .

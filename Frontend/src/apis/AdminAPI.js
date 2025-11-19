@@ -102,4 +102,40 @@ export default {
       throw err;
     }
   },
+
+  async updateDegreePlans(count) {
+    try {
+      const token = sessionStorage.getItem("token");
+      const response = await axios.post(`/DegreePlan/UpdateDegreePlans/${count}`, null, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      console.log("Degree Plan API Response:", response.data);
+      return response.data;
+      
+    } catch (err) {
+      console.error("Update Degree Plans Error:", err);
+      throw err;
+    }
+  },
+
+  async updateCurrentCourses() {
+    try {
+      const token = sessionStorage.getItem("token");
+      const response = await axios.post(`/CurrentCourses/AddCourses`, null, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      console.log("Current Courses API Response:", response.data);
+      return response.data;
+      
+    } catch (err) {
+      console.error("Update Current Courses Error:", err);
+      throw err;
+    }
+  }
 };
