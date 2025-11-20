@@ -2,7 +2,7 @@ import axios from "axios"
 import Cookies from "js-cookie"
 
 const api = axios.create({
-    //baseURL: "http://uafs_backend:5000",
+    baseURL: "http://uafs_backend:5000",
     withCredentials: true,
 })
 
