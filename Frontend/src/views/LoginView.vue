@@ -2,13 +2,13 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user.js'
+import  TransferAPI  from '../apis/TransferAPI.js'
 
 /* =========================
    STATE
 ========================= */
 const router = useRouter()
 const userStore = useUserStore()
-
 const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
@@ -38,7 +38,10 @@ async function login() {
   loading.value = true
 
   try {
-    await userStore.login(username.value, password.value)
+
+    console.log("TransferAPI:", TransferAPI)
+
+    await TransferAPI.login(username.value, password.value)
 
     if (userStore.isLoggedIn) {
       alert('Login successful!')
@@ -65,7 +68,7 @@ async function login() {
   } finally {
     loading.value = false
   }
-}
+  }
 
 /* UI helpers */
 const loginDisabled = computed(() => !valid.value || loading.value)
