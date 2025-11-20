@@ -28,31 +28,33 @@ export const useUserStore = defineStore('user', () => {
     return config
   })
 
-  async function login(username, password) {
-    try {
-      const res = await axios.post('http://127.0.0.1:5000/Transfer/login', {
-        username,
-        password
-      })
+  // async function login(username, password) {
+  //   try {
+  //     const res = await axios.post('http://127.0.0.1:5000/Transfer/login', {
+  //       username,
+  //       password
+  //     })
 
-      token.value = res.data.Token
-      localStorage.setItem('token', token.value)
+  //     token.value = res.data.Token
+  //     localStorage.setItem('token', token.value)
 
-      const payload = decodeToken(token.value)
-      if (payload) {
-        userRole.value = payload.Role
-        userID.value = payload.userID
-        email.value = payload.Email
-        isLoggedIn.value = true
-      } else {
-        logout()
-      }
-    } catch (err) {
-      console.error('Login failed', err)
-      logout()
-      throw err
-    }
-  }
+  //     const payload = decodeToken(token.value)
+  //     if (payload) {
+  //       userRole.value = payload.Role
+  //       userID.value = payload.userID
+  //       email.value = payload.Email
+  //       isLoggedIn.value = true
+  //     } else {
+  //       logout()
+  //     }
+  //   } catch (err) {
+  //     console.error('Login failed', err)
+  //     logout()
+  //     throw err
+  //   }
+  // }
+
+
 
   async function restoreSession() {
     const storedToken = localStorage.getItem('token')
