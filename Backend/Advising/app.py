@@ -17,7 +17,7 @@ def create_app():
         pass
 
     CORS(app, resources = {r"/*": {
-        "origins": "http://uafs_frontend:8080",
+        #"origins": "http://uafs_frontend:8080",
         "allow_headers": ["Authorization", "Content-Type", "X-CSRF-TOKEN"],
         "expose_headers": ["Authorization"],
         "methods" : ["GET", "POST", "OPTIONS", "PUT", "DELETE"]
