@@ -1,128 +1,3 @@
-<template>
-  <v-container fluid class="pa-1" style="background-color: transparent;">
-    <v-row justify="center">
-      <v-col cols="12">
-        <v-card class="pa-4" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:12px;">
-          <!-- Header / Title -->
-          <v-row class="mb-3" text-align="center">
-            <v-col cols="12" md="6">
-              <v-card flat class="elevation-0" style="background: transparent;">
-                <v-card-title class="py-2 px-3"
-                  style="color:#002856; border:1px solid #002856; border-radius:4px; font-weight:700; letter-spacing:.25px;">
-                  TRANSCRIPT VIEW
-                </v-card-title>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="6" class="d-flex justify-end align-center gap-2">
-              <v-btn variant="outlined" :ripple="false" class="mr-2" color="#002856" @click="goBack">
-                <v-icon start>mdi-arrow-left</v-icon>
-                Back to Students
-              </v-btn>
-              <v-btn variant="outlined" color="#002856" class="mr-2" @click="printPage">
-                <v-icon start>mdi-printer</v-icon>
-                Print / Save PDF
-              </v-btn>
-              <v-btn color="#002856" style="color:white" @click="downloadCSV">
-                <v-icon start>mdi-file-delimited</v-icon>
-                Export CSV
-              </v-btn>
-            </v-col>
-          </v-row>
-
-          <!-- Student Summary Card (same look as degree-plan summary) -->
-          <v-card class="pa-3 mb-4"
-                  style="background-color:rgba(255,255,255,.6); border:1px solid #002856; text-align:left; border-radius:12px;">
-            <v-row>
-              <v-col cols="12" md="8">
-                <div class="text-h6 mb-2" style="color:#002856;">{{ student.fullName }}</div>
-                <div class="d-flex flex-wrap" style="gap:16px;">
-                  <div><strong>ID:</strong> {{ student.studentID }}</div>
-                  <div><strong>Level:</strong> {{ student.level }}</div>
-                  <div><strong>Major:</strong> {{ student.major }}</div>
-                  <div v-if="student.minor"><strong>Minor:</strong> {{ student.minor }}</div>
-                </div>
-              </v-col>
-              <v-col cols="12" md="4" class="d-flex align-end justify-end">
-                <div class="text-right">
-                  <div><strong>Total Credits:</strong> {{ cumulative.credits }}</div>
-                  <div><strong>Cumulative GPA:</strong> {{ cumulative.gpa.toFixed(2) }}</div>
-                </div>
-              </v-col>
-            </v-row>
-          </v-card>
-
-          <!-- Controls Row (identical layout) -->
-          <v-row class="mb-3" text-align="center">
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="selectedTerm"
-                :items="termOptions"
-                label="Select Term"
-                variant="outlined"
-                density="comfortable"
-                hide-details
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="search"
-                label="Search courses (code, title, grade)"
-                prepend-inner-icon="mdi-magnify"
-                variant="outlined"
-                density="comfortable"
-                hide-details
-              />
-            </v-col>
-          </v-row>
-
-          <!-- Courses Table (same shell as degree plan) -->
-          <v-card class="pa-2"
-                  style="background-color:rgba(255,255,255,.6); text-align:left; border:1px solid #002856; border-radius:12px;">
-            <v-data-table
-              :headers="headers"
-              :items="filteredCourses"
-              :items-per-page="10"
-              item-key="id"
-              class="elevation-0"
-              :search="search"
-            >
-              <template #item.credits="{ item }">
-                <span class="font-mono">{{ item.credits }}</span>
-              </template>
-
-              <template #item.grade="{ item }">
-                <v-chip size="small" :color="gradeColor(item.grade)" variant="flat">
-                  {{ item.grade }}
-                </v-chip>
-              </template>
-
-              <template #item.points="{ item }">
-                <span class="font-mono">{{ (item.credits * gradePoint(item.grade)).toFixed(2) }}</span>
-              </template>
-
-              <template #bottom>
-                <div class="d-flex flex-wrap justify-space-between align-center pa-4" style="border-top:1px solid #002856;">
-                  <div class="text-body-2"><strong>Term:</strong> {{ selectedTerm }}</div>
-                  <div class="text-body-2">
-                    <strong>Term Credits:</strong> {{ termSummary.credits }}
-                    <span class="mx-2">|</span>
-                    <strong>Term GPA:</strong> {{ termSummary.gpa.toFixed(2) }}
-                  </div>
-                </div>
-              </template>
-            </v-data-table>
-          </v-card>
-
-          <!-- Footer -->
-          <div class="text-center mt-6 brand-primary" style="color:#002856;">
-            © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
-          </div>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
-</template>
-
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -277,3 +152,128 @@ function downloadCSV() {
 .gap-2 { gap: .5rem; }
 .gap-4 { gap: 1rem; }
 </style>
+
+<template>
+  <v-container fluid class="pa-1" style="background-color: transparent;">
+    <v-row justify="center">
+      <v-col cols="12">
+        <v-card class="pa-4" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:12px;">
+          <!-- Header / Title -->
+          <v-row class="mb-3" text-align="center">
+            <v-col cols="12" md="6">
+              <v-card flat class="elevation-0" style="background: transparent;">
+                <v-card-title class="py-2 px-3"
+                  style="color:#002856; border:1px solid #002856; border-radius:4px; font-weight:700; letter-spacing:.25px;">
+                  TRANSCRIPT VIEW
+                </v-card-title>
+              </v-card>
+            </v-col>
+            <v-col cols="12" md="6" class="d-flex justify-end align-center gap-2">
+              <v-btn variant="outlined" :ripple="false" class="mr-2" color="#002856" @click="goBack">
+                <v-icon start>mdi-arrow-left</v-icon>
+                Back to Students
+              </v-btn>
+              <v-btn variant="outlined" color="#002856" class="mr-2" @click="printPage">
+                <v-icon start>mdi-printer</v-icon>
+                Print / Save PDF
+              </v-btn>
+              <v-btn color="#002856" style="color:white" @click="downloadCSV">
+                <v-icon start>mdi-file-delimited</v-icon>
+                Export CSV
+              </v-btn>
+            </v-col>
+          </v-row>
+
+          <!-- Student Summary Card (same look as degree-plan summary) -->
+          <v-card class="pa-3 mb-4"
+                  style="background-color:rgba(255,255,255,.6); border:1px solid #002856; text-align:left; border-radius:12px;">
+            <v-row>
+              <v-col cols="12" md="8">
+                <div class="text-h6 mb-2" style="color:#002856;">{{ student.fullName }}</div>
+                <div class="d-flex flex-wrap" style="gap:16px;">
+                  <div><strong>ID:</strong> {{ student.studentID }}</div>
+                  <div><strong>Level:</strong> {{ student.level }}</div>
+                  <div><strong>Major:</strong> {{ student.major }}</div>
+                  <div v-if="student.minor"><strong>Minor:</strong> {{ student.minor }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4" class="d-flex align-end justify-end">
+                <div class="text-right">
+                  <div><strong>Total Credits:</strong> {{ cumulative.credits }}</div>
+                  <div><strong>Cumulative GPA:</strong> {{ cumulative.gpa.toFixed(2) }}</div>
+                </div>
+              </v-col>
+            </v-row>
+          </v-card>
+
+          <!-- Controls Row (identical layout) -->
+          <v-row class="mb-3" text-align="center">
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="selectedTerm"
+                :items="termOptions"
+                label="Select Term"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="search"
+                label="Search courses (code, title, grade)"
+                prepend-inner-icon="mdi-magnify"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+          </v-row>
+
+          <!-- Courses Table (same shell as degree plan) -->
+          <v-card class="pa-2"
+                  style="background-color:rgba(255,255,255,.6); text-align:left; border:1px solid #002856; border-radius:12px;">
+            <v-data-table
+              :headers="headers"
+              :items="filteredCourses"
+              :items-per-page="10"
+              item-key="id"
+              class="elevation-0"
+              :search="search"
+            >
+              <template #item.credits="{ item }">
+                <span class="font-mono">{{ item.credits }}</span>
+              </template>
+
+              <template #item.grade="{ item }">
+                <v-chip size="small" :color="gradeColor(item.grade)" variant="flat">
+                  {{ item.grade }}
+                </v-chip>
+              </template>
+
+              <template #item.points="{ item }">
+                <span class="font-mono">{{ (item.credits * gradePoint(item.grade)).toFixed(2) }}</span>
+              </template>
+
+              <template #bottom>
+                <div class="d-flex flex-wrap justify-space-between align-center pa-4" style="border-top:1px solid #002856;">
+                  <div class="text-body-2"><strong>Term:</strong> {{ selectedTerm }}</div>
+                  <div class="text-body-2">
+                    <strong>Term Credits:</strong> {{ termSummary.credits }}
+                    <span class="mx-2">|</span>
+                    <strong>Term GPA:</strong> {{ termSummary.gpa.toFixed(2) }}
+                  </div>
+                </div>
+              </template>
+            </v-data-table>
+          </v-card>
+
+          <!-- Footer -->
+          <div class="text-center mt-6 brand-primary" style="color:#002856;">
+            © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>

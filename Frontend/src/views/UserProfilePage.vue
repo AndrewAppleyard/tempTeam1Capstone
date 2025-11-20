@@ -1,3 +1,307 @@
+<script setup lang="ts">
+import { computed, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+/* GPA map */
+const GPA_POINTS: Record<string, number> = {
+  'A': 4.0, 'A-': 3.7,
+  'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+  'C+': 2.3, 'C': 2.0, 'C-': 1.7,
+  'D+': 1.3, 'D': 1.0,
+  'F': 0.0, 'P': 0.0, 'W': 0.0, 'I': 0.0,
+}
+const gradePoint = (g: string) => GPA_POINTS[g] ?? 0
+
+/* Routing */
+const route = useRoute()
+const router = useRouter()
+const studentIdParam = route.params.studentID as string | undefined
+
+/* Profile data */
+const profile = reactive({
+  studentID: studentIdParam || 'S1002',
+  firstName: 'Andrew',
+  lastName: 'Mackey',
+  level: 'Undergraduate',
+  major: 'Computer Science',
+  minor: 'Mathematics',
+  gradTerm: 'Spring 2026',
+  standing: 'Good Standing',
+  email: 'amackey@uafs.edu',
+  phone: '(479) 555-1234',
+  address: '5210 Grand Ave, Fort Smith, AR',
+  pronouns: 'he/him',
+})
+
+/* Stats */
+const stats = reactive({
+  totalCredits: 86,
+  gpa: 3.64,
+  degreeCredits: 120,
+})
+const progressPercent = computed(() => (stats.totalCredits / stats.degreeCredits) * 100)
+
+/* Advisor */
+const advisor = reactive({
+  name: 'Dr. Dave Stevens',
+  title: 'Dean of Students',
+  email: 'dave.stevens@uafs.edu',
+  nextAppt: 'Nov 4, 2025 • 2:30 PM',
+})
+
+/* Tags */
+const tags = ref<string[]>(['IFC President', 'Sigma Nu', 'Dean\'s List', 'Senior'])
+const tagOptions = ref<string[]>([
+  'IFC President','Sigma Nu','Dean\'s List','Senior','Athlete','Honors','Mentor'
+])
+
+/* Activity timeline */
+const activity = ref([
+  { id: 'a1', title: 'Submitted Degree Audit', when: 'Oct 20, 2025', icon: 'mdi-check-circle', color: 'primary' },
+  { id: 'a2', title: 'Advising Session Completed', when: 'Oct 14, 2025', icon: 'mdi-account-tie', color: 'primary' },
+  { id: 'a3', title: 'Enrolled in Spring 2026', when: 'Oct 10, 2025', icon: 'mdi-calendar-plus', color: 'primary' },
+])
+
+/* Recent courses */
+interface CourseRow { id: string; term: string; code: string; title: string; credits: number; grade: string }
+const recentCourses = ref<CourseRow[]>([
+  { id: 'r1', term: 'Fall 2025', code: 'CS 4013', title: 'Operating Systems', credits: 3, grade: 'A' },
+  { id: 'r2', term: 'Fall 2025', code: 'CS 4113', title: 'Database Systems', credits: 3, grade: 'A-' },
+  { id: 'r3', term: 'Fall 2025', code: 'CS 4213', title: 'Networks', credits: 3, grade: 'B+' },
+  { id: 'r4', term: 'Fall 2025', code: 'MATH 3403', title: 'Linear Algebra', credits: 3, grade: 'A' },
+])
+const courseHeaders = [
+  { title: 'Term', key: 'term', sortable: true },
+  { title: 'Course #', key: 'code', sortable: true },
+  { title: 'Title', key: 'title', sortable: true },
+  { title: 'Credits', key: 'credits', sortable: true, align: 'end' },
+  { title: 'Grade', key: 'grade', sortable: true, align: 'center' },
+  { title: 'Points', key: 'points', align: 'end' },
+]
+
+/* Involvement */
+const orgs = ref([
+  { id: 'o1', name: 'Interfraternity Council', role: 'President', since: '2025' },
+  { id: 'o2', name: 'Sigma Nu', role: 'Member', since: '2023' },
+  { id: 'o3', name: 'UAFS AI Society', role: 'Co-founder', since: '2024' },
+])
+
+/* Documents */
+interface DocRow { id: string; name: string; type: string; updated: string; size: string }
+const documents = ref<DocRow[]>([
+  { id: 'd1', name: 'Unofficial_Transcript.pdf', type: 'PDF', updated: 'Oct 22, 2025', size: '142 KB' },
+  { id: 'd2', name: 'Degree_Audit.pdf', type: 'PDF', updated: 'Oct 20, 2025', size: '228 KB' },
+  { id: 'd3', name: 'Resume_YashPatel.pdf', type: 'PDF', updated: 'Oct 08, 2025', size: '198 KB' },
+])
+const docHeaders = [
+  { title: 'Name', key: 'name' },
+  { title: 'Type', key: 'type', align: 'center' },
+  { title: 'Updated', key: 'updated', align: 'center' },
+  { title: 'Size', key: 'size', align: 'end' },
+  { title: '', key: 'actions', align: 'end' },
+]
+
+/* Tabs + back-to-students behavior */
+type RealTab = 'overview' | 'academics' | 'involvement' | 'documents'
+type AnyTab = RealTab | 'students'
+const tab = ref<AnyTab>('overview')
+const lastRealTab = ref<RealTab>('overview')
+
+watch(tab, (next) => {
+  if (next === 'students') {
+    goBack()
+    tab.value = lastRealTab.value
+  } else {
+    lastRealTab.value = next as RealTab
+  }
+})
+
+/* Edit dialog state */
+const openEdit = ref(false)
+const editForm = ref()
+const editValid = ref(false)
+const rules = {
+  required: (v: unknown) => (v !== null && v !== undefined && String(v).trim().length > 0) || 'Required',
+  email: (v: string) => (!v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) || 'Invalid email',
+}
+const editable = reactive({
+  // identity
+  studentID: profile.studentID,
+  firstName: profile.firstName,
+  lastName: profile.lastName,
+  level: profile.level,
+  // academics
+  major: profile.major,
+  minor: profile.minor,
+  gradTerm: profile.gradTerm,
+  standing: profile.standing,
+  totalCredits: stats.totalCredits,
+  gpa: stats.gpa,
+  // contact
+  email: profile.email,
+  phone: profile.phone,
+  address: profile.address,
+  pronouns: profile.pronouns,
+  // tags
+  tags: [...tags.value],
+})
+
+/* Computed helpers */
+const fullName = computed(() => `${profile.firstName} ${profile.lastName}`)
+function initials(f: string, l: string) { return `${f?.[0] ?? ''}${l?.[0] ?? ''}`.toUpperCase() }
+
+/* Actions */
+function goBack() {
+  if (router && router.currentRoute.value.name !== 'students') {
+    router.push({ name: 'students' }).catch(() => window.history.back())
+  } else {
+    window.history.back()
+  }
+}
+function printPage() { window.print() }
+
+function downloadVCF() {
+  const vcf = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `N:${profile.lastName};${profile.firstName};;;`,
+    `FN:${fullName.value}`,
+    `EMAIL;TYPE=INTERNET:${profile.email}`,
+    `TEL;TYPE=CELL:${profile.phone}`,
+    `ADR;TYPE=HOME:;;${profile.address};;;;`,
+    'ORG:UAFS',
+    'TITLE:Student',
+    'END:VCARD'
+  ].join('\n')
+
+  const blob = new Blob([vcf], { type: 'text/vcard;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${profile.studentID}_${profile.lastName}.vcf`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function downloadDoc(item: DocRow) {
+  // Hook to real endpoint when ready
+  alert(`Downloading: ${item.name}`)
+}
+
+/* Save edit — updates all fields */
+const snack = reactive({ show: false, message: '', color: 'success' })
+async function saveEdit() {
+  const res = await editForm.value?.validate()
+  if (!res?.valid) {
+    snack.show = true
+    snack.message = 'Please fix form errors.'
+    snack.color = 'error'
+    return
+  }
+
+  // Assign back to live state
+  profile.studentID = editable.studentID
+  profile.firstName = editable.firstName
+  profile.lastName = editable.lastName
+  profile.level = editable.level
+
+  profile.major = editable.major
+  profile.minor = editable.minor
+  profile.gradTerm = editable.gradTerm
+  profile.standing = editable.standing
+
+  stats.totalCredits = Number(editable.totalCredits) || 0
+  stats.gpa = Math.max(0, Math.min(4, Number(editable.gpa) || 0))
+
+  profile.email = editable.email
+  profile.phone = editable.phone
+  profile.address = editable.address
+  profile.pronouns = editable.pronouns
+
+  tags.value = [...editable.tags]
+
+  openEdit.value = false
+  snack.show = true
+  snack.message = 'Profile updated.'
+  snack.color = 'success'
+}
+</script>
+
+<style scoped>
+/* 95% width shell, centered */
+.profile-shell {
+  width: 95%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Heavier but not flashy */
+.heavy-page {
+  font-size: 1.06rem;
+  line-height: 1.55;
+}
+
+/* Brand helpers */
+.brand-primary { color: #002856; }
+.text-on-dark { color: #F5F5F5 !important; }
+.brand-avatar { background:#002856; border:1px solid #002856; }
+
+/* Chips / Title */
+.title-chip {
+  color:#002856;
+  border:1px solid #002856;
+  border-radius: 8px;
+  font-weight: 700;
+  letter-spacing: .25px;
+  font-size: 1.15rem;
+}
+
+/* Section titles */
+.section-title {
+  color:#002856;
+  font-weight: 650;
+  font-size: 1.15rem;
+}
+.section-sub {
+  color:#002856;
+  font-weight: 650;
+  font-size: 1.05rem;
+}
+
+/* Header buttons spacing */
+.header-actions > .v-btn {
+  margin-left: 10px;
+  margin-top: 8px;
+}
+.header-actions { gap: 10px; }
+
+/* Subtle glass card look */
+.glass-card {
+  background-color: rgba(255,255,255,.6);
+  border: 1px solid #002856;
+  border-radius: 12px;
+}
+
+/* Tabs a bit bolder */
+.bold-tabs .v-tab {
+  font-weight: 600;
+  font-size: 1.02rem;
+}
+
+/* Data tables a bit bigger */
+.bigger-table .v-data-table-header__content,
+.bigger-table .v-data-table__td {
+  font-size: 1.02rem;
+}
+
+/* Print */
+@media print {
+  .v-btn, .v-select, .v-text-field, .v-tabs { display:none !important }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact }
+  .v-card { box-shadow: none !important }
+}
+</style>
+
 <template>
   <v-container fluid class="pa-2" style="background-color: transparent;">
     <v-row>
@@ -343,307 +647,3 @@
     </v-snackbar>
   </v-container>
 </template>
-
-<script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-
-/* GPA map */
-const GPA_POINTS: Record<string, number> = {
-  'A': 4.0, 'A-': 3.7,
-  'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-  'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-  'D+': 1.3, 'D': 1.0,
-  'F': 0.0, 'P': 0.0, 'W': 0.0, 'I': 0.0,
-}
-const gradePoint = (g: string) => GPA_POINTS[g] ?? 0
-
-/* Routing */
-const route = useRoute()
-const router = useRouter()
-const studentIdParam = route.params.studentID as string | undefined
-
-/* Profile data */
-const profile = reactive({
-  studentID: studentIdParam || 'S1002',
-  firstName: 'Andrew',
-  lastName: 'Mackey',
-  level: 'Undergraduate',
-  major: 'Computer Science',
-  minor: 'Mathematics',
-  gradTerm: 'Spring 2026',
-  standing: 'Good Standing',
-  email: 'amackey@uafs.edu',
-  phone: '(479) 555-1234',
-  address: '5210 Grand Ave, Fort Smith, AR',
-  pronouns: 'he/him',
-})
-
-/* Stats */
-const stats = reactive({
-  totalCredits: 86,
-  gpa: 3.64,
-  degreeCredits: 120,
-})
-const progressPercent = computed(() => (stats.totalCredits / stats.degreeCredits) * 100)
-
-/* Advisor */
-const advisor = reactive({
-  name: 'Dr. Dave Stevens',
-  title: 'Dean of Students',
-  email: 'dave.stevens@uafs.edu',
-  nextAppt: 'Nov 4, 2025 • 2:30 PM',
-})
-
-/* Tags */
-const tags = ref<string[]>(['IFC President', 'Sigma Nu', 'Dean\'s List', 'Senior'])
-const tagOptions = ref<string[]>([
-  'IFC President','Sigma Nu','Dean\'s List','Senior','Athlete','Honors','Mentor'
-])
-
-/* Activity timeline */
-const activity = ref([
-  { id: 'a1', title: 'Submitted Degree Audit', when: 'Oct 20, 2025', icon: 'mdi-check-circle', color: 'primary' },
-  { id: 'a2', title: 'Advising Session Completed', when: 'Oct 14, 2025', icon: 'mdi-account-tie', color: 'primary' },
-  { id: 'a3', title: 'Enrolled in Spring 2026', when: 'Oct 10, 2025', icon: 'mdi-calendar-plus', color: 'primary' },
-])
-
-/* Recent courses */
-interface CourseRow { id: string; term: string; code: string; title: string; credits: number; grade: string }
-const recentCourses = ref<CourseRow[]>([
-  { id: 'r1', term: 'Fall 2025', code: 'CS 4013', title: 'Operating Systems', credits: 3, grade: 'A' },
-  { id: 'r2', term: 'Fall 2025', code: 'CS 4113', title: 'Database Systems', credits: 3, grade: 'A-' },
-  { id: 'r3', term: 'Fall 2025', code: 'CS 4213', title: 'Networks', credits: 3, grade: 'B+' },
-  { id: 'r4', term: 'Fall 2025', code: 'MATH 3403', title: 'Linear Algebra', credits: 3, grade: 'A' },
-])
-const courseHeaders = [
-  { title: 'Term', key: 'term', sortable: true },
-  { title: 'Course #', key: 'code', sortable: true },
-  { title: 'Title', key: 'title', sortable: true },
-  { title: 'Credits', key: 'credits', sortable: true, align: 'end' },
-  { title: 'Grade', key: 'grade', sortable: true, align: 'center' },
-  { title: 'Points', key: 'points', align: 'end' },
-]
-
-/* Involvement */
-const orgs = ref([
-  { id: 'o1', name: 'Interfraternity Council', role: 'President', since: '2025' },
-  { id: 'o2', name: 'Sigma Nu', role: 'Member', since: '2023' },
-  { id: 'o3', name: 'UAFS AI Society', role: 'Co-founder', since: '2024' },
-])
-
-/* Documents */
-interface DocRow { id: string; name: string; type: string; updated: string; size: string }
-const documents = ref<DocRow[]>([
-  { id: 'd1', name: 'Unofficial_Transcript.pdf', type: 'PDF', updated: 'Oct 22, 2025', size: '142 KB' },
-  { id: 'd2', name: 'Degree_Audit.pdf', type: 'PDF', updated: 'Oct 20, 2025', size: '228 KB' },
-  { id: 'd3', name: 'Resume_YashPatel.pdf', type: 'PDF', updated: 'Oct 08, 2025', size: '198 KB' },
-])
-const docHeaders = [
-  { title: 'Name', key: 'name' },
-  { title: 'Type', key: 'type', align: 'center' },
-  { title: 'Updated', key: 'updated', align: 'center' },
-  { title: 'Size', key: 'size', align: 'end' },
-  { title: '', key: 'actions', align: 'end' },
-]
-
-/* Tabs + back-to-students behavior */
-type RealTab = 'overview' | 'academics' | 'involvement' | 'documents'
-type AnyTab = RealTab | 'students'
-const tab = ref<AnyTab>('overview')
-const lastRealTab = ref<RealTab>('overview')
-
-watch(tab, (next) => {
-  if (next === 'students') {
-    goBack()
-    tab.value = lastRealTab.value
-  } else {
-    lastRealTab.value = next as RealTab
-  }
-})
-
-/* Edit dialog state */
-const openEdit = ref(false)
-const editForm = ref()
-const editValid = ref(false)
-const rules = {
-  required: (v: unknown) => (v !== null && v !== undefined && String(v).trim().length > 0) || 'Required',
-  email: (v: string) => (!v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) || 'Invalid email',
-}
-const editable = reactive({
-  // identity
-  studentID: profile.studentID,
-  firstName: profile.firstName,
-  lastName: profile.lastName,
-  level: profile.level,
-  // academics
-  major: profile.major,
-  minor: profile.minor,
-  gradTerm: profile.gradTerm,
-  standing: profile.standing,
-  totalCredits: stats.totalCredits,
-  gpa: stats.gpa,
-  // contact
-  email: profile.email,
-  phone: profile.phone,
-  address: profile.address,
-  pronouns: profile.pronouns,
-  // tags
-  tags: [...tags.value],
-})
-
-/* Computed helpers */
-const fullName = computed(() => `${profile.firstName} ${profile.lastName}`)
-function initials(f: string, l: string) { return `${f?.[0] ?? ''}${l?.[0] ?? ''}`.toUpperCase() }
-
-/* Actions */
-function goBack() {
-  if (router && router.currentRoute.value.name !== 'students') {
-    router.push({ name: 'students' }).catch(() => window.history.back())
-  } else {
-    window.history.back()
-  }
-}
-function printPage() { window.print() }
-
-function downloadVCF() {
-  const vcf = [
-    'BEGIN:VCARD',
-    'VERSION:3.0',
-    `N:${profile.lastName};${profile.firstName};;;`,
-    `FN:${fullName.value}`,
-    `EMAIL;TYPE=INTERNET:${profile.email}`,
-    `TEL;TYPE=CELL:${profile.phone}`,
-    `ADR;TYPE=HOME:;;${profile.address};;;;`,
-    'ORG:UAFS',
-    'TITLE:Student',
-    'END:VCARD'
-  ].join('\n')
-
-  const blob = new Blob([vcf], { type: 'text/vcard;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${profile.studentID}_${profile.lastName}.vcf`
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-function downloadDoc(item: DocRow) {
-  // Hook to real endpoint when ready
-  alert(`Downloading: ${item.name}`)
-}
-
-/* Save edit — updates all fields */
-const snack = reactive({ show: false, message: '', color: 'success' })
-async function saveEdit() {
-  const res = await editForm.value?.validate()
-  if (!res?.valid) {
-    snack.show = true
-    snack.message = 'Please fix form errors.'
-    snack.color = 'error'
-    return
-  }
-
-  // Assign back to live state
-  profile.studentID = editable.studentID
-  profile.firstName = editable.firstName
-  profile.lastName = editable.lastName
-  profile.level = editable.level
-
-  profile.major = editable.major
-  profile.minor = editable.minor
-  profile.gradTerm = editable.gradTerm
-  profile.standing = editable.standing
-
-  stats.totalCredits = Number(editable.totalCredits) || 0
-  stats.gpa = Math.max(0, Math.min(4, Number(editable.gpa) || 0))
-
-  profile.email = editable.email
-  profile.phone = editable.phone
-  profile.address = editable.address
-  profile.pronouns = editable.pronouns
-
-  tags.value = [...editable.tags]
-
-  openEdit.value = false
-  snack.show = true
-  snack.message = 'Profile updated.'
-  snack.color = 'success'
-}
-</script>
-
-<style scoped>
-/* 95% width shell, centered */
-.profile-shell {
-  width: 95%;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* Heavier but not flashy */
-.heavy-page {
-  font-size: 1.06rem;
-  line-height: 1.55;
-}
-
-/* Brand helpers */
-.brand-primary { color: #002856; }
-.text-on-dark { color: #F5F5F5 !important; }
-.brand-avatar { background:#002856; border:1px solid #002856; }
-
-/* Chips / Title */
-.title-chip {
-  color:#002856;
-  border:1px solid #002856;
-  border-radius: 8px;
-  font-weight: 700;
-  letter-spacing: .25px;
-  font-size: 1.15rem;
-}
-
-/* Section titles */
-.section-title {
-  color:#002856;
-  font-weight: 650;
-  font-size: 1.15rem;
-}
-.section-sub {
-  color:#002856;
-  font-weight: 650;
-  font-size: 1.05rem;
-}
-
-/* Header buttons spacing */
-.header-actions > .v-btn {
-  margin-left: 10px;
-  margin-top: 8px;
-}
-.header-actions { gap: 10px; }
-
-/* Subtle glass card look */
-.glass-card {
-  background-color: rgba(255,255,255,.6);
-  border: 1px solid #002856;
-  border-radius: 12px;
-}
-
-/* Tabs a bit bolder */
-.bold-tabs .v-tab {
-  font-weight: 600;
-  font-size: 1.02rem;
-}
-
-/* Data tables a bit bigger */
-.bigger-table .v-data-table-header__content,
-.bigger-table .v-data-table__td {
-  font-size: 1.02rem;
-}
-
-/* Print */
-@media print {
-  .v-btn, .v-select, .v-text-field, .v-tabs { display:none !important }
-  body { -webkit-print-color-adjust: exact; print-color-adjust: exact }
-  .v-card { box-shadow: none !important }
-}
-</style>
