@@ -4,7 +4,7 @@ export default {
 
     async login(username, password) {
         try {
-            const response = await api.post("/TransferAPI/login", { username, password });
+            const response = await api.post("/Transfer/login", { username, password });
             console.log("Login successful:", response.data);
             return response.data; 
         } catch (err) {
@@ -15,7 +15,7 @@ export default {
 
     async refresh() {
         try {
-            const response = await api.post("/TransferAPI/refresh"); 
+            const response = await api.post("/Transfer/refresh"); 
             console.log("Token refreshed:", response.data);
             return response.data;
         } catch (err) {
@@ -26,7 +26,7 @@ export default {
 
     async logout() {
         try {
-            const response = await api.post("/TransferAPI/logout");
+            const response = await api.post("/Transfer/logout");
             console.log("Logout successful:", response.data);
             return response.data;
         } catch (err) {
