@@ -40,7 +40,7 @@ def create_app():
     app.config["JWT_COOKIE_CSRF_PROTECT"] = True
     app.config["JWT_CSRF_IN_COOKIES"] = True
     app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
-    app.config["JWT_REFRESH_COOKIE_PATH"] = "/TransferAPI/refresh"
+    app.config["JWT_REFRESH_COOKIE_PATH"] = "/Transfer/refresh"
     app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
 
     jwt.init_app(app)

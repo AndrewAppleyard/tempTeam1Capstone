@@ -2,12 +2,12 @@ import axios from "axios"
 import Cookies from "js-cookie"
 
 const api = axios.create({
-    baseURL: "/Transfer",
+    // baseURL: "/",
     withCredentials: true,
 })
 
 api.interceptors.request.use((config) => {
-  if (config.url && config.url.includes("/refresh")) {
+  if (config.url && config.url.includes("/Transfer/refresh")) {
     const refreshCsrf = Cookies.get("csrf_refresh_token") ||
       (document && document.cookie.match(/(?:^|\s*)csrf_refresh_token=([^]+)/)?.[1])
     if (refreshCsrf) {
@@ -43,7 +43,7 @@ api.interceptors.response.use(
     if (error.response.status === 401 && !originalRequest._retry) {
       if (!isRefreshing) {
         isRefreshing = true
-        refreshPromise = api.post("/refresh")
+        refreshPromise = api.post("/Transfer/refresh")
           .then((r) => {
             isRefreshing = false
             return r
