@@ -2,12 +2,12 @@ import axios from "axios"
 import Cookies from "js-cookie"
 
 const api = axios.create({
-    baseURL: "http://uafs_backend:5000",
+    baseURL: "/Transfer",
     withCredentials: true,
 })
 
 api.interceptors.request.use((config) => {
-  if (config.url && config.url.includes("/TransferAPI/refresh")) {
+  if (config.url && config.url.includes("/refresh")) {
     const refreshCsrf = Cookies.get("csrf_refresh_token") ||
       (document && document.cookie.match(/(?:^|\s*)csrf_refresh_token=([^]+)/)?.[1])
     if (refreshCsrf) {
@@ -28,13 +28,13 @@ let isRefreshing = false
 let refreshPromise = null
 
 api.interceptors.response.use(
-  /*(response) => {
+  (response) => {
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log("[api] Response:", response.status, response.config.url)
     }
     return response
-  },*/
+  },
   async (error) => {
     const originalRequest = error.config
 
@@ -43,7 +43,7 @@ api.interceptors.response.use(
     if (error.response.status === 401 && !originalRequest._retry) {
       if (!isRefreshing) {
         isRefreshing = true
-        refreshPromise = api.post("/TransferAPI/refresh")
+        refreshPromise = api.post("/refresh")
           .then((r) => {
             isRefreshing = false
             return r

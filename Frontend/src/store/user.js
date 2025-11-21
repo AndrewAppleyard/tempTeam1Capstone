@@ -95,5 +95,6 @@ export const useUserStore = defineStore('user', () => {
     window.location.href = '/'
   }
 
-  return { isLoggedIn, userRole, userID, email, token, login, logout, restoreSession }
+  // return { isLoggedIn, userRole, userID, email, token, login, logout, restoreSession }
+  return { isLoggedIn, userRole, userID, email, token, logout, restoreSession }
 })

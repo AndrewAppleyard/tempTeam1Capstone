@@ -29,11 +29,11 @@ const rules = {
    ACTIONS
 ========================= */
 async function login() {
-  const result = await form.value?.validate()
-  if (!result?.valid) {
-    alert('Login failed. Please check your credentials.')
-    return
-  }
+  // const isValid = await form.value?.validate()
+  // if (!isValid) {
+  //   alert('Login failed. Please check your credentials.')
+  //   return
+  // }
   
   loading.value = true
 

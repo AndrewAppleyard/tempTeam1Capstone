@@ -75,21 +75,21 @@ def login():
             conn.unbind()
             if "UAFS_ADMINS" in group:
                 access_token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADMINS"})
-                refresh_token = create_refresh_token(identity=username)
+                refresh_token = create_refresh_token(identity=username, additional_claims={"Role":"UAFS_ADMINS"})
                 resp = jsonify({"login": True, "Role": "UAFS_ADMINS"})
                 set_access_cookies(resp, access_token)
                 set_refresh_cookies(resp, refresh_token)
                 return resp, 200
             elif "UAFS_STUDENTS" in group:
-                access_token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADMINS"})
-                refresh_token = create_refresh_token(identity=username)
+                access_token = create_access_token(identity=username, additional_claims={"Role":"UAFS_STUDENTS"})
+                refresh_token = create_refresh_token(identity=username, additional_claims={"Role":"UAFS_STUDENTS"})
                 resp = jsonify({"login": True, "Role": "UAFS_STUDENTS"})
                 set_access_cookies(resp, access_token)
                 set_refresh_cookies(resp, refresh_token)
                 return resp, 200
             elif "UAFS_ADVISORS" in group:
-                access_token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADMINS"})
-                refresh_token = create_refresh_token(identity=username)
+                access_token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADVISORS"})
+                refresh_token = create_refresh_token(identity=username, additional_claims={"Role":"UAFS_ADVISORS"})
                 resp = jsonify({"login": True, "Role": "UAFS_ADVISORS"})
                 set_access_cookies(resp, access_token)
                 set_refresh_cookies(resp, refresh_token)

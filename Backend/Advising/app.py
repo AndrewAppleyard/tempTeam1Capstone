@@ -16,8 +16,15 @@ def create_app():
     except OSError:
         pass
 
-    CORS(app, resources = {r"/*": {
-        #"origins": "http://uafs_frontend:8080",
+    CORS(app, supports_credentials=True, resources = {r"/*": {
+        # "origins": [
+        #     "http://localhost:8080",
+        #     "http://uafs_frontend",
+        #     "http://uafs_frontend:80",
+        #     "http://uafs_frontend:8080"
+        # ],
+        "origins": "http://localhost:8080",
+        "supports_credentials": True,
         "allow_headers": ["Authorization", "Content-Type", "X-CSRF-TOKEN"],
         "expose_headers": ["Authorization"],
         "methods" : ["GET", "POST", "OPTIONS", "PUT", "DELETE"]
@@ -28,7 +35,7 @@ def create_app():
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=15)
 
     app.config["JWT_COOKIE_SECURE"] = False
-    app.config["JWT_COOKIE_SAMESITE"] = "None"
+    app.config["JWT_COOKIE_SAMESITE"] = "Lax"
 
     app.config["JWT_COOKIE_CSRF_PROTECT"] = True
     app.config["JWT_CSRF_IN_COOKIES"] = True
@@ -47,15 +54,15 @@ def create_app():
     app.register_blueprint(DegreePlanAPI.bp)
     app.register_blueprint(TranscriptAPI.bp)
 
-    @app.route('/<path:path>', methods=['OPTIONS'])
-    def handle_options():
-        """ Handle OPTIONS requests for CORS preflight """
-        response = Response()
-        response.status_code = 200
-        response.headers['Access-Control-Allow-Origin'] = 'http://uafs_frontend:8080'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-        response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, X-CSRF-TOKEN'
-        return response
+    # @app.route('/<path:path>', methods=['OPTIONS'])
+    # def handle_options():
+    #     """ Handle OPTIONS requests for CORS preflight """
+    #     response = Response()
+    #     response.status_code = 200
+    #     response.headers['Access-Control-Allow-Origin'] = 'http://uafs_frontend:8080'
+    #     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+    #     response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, X-CSRF-TOKEN'
+    #     return response
 
     return app
 
