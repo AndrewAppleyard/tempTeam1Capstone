@@ -11,6 +11,8 @@ from Advising.APIs import URL
 from UserClasses import DegreePlan, User
 from openai import OpenAI
 from dotenv import load_dotenv
+import fitz
+import requests
 
 bp = Blueprint("DegreePlanAPI", __name__, url_prefix="/DegreePlan")
 
@@ -35,6 +37,11 @@ def role_required(*required_roles):
             return fn(*args, **kwargs)
         return wrapper
     return decorator
+
+
+
+
+
 
 
 @bp.route("/View", methods=["GET"])
@@ -67,209 +74,184 @@ def view_degree_plans():
 
 
 
-load_dotenv()
 
+
+
+
+
+load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def normalize_degrees(name):
-    if not name or not isinstance(name, str):
-        return "UNKNOWN"
 
-    name = name.strip()
-    name = name.replace(".", "")
-    name = name.replace("-", " ")
-    name = re.sub(r"\s+", " ", name)
 
-    lower = name.lower()
 
-    #not very dynamic T_T
-    DEGREE_MAP = {
-        r"bachelor of science": "BS",
-        r"bachelor of arts": "BA",
-        r"bachelor of applied science": "BAS",
-        r"bachelor of business administration": "BBA",
-        r"bachelor of fine arts": "BFA",
-        r"bachelor of music": "BM",
-        r"bachelor of general studies": "BGS",
+degree_list = {
+    "B.S. in Computer Science": "https://uafs.edu/programs/degree-plans/_documents/current/bs-computer-science.pdf",
+    "B.A. in English": "https://uafs.edu/programs/degree-plans/_documents/current/ba-english.pdf",
+    
+    # "M.Ed. in Curriculum and Instruction": "",
+    # "M.Ed. in English": "",
+    # "M.S. in Healthcare Administration": "",
+    # "B.A. in History": "",
+    # "B.A. in Media Communication": "",
+    # "B.A. in Music": "",
+    # "B.A. in Psychology": "",
+    # "B.A. in Studio Art": "",
+    # "B.B.A. in Business Administration": "",
+    # "B.B.A. in Business Administration - Online Completion": "",
+    # "B.G.S. in Bachelor of General Studies": "",
+    # "B.M.E. in Music Education - Instrumental Music K-12": "",
+    # "B.M.E. in Music Education - Vocal Music K-12": "",
+    # "B.S. in Advanced Manufacturing Engineering": "",
+    # "B.S. in Biology": "",
+    # "B.S. in Biology With Life Science Teacher Licensure 7-12": "",
+    # "B.S. in Chemistry": "",
+    # "B.S. in Chemistry with Concentration in Biochemistry": "",
+    # "B.S. in Criminal Justice": "",
+    # "B.S. in Dental Hygiene": "",
+    # "B.S. in Dental Hygiene-AAS to BS Dental Hygiene Online Completion": "",
+    # "B.S. in Early Childhood Education Non-Licensure": "",
+    # "B.S. in Electrical Engineering Technology": "",
+    # "B.S. in Elementary Education K-6": "",
+    # "B.S. in English with Teacher Licensure 7-12": "",
+    # "B.S. in Geoscience": "",
+    # "B.S. in Graphic Design": "",
+    # "B.S. in History with Social Studies Teacher Licensure 7-12": "",
+    # "B.S. in Imaging Sciences-Diagnostic Medical Sonography": "",
+    # "B.S. in Mathematics": "",
+    # "B.S. in Mathematics with Teacher Licensure 7-12": "",
+    # "B.S. in Middle Level Education 4-8": "",
+    # "B.S. in Organizational Leadership": "",
+    # "B.S.N in Nursing": "",
+    # "B.S.N in Nursing - Accelerated": "",
+    # "B.S.W in Social Work": "",
+    # "A.A.S. in Early Childhood Education": "",
+    # "A.A.S. in Electronics Technology": "",
+    # "A.A.S. in General Technology": "",
+    # "A.A.S. in Nursing (ADN)": "",
+    # "A.A.S. in Nursing (LPN to ADN)": "",
+    # "A.A.S. in Radiography": "",
+    # "A.A.S. in Surgical Technology": "",
+    # "A.A.S. in Welding": "",
+    # "A.A in Associate of Arts": "",
+    # "A.G.S in Associate of General Studies": "",
+    # "A.S. in Electrical Engineering": "",
+    # "A.S. in Mechanical Engineering": "",
+    # "Minor in Applied Statistics": "",
+    # "Minor in Art History": "",
+    # "Minor in Biology": "",
+    # "Minor in Business Administration": "",
+    # "Minor in Chemistry": "",
+    # "Minor in Computer Science": "",
+    # "Minor in Creative Writing": "",
+    # "Minor in Criminal Justice": "",
+    # "Minor in Diversity Studies": "",
+    # "Minor in Geographic Information Systems": "",
+    # "Minor in Geoscience": "",
+    # "Minor in History": "",
+    # "Minor in Literary and Cultural Studies": "",
+    # "Minor in Mathematics": "",
+    # "Minor in Media Communication": "",
+    # "Minor in Music": "",
+    # "Minor in Philosophy": "",
+    # "Minor in Physics": "",
+    # "Minor in Political Science": "",
+    # "Minor in Professional Writing": "",
+    # "Minor in Psychology": "",
+    # "Minor in Social Work": "",
+    # "Minor in Sociology": "",
+    # "Minor in Spanish": "",
+    # "Minor in Speech": "",
+    # "Minor in Studio Art": "",
+    # "Minor in Teaching English as a Second Language": "",
+    # "Minor in Theatre": "",
+    # "Technical Certificate in Early Childhood Education": "",
+    # "Technical Certificate in Industrial Electronics and Electrical Maintenance": "",
+    # "Technical Certificate in Welding": "",
+    # "Certificate of Proficiency in Accounting Fundamentals": "",
+    # "Certificate of Proficiency in Arc Welding": "",
+    # "Certificate of Proficiency in Consumer Marketing": "",
+    # "Certificate of Proficiency in Content Creation, Editing, and Publishing": "",
+    # "Certificate of Proficiency in Corporate Finance": "",
+    # "Certificate of Proficiency in Cyber Systems": "",
+    # "Certificate of Proficiency in Data Analytics": "",
+    # "Certificate of Proficiency in Digital Marketing": "",
+    # "Certificate of Proficiency in Early Childhood Education": "",
+    # "Certificate of Proficiency in Economic Analysis": "",
+    # "Certificate of Proficiency in Emergency Medical Technology": "",
+    # "Certificate of Proficiency in Entrepreneurship": "",
+    # "Certificate of Proficiency in Grant and Non-Profit Writing": "",
+    # "Certificate of Proficiency in Human Resource Management": "",
+    # "Certificate of Proficiency in Industrial Electronics and Electrical Maintenance": "",
+    # "Certificate of Proficiency in International Business": "",
+    # "Certificate of Proficiency in International Financial Economics": "",
+    # "Certificate of Proficiency in Investment Securities": "",
+    # "Certificate of Proficiency in Leadership": "",
+    # "Certificate of Proficiency in MIG Welding": "",
+    # "Certificate of Proficiency in Pre-Law Studies": "",
+    # "Certificate of Proficiency in Public Accounting Standards and Practices": "",
+    # "Certificate of Proficiency in Robotics": "",
+    # "Certificate of Proficiency in Spanish for the Helping Professions": "",
+    # "Certificate of Proficiency in Supply Chain Management": "",
+    # "Certificate of Proficiency in Sustainable Energy Technologies": "",
+    # "Certificate of Proficiency in Teaching English As A Second Language": "",
+    # "Certificate of Proficiency in TIG Welding": "",
+    # "Certificate of Proficiency in User Experience (UX)": "",
+    # "Certificate of Proficiency in Welding Layout and Fabrication": ""
+}
 
-        r"master of science": "MS",
-        r"master of arts": "MA",
-        r"master of science in education": "MSE",
-        r"master of healthcare administration": "MHA",
-        r"master of business administration": "MBA",
+def extract_pdf(url):
+    r = requests.get(url, timeout=20)
+    r.raise_for_status()
+    return r.content
 
-        r"associate of applied science": "AAS",
-        r"associate of science": "AS",
-        r"associate of arts": "AA",
 
-        r"certificate of proficiency": "CP",
-        r"technical certificate": "TC",
-        r"graduate certificate": "GC",
-        r"minor in": "MIN",
-    }
+def extract_text_from_pdf(pdf):
+    doc = fitz.open(stream=pdf, filetype="pdf")
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    return text.strip()
 
-    degree = None
-    for pattern, abbr in DEGREE_MAP.items():
-        if re.search(pattern, lower):
-            degree = abbr
-            break
 
-    if not degree:
-        match = re.search(
-            r"\b(bs|ba|bas|bba|bfa|bm|bgs|ms|ma|mse|mha|mba|aas|as|aa|cp|tc|gc|min)\b",
-            lower
-        )
-        if match:
-            degree = match.group(1).upper()
+# TODO
+# Fix this so that it also includes the electives and stuff right now its only doing actual core courses.
+# Probably just need to update prompt.
 
-    major = None
+def generateDegreePlan(name, text):
+    prompt = """
+        Extract REAL degree plan data ONLY from the text provided.
 
-    if " in " in lower:
-        major = lower.split(" in ")[1]
+        DO NOT HALLUCINATE.
+        If something is missing, use "" or [] or 0.
 
-    if not major and "," in lower:
-        parts = [p.strip() for p in lower.split(",")]
-        for part in parts:
-            if not re.match(r"\b(bs|ba|bas|bba|bfa|bm|bgs|ms|ma|mse|mha|mba|aas|as|aa|cp|tc|gc|min)\b", part.lower()):
-                major = part
-                break
+        Schema:
+        {
+            "degree": string,
+            "institution": string,
+            "major_code": string,
+            "credit_hours_total": int,
+            "notes": list,
+            "core_courses": list,
+            "concentrations": list
+        }
 
-    if not major and "(" in lower and ")" in lower:
-        major = re.sub(r"\(.*?\)", "", lower).strip()
+        Only output valid JSON.
+    """
 
-    if not major:
-        if degree:
-            major = re.sub(r"^(ba|bs|bas|bba|bfa|bm|bgs|ms|ma|mse|mha|mba|aas|as|aa|min|tc|cp|gc)\s*", "", lower)
-        else:
-            major = lower
-
-    major = major.strip()
-    major = re.sub(r"\s+", " ", major)
-
-    JUNK = ["program", "degree", "major", "track"]
-    for word in JUNK:
-        major = re.sub(rf"\b{word}\b", "", major, flags=re.I)
-
-    major = major.strip()
-    major = major.title()
-
-    if degree:
-        return f"{degree} {major}".strip()
-
-    return major
-
-def degreeList():
     completion = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4o",
+        temperature=0,
         response_format={"type": "json_object"},
-        max_tokens=900,
+        max_tokens=3500,
         messages=[
-            {"role": "system", "content": """Output only valid JSON. No intro, no explanation. If unsure about any information, use placeholders rather than expanding.
-                        Never invent nested or recursive structures. Total output must not exceed 1800 tokens."""},
-            {"role": "user",
-             "content": "List all majors, minors, certificates, and academic programs offered at the University of Arkansas - Fort Smith. Return only a JSON array of program names."}
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": f"Degree Name: {name}"},
+            {"role": "user", "content": text}
         ],
     )
 
-    content = completion.choices[0].message.content
-    data = json.loads(content)
-    if isinstance(data, list):
-        return data
-    elif isinstance(data, dict) and "programs" in data:
-        return data["programs"]
-    else:
-        raise ValueError("Unexpected program list format.")
-
-def generateDegreePlan(name):
-    completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        response_format={"type": "json_object"},
-        max_tokens=1500,
-        messages=[
-            {"role": "system",
-             "content": """Output only valid JSON. No intro, no explanation. If unsure about any information, use placeholders rather than expanding.
-                        Never invent nested or recursive structures. Total output must not exceed 1800 tokens. Never generate data not required by the schema.
-                        Never generate more than 8 notes."""},
-            {"role": "user",
-             "content": f"""
-                        Generate a detailed JSON degree plan for the program '{name}' at the University of Arkansas - Fort Smith.
-
-                        Use exactly this schema:
-                        {{
-                            "degree": string,
-                            "institution": string,
-                            "major_code": string,
-                            "credit_hours_total": int,
-                            "notes": list[dict],
-                            "core_courses": list[dict],
-                            "concentrations": list[dict]
-                        }}
-
-                        Keep the keys exactly as defined in the schema. Do not add, remove, or rename any fields.
-
-                        Follow these strict formatting rules:
-
-                        All values must be valid JSON.
-                        Never output trailing commas.
-                        Never output placeholder expressions like {{...}}, ...etc..., or empty fields like `"hours":`.
-                        If information is unknown, use empty strings `""` or zeroes `0` (for numbers), or empty lists `[]`.
-                        The structure must always follow the schema shape:
-
-                        {{
-                        "degree": "string",
-                        "institution": "string",
-                        "major_code": "string",
-                        "credit_hours_total": int,
-                        "notes": ["string", "string", ...],
-                        "core_courses": [
-                            {{
-                            "semester": "Freshman Fall",
-                            "courses": [
-                                {{ "code": "string", "title": "string", "hours": int }},
-                                ...
-                            ]
-                            }},
-                            {{
-                            "semester": "Freshman Spring",
-                            "courses": [
-                                {{ "code": "string", "title": "string", "hours": int }},
-                                ...
-                            ]
-                            }},
-                            ...
-                            {{
-                            "semester": "Senior Fall",
-                            "courses": [
-                                {{ "code": "string", "title": "string", "hours": int }},
-                                ...
-                            ]
-                            }},
-                            ...
-                        ],
-                        "concentrations": [
-                            {{
-                            "code": "string",
-                            "name": "string",
-                            "required_hours": int,
-                            "courses": ["string", "string", ...],
-                            "notes": "string"
-                            }},
-                            ...
-                        ]
-                        }}
-
-                        You must use this structure exactly and never invent new keys.
-                        """
-             }
-        ],
-    )
-
-    content = completion.choices[0].message.content
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        print("bad json:", content)
-        raise
+    return json.loads(completion.choices[0].message.content)
 
 
 """ We uncomment this when we are ready
@@ -336,25 +318,25 @@ def update_degree_plans():
 @role_required("UAFS_ADMINS")
 def update_degree_plans(count):
     try:
-        degreeListArray = degreeList()
-
-        if count <= 0:
-            return jsonify({"message": "Count must be at least 1"}), 400
-
-        testingList = degreeListArray[:count]
-        insertedDegrees = []
-        failedInserts = []
+        inserted = []
+        failed = []
+        limited_list = list(degree_list.items())[:count]
 
         with Session(engine) as session:
-            for degree in testingList:
+            for degree_name, url in limited_list:
+
+                if not url:
+                    failed.append({"degree": degree_name, "error": "URL does not exist or URL not assigned"})
+                    continue
+
                 try:
-                    normalized = normalize_degrees(degree)
 
-                    generatedDegree = generateDegreePlan(degree)
+                    pdf = extract_pdf(url)
+                    text = extract_text_from_pdf(pdf)
 
-                    generatedDegree["degree"] = normalized
+                    generatedDegree = generateDegreePlan(degree_name, text)
 
-                    existing = session.query(DegreePlan.DegreePlanMap).filter(DegreePlan.DegreePlanMap.degree == normalized).first()
+                    existing = session.query(DegreePlan.DegreePlanMap).filter(DegreePlan.DegreePlanMap.degree == generatedDegree["degree"]).first()
 
                     if existing:
                         existing.institution = generatedDegree["institution"]
@@ -375,19 +357,19 @@ def update_degree_plans(count):
                         )
                         session.add(newDegree)
                     
-                    insertedDegrees.append(normalized)
+                    inserted.append(generatedDegree["degree"])
 
                 except Exception as e:
-                    print(f"Failed Insert: {degree} — {e}")
-                    failedInserts.append({"degree": degree, "error": str(e)})
+                    print(f"Error: Failed to process {degree_name}: {e}")
+                    failed.append({"degree": degree_name, "error": str(e)})
                     session.rollback()
 
             session.commit()
 
         return jsonify({
-            "message": f"Successfully generated {len(insertedDegrees)} sample degree plans.",
-            "programs": insertedDegrees,
-            "failed inserts": failedInserts
+            "message": f"Generated {len(inserted)} sample degree plans.",
+            "programs": inserted,
+            "failed inserts": failed
         })
 
     except Exception as e:
