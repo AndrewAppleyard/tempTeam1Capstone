@@ -214,29 +214,54 @@ def extract_text_from_pdf(pdf):
     return text.strip()
 
 
-# TODO
-# Fix this so that it also includes the electives and stuff right now its only doing actual core courses.
-# Probably just need to update prompt.
 
 def generateDegreePlan(name, text):
     prompt = """
-        Extract REAL degree plan data ONLY from the text provided.
+        Extract real degree plan data only from the text provided.
 
         DO NOT HALLUCINATE.
         If something is missing, use "" or [] or 0.
-
+                
         Schema:
         {
             "degree": string,
-            "institution": string,
-            "major_code": string,
-            "credit_hours_total": int,
+            "institution": "University of Arkansas - Fort Smith",
+            "majorcode": string,
+            "credithourstotal": int,
             "notes": list,
-            "core_courses": list,
-            "concentrations": list
+            "corecourses": dict,
+            "concentrations": dict
         }
 
-        Only output valid JSON.
+        This is the format I want for the corecourses:
+        {
+        "Freshman Fall":    [ course, course, ... ],
+        "Freshman Spring":  [ course, course, ... ],
+        "Sophomore Fall":   [ ... ],
+        "Sophomore Spring": [ ... ],
+        "Junior Fall":      [ ... ],
+        "Junior Spring":    [ ... ],
+        "Senior Fall":      [ ... ],
+        "Senior Spring":    [ ... ]
+        }
+
+        Each course object must be:
+        {
+        "code": string,
+        "title": string,
+        "hours": int
+        }
+
+        Include the electives as the name they are listed in the degree plan as if that was the name of the course and follow the same schema as above.
+
+        Follow the same format for the concentrations as well make the key the concentration name and the value the courses and include the concentration code in the schema of the dict as well, 
+        if there are no concentrations just return an empty dict.
+
+        Output MUST be strictly valid JSON.
+        Double-check that:
+        - Every string begins and ends with "
+        - No string contains an unescaped " inside it
+        - All \ characters are escaped properly
     """
 
     completion = client.chat.completions.create(
@@ -251,7 +276,13 @@ def generateDegreePlan(name, text):
         ],
     )
 
-    return json.loads(completion.choices[0].message.content)
+    try:
+        content = completion.choices[0].message.content
+        return json.loads(content)
+    except json.JSONDecodeError as e:
+        print("Raw Output On Error:")
+        print(content)
+        raise e
 
 
 """ We uncomment this when we are ready
@@ -340,19 +371,19 @@ def update_degree_plans(count):
 
                     if existing:
                         existing.institution = generatedDegree["institution"]
-                        existing.majorcode = generatedDegree["major_code"]
-                        existing.credithourstotal = generatedDegree["credit_hours_total"]
+                        existing.majorcode = generatedDegree["majorcode"]
+                        existing.credithourstotal = generatedDegree["credithourstotal"]
                         existing.notes = generatedDegree["notes"]
-                        existing.corecourses = generatedDegree["core_courses"]
+                        existing.corecourses = generatedDegree["corecourses"]
                         existing.concentrations = generatedDegree["concentrations"]
                     else:
                         newDegree = DegreePlan.DegreePlanMap(
                             degree=generatedDegree["degree"],
                             institution=generatedDegree["institution"],
-                            majorcode=generatedDegree["major_code"],
-                            credithourstotal=generatedDegree["credit_hours_total"],
+                            majorcode=generatedDegree["majorcode"],
+                            credithourstotal=generatedDegree["credithourstotal"],
                             notes=generatedDegree["notes"],
-                            corecourses=generatedDegree["core_courses"],
+                            corecourses=generatedDegree["corecourses"],
                             concentrations=generatedDegree["concentrations"],
                         )
                         session.add(newDegree)
