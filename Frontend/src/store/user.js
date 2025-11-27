@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import axios from 'axios'
 import TransferAPI from '../apis/TransferAPI'
 import Cookies from "js-cookie"
+import { router } from '../router'
 
 export const useUserStore = defineStore('user', () => {
   const isLoggedIn = ref(false)
@@ -98,7 +99,7 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  function logout() {
+  async function logout() {
     isLoggedIn.value = false
     userRole.value = null
     userID.value = null
@@ -107,8 +108,16 @@ export const useUserStore = defineStore('user', () => {
 
     //localStorage.removeItem('token')
     //localStorage.removeItem('role')
+    //window.location.href = '/'
 
-    window.location.href = '/'
+    try{
+      const data = await TransferAPI.logout()
+      console.log(data.logout)
+    }catch (e) {
+      console.warn('Logout request failed', e)
+    }
+
+    router.replace('/')
   }
 
   // return { isLoggedIn, userRole, userID, email, token, login, logout, restoreSession }
