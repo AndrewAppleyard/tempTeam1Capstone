@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
+import TransferAPI from '../apis/TransferAPI'
+import Cookies from "js-cookie"
 
 export const useUserStore = defineStore('user', () => {
   const isLoggedIn = ref(false)
@@ -8,6 +10,20 @@ export const useUserStore = defineStore('user', () => {
   const userID = ref(null)
   const email = ref(null)
   const token = ref(null)
+
+  async function restoreLogin() {
+    const refreshToken = Cookies.get('csrf_refresh_token')
+    if (!refreshToken) return
+    try {
+      const data = await TransferAPI.refresh() 
+
+      isLoggedIn.value = true
+      userRole.value = data.Role || null
+    } catch (err) {
+      isLoggedIn.value = false
+      userRole.value = null
+    }
+  }
 
   function decodeToken(jwt) {
     try {
@@ -89,12 +105,12 @@ export const useUserStore = defineStore('user', () => {
     email.value = null
     token.value = null
 
-    localStorage.removeItem('token')
-    localStorage.removeItem('role')
+    //localStorage.removeItem('token')
+    //localStorage.removeItem('role')
 
     window.location.href = '/'
   }
 
   // return { isLoggedIn, userRole, userID, email, token, login, logout, restoreSession }
-  return { isLoggedIn, userRole, userID, email, token, logout, restoreSession }
+  return { isLoggedIn, userRole, userID, email, token, logout, restoreSession, restoreLogin }
 })

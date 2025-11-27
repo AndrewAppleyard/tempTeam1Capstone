@@ -64,8 +64,8 @@ router.beforeEach((to, from, next) => {
   }
 
   if (userStore.isLoggedIn && to.path === '/') {
-    console.log("INDEX TOKEN:\t" + userStore.storedToken)
-    console.log("INDEX ROLE:\t" + userStore.storedRole)
+    //console.log("INDEX TOKEN:\t" + userStore.storedToken)
+    //console.log("INDEX ROLE:\t" + userStore.storedRole)
     switch (userStore.userRole) {
       case 'UAFS_STUDENTS': return next('/student')
       case 'UAFS_ADVISORS': return next('/advisor')

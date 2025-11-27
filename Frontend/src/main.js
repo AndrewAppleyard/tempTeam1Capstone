@@ -23,11 +23,12 @@ async function bootstrap() {
   const pinia = createPinia()
   app.use(pinia)
   app.use(vuetify)
-
   const userStore = useUserStore()
-  await userStore.restoreSession()
+  //await userStore.restoreSession()
+  await userStore.restoreLogin()
 
   app.use(router)
+
   app.mount('#app')
 }
 bootstrap()

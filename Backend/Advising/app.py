@@ -24,7 +24,7 @@ def create_app():
         #     "http://uafs_frontend:8080"
         # ],
         "origins": "http://localhost:8080",
-        "supports_credentials": True,
+        #"supports_credentials": True,
         "allow_headers": ["Authorization", "Content-Type", "X-CSRF-TOKEN"],
         "expose_headers": ["Authorization"],
         "methods" : ["GET", "POST", "OPTIONS", "PUT", "DELETE"]

@@ -6,6 +6,8 @@ const api = axios.create({
     withCredentials: true,
 })
 
+const publicRoutes = ['/Transfer/login', '/Transfer/refresh']
+
 api.interceptors.request.use((config) => {
   if (config.url && config.url.includes("/Transfer/refresh")) {
     const refreshCsrf = Cookies.get("csrf_refresh_token") ||
@@ -40,7 +42,9 @@ api.interceptors.response.use(
 
     if (!error.response) return Promise.reject(error)
 
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (error.response.status === 401 && !originalRequest._retry && 
+      !publicRoutes.includes(originalRequest.url)
+    ) {
       if (!isRefreshing) {
         isRefreshing = true
         refreshPromise = api.post("/Transfer/refresh")
