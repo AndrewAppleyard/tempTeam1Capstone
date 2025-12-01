@@ -9,7 +9,6 @@ from functools import wraps
 from Advising.APIs import URL
 from UserClasses import Student, User
 
-#TODO: Currently throws 500 error because theres something wrong with the logic
 bp = Blueprint('AgentAPI', __name__, url_prefix="/Schedule")
 
 current_dir = os.path.dirname(__file__)
