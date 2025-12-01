@@ -39,7 +39,7 @@ export default {
   async addSchedule(studentid) {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.post(`/Schedule/GenerateSchedule/${studentid}`, null, {
+      const response = await api.post(`/Schedule/GenerateSchedule/${studentid}`, { semester: "Spring 2026" }, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
