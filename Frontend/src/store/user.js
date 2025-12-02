@@ -71,8 +71,6 @@ export const useUserStore = defineStore('user', () => {
   //   }
   // }
 
-
-
   async function restoreSession() {
     const storedToken = localStorage.getItem('token')
 

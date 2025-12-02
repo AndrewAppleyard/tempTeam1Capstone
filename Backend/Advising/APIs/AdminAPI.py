@@ -12,6 +12,7 @@ from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
 from functools import wraps
 from Advising.APIs import URL
 from UserClasses import Advisor, User, Student, Admin
+from ldap3 import Server, Connection, ALL, MODIFY_REPLACE
 
 bp = Blueprint('AdminAPI', __name__, url_prefix='/Admin')
 
@@ -47,6 +48,74 @@ def role_required(*required_roles):
     
     return decorator
 
+LDAP_URL = "ldap://localhost:3389"
+LDAP_ADMIN_DN = "cn=Directory Manager"
+LDAP_ADMIN_PASSWORD = os.getenv("DS_DM_PASSWORD")
+LDAP_BASE = "cn=Users,cn=Person,dc=uafs,dc=edu"
+
+def addLDAPUser(email, firstname, lastname):
+    server = Server(LDAP_URL, get_info=ALL)
+    conn = Connection(server, LDAP_ADMIN_DN, LDAP_ADMIN_PASSWORD, auto_bind=True)
+
+    dn = f"uid={email},{LDAP_BASE}"
+
+    result = conn.add(
+        dn,
+        ['inetorgperson', 'inetuser'],
+        {
+            'uid': email,
+            'givenName': firstname,
+            'sn': lastname,
+            'cn': f"{firstname} {lastname}",
+            'userPassword': 'password123'
+        }
+    )
+
+    if not result:
+        print("LDAP Error:", conn.result)
+
+    conn.unbind()
+
+def deleteLDAPUser(email):
+    server = Server(LDAP_URL, get_info=ALL)
+    conn = Connection(server, LDAP_ADMIN_DN, LDAP_ADMIN_PASSWORD, auto_bind=True)
+
+    dn = f"uid={email},{LDAP_BASE}"
+    result = conn.delete(dn)
+
+    if not result:
+        print("LDAP Delete Error:", conn.result)
+
+    conn.unbind()
+
+def updateLDAPUser(oldEmail, newEmail, firstname, lastname):
+    server = Server(LDAP_URL, get_info=ALL)
+    conn = Connection(server, LDAP_ADMIN_DN, LDAP_ADMIN_PASSWORD, auto_bind=True)
+
+    old_dn = f"uid={oldEmail},{LDAP_BASE}"
+    new_dn = f"uid={newEmail},{LDAP_BASE}"
+
+    rename_ok = conn.modify_dn(old_dn, f"uid={newEmail}", delete_old_rdn=True)
+    if not rename_ok:
+        print("LDAP Email Rename Error:", conn.result)
+        conn.unbind()
+        return
+
+    update_ok = conn.modify(
+        new_dn,
+        {
+            "uid": [(MODIFY_REPLACE, [newEmail])],
+            "cn": [(MODIFY_REPLACE, [f"{firstname} {lastname}"])],
+            "givenName": [(MODIFY_REPLACE, [firstname])],
+            "sn": [(MODIFY_REPLACE, [lastname])]
+        }
+    )
+
+    if not update_ok:
+        print("LDAP Attribute Update Error:", conn.result)
+
+    conn.unbind()
+
 @bp.route("/Advisor/Insert", methods = ['POST'])
 @role_required("UAFS_ADMINS")
 def addAdvisor() -> None:
@@ -64,6 +133,15 @@ def addAdvisor() -> None:
             session.commit()
             session.refresh(advisor)
 
+            try:
+                addLDAPUser(
+                    email=advisor.email,
+                    firstname=advisor.firstname,
+                    lastname=advisor.lastname
+                )
+            except Exception as ex:
+                print("LDAP insert failed:", ex)
+
             return "Advisor Added"
     except Exception as e:
         traceback.print_exc()
@@ -72,7 +150,6 @@ def addAdvisor() -> None:
         return "Advisor Add Failed"
     finally:
         session.close()
-        
 
 @bp.route("/Advisor/<int:id>", methods=['GET','POST'])
 @role_required("UAFS_ADMINS")
@@ -81,8 +158,16 @@ def deleteAdvisor(id: int):
     try:
         with Session(engine) as session:
             result = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap.advisorid == id).first()
+            email = result.email
+
             session.delete(result)
             session.commit()
+
+            try:
+                deleteLDAPUser(email)
+            except:
+                print("LDAP delete failed")
+
             return "Advisor Deleted"
     except Exception as e:
         traceback.print_exc()
@@ -97,6 +182,10 @@ def updateAdvisor(id: int) -> None:
     try:
         with Session(engine) as session:
             advisor = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap.advisorid == id).first()
+            oldEmail = advisor.email
+            oldFirstName = advisor.firstname
+            oldLastName = advisor.lastname
+
             if(request.form.get('firstname') != None):
                 advisor.firstname = request.form.get('firstname')
             if(request.form.get('lastname') != None):
@@ -111,6 +200,17 @@ def updateAdvisor(id: int) -> None:
                 advisor.school = request.form.get('school')
 
             session.commit()
+
+            if oldEmail != advisor.email or oldFirstName != advisor.firstname or oldLastName != advisor.lastname:
+                try:
+                    updateLDAPUser(
+                        oldEmail,
+                        advisor.email,
+                        advisor.firstname,
+                        advisor.lastname
+                    )
+                except Exception as ex:
+                    print("LDAP email update failed:", ex)
 
             return "Advisor Update Successful"
     except Exception as e:
@@ -169,6 +269,15 @@ def addStudent():
             session.commit()
             session.refresh(student)
 
+            try:
+                addLDAPUser(
+                    email=student.email,
+                    firstname=student.firstname,
+                    lastname=student.lastname
+                )
+            except Exception as ex:
+                print("LDAP insert failed:", ex)
+
             return "Student Added"
     except Exception as e:
         traceback.print_exc()
@@ -186,6 +295,12 @@ def deleteStudent(id: int):
             result = session.query(Student.StudentMap).filter(Student.StudentMap.studentid == id).first()
             session.delete(result)
             session.commit()
+
+            try:
+                deleteLDAPUser(email)
+            except:
+                print("LDAP delete failed")
+                
             return "Student Deleted"
     except Exception as e:
         traceback.print_exc()

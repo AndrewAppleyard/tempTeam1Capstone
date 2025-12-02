@@ -48,15 +48,14 @@ async function save() {
     if (props.student) {
       studentid = props.student.studentid
       await StudentAPI.updateStudent(studentid, form.value)
-      
+      alert('Successfully updated student!')
     } else {
       form.value.role = 'student'
       form.value.dateadvised = '2025-01-01' // should be empty
-      const response = await AdminAPI.addStudent(form.value)
-
-      console.log('AddStudent response:', response);
+      await AdminAPI.addStudent(form.value)
+      alert('Successfully added student!')
     }
-
+    
     if (selectedAdvisor.value) {
       await AdminAPI.addStudentToAdvisor(selectedAdvisor.value, studentid)
     }
