@@ -38,12 +38,7 @@ export default {
 
   async addSchedule(studentid) {
     try {
-      const token = sessionStorage.getItem("token");
-      const response = await api.post(`/Schedule/GenerateSchedule/${studentid}`, { semester: "Spring 2026" }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
-      });
+      const response = await api.post(`/Schedule/GenerateSchedule/${studentid}`);
       console.log('Schedule Generated:', response.data);
       return response.data;
     } catch (err) {

@@ -128,7 +128,7 @@ def generate_schedule_with_agent(student, degreeplan, current_courses, target_se
 def generate_schedule(student_id):
     try:    
 
-        target_semester = request.json.get("semester", "Spring 2026")
+        target_semester = "Spring 2026"
 
         with Session(engine) as session:
             student = session.query(StudentMap).filter(StudentMap.studentid == student_id).first()

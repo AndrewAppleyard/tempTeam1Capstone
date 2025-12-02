@@ -268,7 +268,7 @@ def generateDegreePlan(name, text):
         model="gpt-4o",
         temperature=0,
         response_format={"type": "json_object"},
-        max_tokens=3500,
+        max_tokens=4000,
         messages=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": f"Degree Name: {name}"},
