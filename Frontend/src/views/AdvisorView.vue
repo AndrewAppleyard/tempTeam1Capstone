@@ -1,15 +1,17 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import AdvisorAPI from '../apis/AdvisorAPI'
 
 /* =========================
    STATE
 ========================= */
+const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
 const error = ref(null)
 const students = ref([])
+const advisorID = route.params.advisorid
 
 /* =========================
    DATA FETCH
@@ -72,6 +74,10 @@ function getCardStyle(s) {
   }
 }
 
+onMounted(async () => {
+  const userData = await AdvisorAPI.getAdvisorInfo(advisorID)
+  console.log(userData)
+})
 onMounted(fetchStudents)
 </script>
 

@@ -48,10 +48,10 @@ async function login() {
 
       switch (userStore.userRole) {
         case 'UAFS_STUDENTS':
-          router.replace('/student')
+          router.replace('/student/${userStore.userID}')
           break
         case 'UAFS_ADVISORS':
-          router.replace('/advisor')
+          router.replace('/advisor/${userStore.userID}')
           break
         case 'UAFS_ADMINS':
           router.replace('/admin')

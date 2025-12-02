@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import StudentAPI from '../apis/StudentAPI.js'
+
+const route = useRoute()
+const studentID = route.params.advisorid
 
 /* =========================================================
    THEME — same palette, more respectful visuals (centralized)
@@ -165,6 +170,11 @@ onMounted(() => {
   syncNextCardFromPopup()
 })
 
+onMounted(async () => {
+  const userData = await StudentAPI.getStudentInfo(studentID)
+  console.log(userData)
+})
+
 watch([nextSchedule, nextPopupRows, nextTerm], () => {
   const payload = { nextSchedule: nextSchedule.value, nextPopupRows: nextPopupRows.value, nextTerm: nextTerm.value }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
@@ -201,8 +211,6 @@ function removeNextRow(index: number) {
   }
   syncNextCardFromPopup()
 }
-
-import StudentAPI from '../apis/StudentAPI.js'
 
 async function generateSchedule() {
   try {

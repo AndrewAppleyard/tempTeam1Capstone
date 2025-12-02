@@ -10,9 +10,16 @@ LDAP_HOST = "dirsrv"
 LDAP_PORT = 3389
 LDAP_USER = "cn=Directory Manager"
 LDAP_PASS = os.getenv("DS_DM_PASSWORD")
-# BASE_DN = "dc=UAFS,dc=COM"
 BASE_DN = "cn=Users,cn=Person,dc=UAFS,dc=COM"
+GROUP_DN = "cn=Groups,cn=Person,dc=UAFS,dc=COM"
+
+GROUP_MAP = {
+    "admin": "UAFS_ADMINS",
+    "advisor": "UAFS_ADVISORS",
+    "student": "UAFS_STUDENTS"
+}
 LDAP_URL = f"ldap://{LDAP_HOST}:{LDAP_PORT}"
+
 
 def _connect():
     print("Connecting to LDAP:", LDAP_URL)
@@ -30,7 +37,22 @@ def _connect():
         print("LDAP ERROR: Failed to bind:", ex)
         return None
 
-def addUser(email, firstname, lastname):
+
+def addToGroup(conn, email, role):
+    groupName = GROUP_MAP.get(role)
+    if not groupName:
+        print(f"Invalid role: {role}")
+        return False
+
+    group_dn = f"cn={groupName},{GROUP_DN}"
+    user_dn = f"uid={email},{BASE_DN}"
+
+    return conn.modify(
+        group_dn,
+        {"member": [(MODIFY_ADD, [user_dn])]}
+    )
+
+def addUser(email, firstname, lastname, role):
     conn = _connect()
     if conn is None:
         return False
@@ -52,6 +74,10 @@ def addUser(email, firstname, lastname):
 
         if not result:
             print("LDAP add error:", conn.result)
+            return False
+
+        if not addToGroup(conn, email, role):
+            print("LDAP group add error:", conn.result)
             return False
 
     finally:

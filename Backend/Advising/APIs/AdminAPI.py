@@ -65,7 +65,7 @@ def addAdvisor() -> None:
             session.refresh(advisor)
 
             try:
-                addUser(advisor.email, advisor.firstname, advisor.lastname)
+                addUser(advisor.email, advisor.firstname, advisor.lastname, "advisor")
             except Exception as ex:
                 print("LDAP insert failed:", ex)
 
@@ -192,7 +192,7 @@ def addStudent():
             session.refresh(student)
 
             try:
-                addUser(student.email, student.firstname, student.lastname)
+                addUser(student.email, student.firstname, student.lastname, "student")
             except Exception as ex:
                 print("LDAP insert failed:", ex)
 
