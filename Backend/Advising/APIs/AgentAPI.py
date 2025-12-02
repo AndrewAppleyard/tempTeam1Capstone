@@ -10,6 +10,7 @@ from Advising.APIs import URL
 from UserClasses.Student import StudentMap
 from UserClasses.DegreePlan import DegreePlanMap
 from UserClasses.CurrentCourse import CurrentCourseMap
+from UserClasses.Transcript import TranscriptMap
 
 bp = Blueprint('AgentAPI', __name__, url_prefix="/Schedule")
 
@@ -90,7 +91,7 @@ ONLY output valid JSON. No explanations, no markdown.
 If data is missing, return an empty schedule list instead of hallucinating.
 """
 
-def generate_schedule_with_agent(student, degreeplan, current_courses, target_semester):
+def generate_schedule_with_agent(student, transcript, degreeplan, current_courses, target_semester):
     system_prompt = systemprompt.replace("{target_semester}", target_semester)
 
     user_content = {
@@ -98,7 +99,7 @@ def generate_schedule_with_agent(student, degreeplan, current_courses, target_se
             "name": f"{student.firstname} {student.lastname}",
             "student_id": student.studentid,
             "major": student.major,
-            "transcript": student.transcript
+            "transcript": transcript.coursemap
         },
         "degree_plan": {
             "degree": degreeplan.degree,
@@ -114,7 +115,7 @@ def generate_schedule_with_agent(student, degreeplan, current_courses, target_se
         model="gpt-4o",
         temperature=0,
         response_format={"type": "json_object"},
-        max_tokens=3000,
+        max_tokens=600,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": json.dumps(user_content)}
@@ -144,6 +145,10 @@ def generate_schedule(student_id):
             if not degreeplan:
                 return jsonify({"message": f"No degree plan found for {student.major}"}), 404
 
+
+            transcript = session.query(TranscriptMap).filter(TranscriptMap.studentid == student_id).first()
+
+
             current_courses = session.query(CurrentCourseMap).filter(CurrentCourseMap.academicperiod.contains(target_semester)).all()
 
             current_course_list = []
@@ -169,7 +174,7 @@ def generate_schedule(student_id):
                     "startdate": c.startdate
                 })
 
-            schedule = generate_schedule_with_agent(student, degreeplan, current_course_list, target_semester)
+            schedule = generate_schedule_with_agent(student, transcript, degreeplan, current_course_list, target_semester)
 
             if "courses" in schedule:
                 student.classes = schedule["courses"]
