@@ -96,9 +96,7 @@ def parseElement(html):
 
         session.commit()
 
-    return jsonify({
-        "courses": courses,
-    })
+    return courses
 
 def pullCourses():
     print("Starting")
@@ -143,7 +141,9 @@ def addCourses():
 
     courses = pullCourses()
     return jsonify({
-        "Current courses addition completed."
+        "message": "Current courses addition completed.",
+        "count": len(courses),
+        "courses": courses
     })
 
 

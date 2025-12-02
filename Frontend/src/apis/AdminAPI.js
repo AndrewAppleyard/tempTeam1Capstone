@@ -106,7 +106,7 @@ export default {
   async updateDegreePlans(count) {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.post(`/DegreePlan/UpdateDegreePlans/${count}`, null, {
+      const response = await api.post(`/DegreePlan/UpdateDegreePlans/${count}`, null, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -124,7 +124,7 @@ export default {
   async updateCurrentCourses() {
     try {
       const token = sessionStorage.getItem("token");
-      const response = await axios.post(`/CurrentCourses/AddCourses`, null, {
+      const response = await api.post(`/CurrentCourses/AddCourses`, null, {
         headers: {
           Authorization: `Bearer ${token}`
         }
