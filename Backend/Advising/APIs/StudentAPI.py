@@ -11,7 +11,7 @@ from ldap3 import Server, Connection, ALL
 from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
 from functools import wraps
 from Advising.APIs import URL
-from ldap3 import Server, Connection, ALL, MODIFY_REPLACE
+from Advising.APIs.LDAPservice import updateUser
 
 bp = Blueprint('StudentAPI', __name__, url_prefix="/Student")
 
@@ -50,38 +50,6 @@ def role_required(*required_roles):
     
     return decorator
 
-LDAP_URL = "ldap://localhost:3389"
-LDAP_ADMIN_DN = "cn=Directory Manager"
-LDAP_ADMIN_PASSWORD = os.getenv("DS_DM_PASSWORD")
-LDAP_BASE = "cn=Users,cn=Person,dc=uafs,dc=edu"
-
-def updateLDAPUser(oldEmail, newEmail, firstname, lastname):
-    server = Server(LDAP_URL, get_info=ALL)
-    conn = Connection(server, LDAP_ADMIN_DN, LDAP_ADMIN_PASSWORD, auto_bind=True)
-
-    old_dn = f"uid={oldEmail},{LDAP_BASE}"
-    new_dn = f"uid={newEmail},{LDAP_BASE}"
-
-    rename_ok = conn.modify_dn(old_dn, f"uid={newEmail}", delete_old_rdn=True)
-    if not rename_ok:
-        print("LDAP Email Rename Error:", conn.result)
-        conn.unbind()
-        return
-
-    update_ok = conn.modify(
-        new_dn,
-        {
-            "uid": [(MODIFY_REPLACE, [newEmail])],
-            "cn": [(MODIFY_REPLACE, [f"{firstname} {lastname}"])],
-            "givenName": [(MODIFY_REPLACE, [firstname])],
-            "sn": [(MODIFY_REPLACE, [lastname])]
-        }
-    )
-
-    if not update_ok:
-        print("LDAP Attribute Update Error:", conn.result)
-
-    conn.unbind()
 
 @bp.route("/", methods=['GET'])
 @role_required("UAFS_ADMINS")
@@ -262,12 +230,7 @@ def updateStudent(id: int) -> None:
 
             if oldEmail != student.email or oldFirstName != student.firstname or oldLastName != student.lastname:
                 try:
-                    updateLDAPUser(
-                        oldEmail,
-                        student.email,
-                        student.firstname,
-                        student.lastname
-                    )
+                    updateUser(oldEmail, student.email, student.firstname, student.lastname)
                 except Exception as ex:
                     print("LDAP email update failed:", ex)
 

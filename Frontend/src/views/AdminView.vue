@@ -111,9 +111,11 @@ async function deleteUser() {
   try {
     if (viewMode.value === 'students') {
       await AdminAPI.deleteStudent(id)
+      alert("Successfully deleted student.")
       fetchStudents()
     } else {
       await AdminAPI.deleteAdvisor(id)
+      alert("Successfully deleted advisor.")
       fetchAdvisors()
     }
     selectedItem.value = null

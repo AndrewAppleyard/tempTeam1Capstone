@@ -53,6 +53,7 @@ async function save() {
       form.value.role = 'student'
       form.value.dateadvised = '2025-01-01' // should be empty
       await AdminAPI.addStudent(form.value)
+      // studentid = response.data
       alert('Successfully added student!')
     }
     
