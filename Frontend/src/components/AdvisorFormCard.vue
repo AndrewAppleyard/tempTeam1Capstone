@@ -112,7 +112,7 @@ watch(() => props.advisor, (newAdvisor) => {
 
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="grey" text @click="close">Cancel</v-btn>
+        <v-btn color="red" text @click="close">Cancel</v-btn>
         <v-btn color="primary" @click="save">{{ props.advisor ? 'Update' : 'Add' }}</v-btn>
       </v-card-actions>
     </v-card>

@@ -17,6 +17,30 @@ const advisors = ref([])
 const selectedAdvisor = ref(null)
 const currentAdvisor = ref(null)
 
+const datePickerVisible = ref(false)
+const tempDate = ref('')
+
+//For select fields
+const holdsOptions = [
+  { text: 'No Hold', value: false },
+  { text: 'Active Hold', value: true }
+]
+
+const registrationStatusOptions = [
+  { text: 'Not Registered', value: false },
+  { text: 'Registered', value: true}
+]
+
+const advisingStatusOptions = [
+  { text: 'Needs Advising', value: false},
+  { text: 'Advised', value: true}
+]
+
+const activeStatusOptions = [
+  { text: 'Inactive', value: false},
+  { text: 'Active', value: true}
+]
+
 const emailRule = value => {
   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(value) || 'Please enter a valid email';
@@ -90,6 +114,20 @@ function resetForm() { // need to reset id
     activestatus: true,
     dateadvised: '' // needs to be null until set
   }
+}
+
+function convertToYDM(date) {
+  if (!date) {
+
+    return ''
+  }
+  const [y, m, d] = date.split('-')
+  return `${y}-${d}-${m}`
+}
+
+function onDateSelect(value) {
+  datePickerVisible.value = false
+  form.value.dateadvised = convertToYDM(value)
 }
 
 async function removeAdvisor() {
@@ -228,6 +266,102 @@ onMounted(async () => {
               <v-btn color="error" text small @click="removeAdvisor">Remove</v-btn>
             </v-col>
           </v-row>
+
+          <v-row>
+            <v-col cols="6">
+              <v-select 
+                v-model="form.financialhold"
+                :items="holdsOptions"
+                item-title="text"
+                item-value="value"
+                label="Financial Hold"
+                />
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="6">
+              <v-select 
+                v-model="form.advisinghold"
+                :items="holdsOptions"
+                item-title="text"
+                item-value="value"
+                label="Advising Hold"
+                />
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="6">
+              <v-select 
+                v-model="form.academichold"
+                :items="holdsOptions"
+                item-title="text"
+                item-value="value"
+                label="Academic Hold"
+                />
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="6">
+              <v-select 
+                v-model="form.registrationstatus"
+                :items="registrationStatusOptions"
+                item-title="text"
+                item-value="value"
+                label="Registration Status"
+                />
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="6">
+              <v-select 
+                v-model="form.advisingstatus"
+                :items="advisingStatusOptions"
+                item-title="text"
+                item-value="value"
+                label="Advising Status"
+                />
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="6">
+              <v-select 
+                v-model="form.activestatus"
+                :items="activeStatusOptions"
+                item-title="text"
+                item-value="value"
+                label="Active Status"
+                />
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="12">
+              <v-text-field
+                v-model="form.dateadvised"
+                label="Date Advised"
+                readonly
+                prepend-icon="mdi-calendar"
+                @click="datePickerVisible = true"
+              />
+            </v-col>
+          </v-row>
+
+          <v-dialog v-model="datePickerVisible" width="320px">
+            <v-card>
+              <v-card-title>Select Date</v-card-title>
+              <v-card-text>
+                <v-date-picker
+                  v-model="tempDate"
+                  @update:modelValue="onDateSelect"
+                />
+              </v-card-text>
+            </v-card>
+          </v-dialog>
            
         </v-container>
 
@@ -235,7 +369,7 @@ onMounted(async () => {
 
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="grey" text @click="close">Cancel</v-btn>
+        <v-btn color="red" text @click="close">Cancel</v-btn>
         <v-btn color="primary" @click="save">{{ props.student ? 'Update' : 'Add' }}</v-btn>
       </v-card-actions>
 
