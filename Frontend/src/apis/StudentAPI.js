@@ -45,5 +45,16 @@ export default {
       console.error('Schedule Generated Error:', err);
       throw err;
     }
+  },
+
+  async checkAdvisingHold(studentid) {
+    try {
+      const response = await api.post(`/Schedule/CheckAdvisingHold/${studentid}`);
+      console.log(response.data)
+      return response.data;
+    } catch (err) {
+      console.error("Advising Hold Check Error:", err);
+      throw err;
+    }
   }
 };

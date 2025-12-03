@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+
 
 /* =========================================================
    THEME — same palette, more respectful visuals (centralized)
@@ -204,13 +206,25 @@ function removeNextRow(index: number) {
 
 import StudentAPI from '../apis/StudentAPI.js'
 
+const route = useRoute()
+const studentId = computed(() => Number(route.params.studentid))
+
 async function generateSchedule() {
   try {
-    const studentid = 1
-    const data = await StudentAPI.addSchedule(studentid)
+    console.log(studentId.value)
+    const data = await StudentAPI.addSchedule(studentId.value)
   } catch (err) {
     console.error('Generate Schedule error: ', err)
     alert('Failed to generate schedule.')
+  }
+}
+
+async function runHoldCheck() {
+  try {
+    const result = await StudentAPI.checkAdvisingHold(studentId.value);
+  } catch (err) {
+    console.error(err);
+    alert("Error checking advising hold.");
   }
 }
 
@@ -232,6 +246,7 @@ async function generateSchedule() {
           <h1 class="welcome-center" :style="{ color: COLOR_PRIMARY }">Welcome, {{ greetingName }}!</h1>
         </v-col>
         <v-btn @click="generateSchedule">Generate Schedule</v-btn>
+        <v-btn color="primary" @click="runHoldCheck">Check Advising Hold</v-btn>
         <v-col cols="12" md="4">&nbsp;</v-col>
       </v-row>
     </header>
