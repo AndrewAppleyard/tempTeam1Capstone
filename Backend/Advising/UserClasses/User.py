@@ -22,3 +22,15 @@ class Base(DeclarativeBase):
 
     def getBase():
         return Base
+
+
+class UserMap(Base):
+    __tablename__ = "users"
+
+    userid: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    firstname: Mapped[str] = mapped_column(String(50))
+    lastname: Mapped[str] = mapped_column(String(50))
+    email: Mapped[str] = mapped_column(String(50), unique=True)
+    phonenumber: Mapped[str] = mapped_column(Integer)
+    role: Mapped[str] = mapped_column(String(10))
+    school: Mapped[str] = mapped_column(String(50))

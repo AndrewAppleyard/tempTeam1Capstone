@@ -9,8 +9,9 @@ export default {
 
             const userStore = useUserStore()
             if (response.data.login) {
-            userStore.isLoggedIn = true
-            userStore.userRole = response.data.Role
+                userStore.isLoggedIn = true
+                userStore.userRole = response.data.Role
+                userStore.email = response.data.email
             } else {
             userStore.isLoggedIn = false
             }

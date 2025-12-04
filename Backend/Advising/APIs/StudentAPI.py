@@ -114,29 +114,54 @@ def getStudentInfo(studentid: int):
                     .filter(Student.StudentMap.studentid == studentid) \
                     .first()
 
-            student = Student.Student()
+            # student = Student.Student()
 
-            student.studentid = result.studentid
-            student.firstname = result.firstname
-            student.lastname = result.lastname
-            student.email = result.email
-            student.phonenumber = result.phonenumber
-            student.role = result.role
-            student.school = result.school
-            student.gpa = result.gpa
-            student.major = result.major
-            student.majorconcentration = result.majorconcentration
-            student.minor = result.minor
-            student.classstanding = result.classstanding
-            student.registrationstatus = result.registrationstatus
-            student.advisingstatus = result.advisingstatus
-            student.dateadvised = result.dateadvised
-            student.finanicalHold = result.financialhold
-            student.advisinghold = result.advisinghold
-            student.academichold = result.academichold
-            student.classes = result.classes
+            # student.studentid = result.studentid
+            # student.firstname = result.firstname
+            # student.lastname = result.lastname
+            # student.email = result.email
+            # student.phonenumber = result.phonenumber
+            # student.role = result.role
+            # student.school = result.school
+            # student.gpa = result.gpa
+            # student.major = result.major
+            # student.majorconcentration = result.majorconcentration
+            # student.minor = result.minor
+            # student.classstanding = result.classstanding
+            # student.registrationstatus = result.registrationstatus
+            # student.advisingstatus = result.advisingstatus
+            # student.dateadvised = result.dateadvised
+            # student.finanicalhold = result.financialhold
+            # student.advisinghold = result.advisinghold
+            # student.academichold = result.academichold
+            # student.classes = result.classes
 
-            return student.__dict__
+            #return student.__dict__
+
+            student_info = {
+                "studentid": result.studentid,
+                "firstname": result.firstname,
+                "lastname": result.lastname,
+                "email": result.email,
+                "phonenumber": result.phonenumber,
+                "role": result.role,
+                "school": result.school,
+                "gpa": result.gpa,
+                "major": result.major,
+                "majorconcentration": result.majorconcentration,
+                "minor": result.minor,
+                "classstanding": result.classstanding,
+                "registrationstatus": result.registrationstatus,
+                "advisingstatus": result.advisingstatus,
+                "dateadvised": result.dateadvised.strftime("%Y-%m-%d") if result.dateadvised else None,
+                "financialhold": result.financialhold,
+                "advisinghold": result.advisinghold,
+                "academichold": result.academichold,
+                "classes": result.classes,
+            }
+
+            return jsonify(student_info)
+            
     except Exception as e:
         traceback.print_exc()
         return "Failed to Execute Search"

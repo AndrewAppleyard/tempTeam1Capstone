@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import StudentAPI from '../apis/StudentAPI.js'
 
 /* ===== GPA scale (4.0) ===== */
 const GPA_POINTS: Record<string, number> = {
@@ -14,41 +15,76 @@ const GPA_POINTS: Record<string, number> = {
 /* ===== Routing ===== */
 const route = useRoute()
 const router = useRouter()
-const studentIdParam = route.params.studentID as string | undefined
+const studentIdParam = route.params.studentid
 
-/* ===== Mock Student (swap with API) ===== */
-const students = [
-  { studentID: 'S1001', firstName: 'Andrew', lastName: 'Mackey', level: 'Undergraduate', major: 'Computer Science', minor: 'Mathematics' },
-  { studentID: 'S1002', firstName: 'Yash', lastName: 'Patel', level: 'Undergraduate', major: 'Mathematics' },
-  { studentID: 'S1003', firstName: 'Jay', lastName: 'Patel', level: 'Undergraduate', major: 'Nursing' }
-]
-
-const student = computed(() => {
-  const s = students.find(s => s.studentID === (studentIdParam || 'S1001')) || students[0]
-  return { ...s, fullName: `${s.firstName} ${s.lastName}` }
+const student = ref({ 
+  studentID: '', 
+  firstName: '', 
+  lastName: '', 
+  level: 'Undergraduate', 
+  major: 'N/A', 
+  minor: undefined,
+  fullName: 'Loading...'
 })
 
+/* ===== Mock Student (swap with API) ===== */
+// const students = [
+//   { studentID: 'S1001', firstName: 'Andrew', lastName: 'Mackey', level: 'Undergraduate', major: 'Computer Science', minor: 'Mathematics' },
+//   { studentID: 'S1002', firstName: 'Yash', lastName: 'Patel', level: 'Undergraduate', major: 'Mathematics' },
+//   { studentID: 'S1003', firstName: 'Jay', lastName: 'Patel', level: 'Undergraduate', major: 'Nursing' }
+// ]
+
+// const student = computed(() => {
+//   const s = students.find(s => s.studentID === (studentIdParam || 'S1001')) || students[0]
+//   return { ...s, fullName: `${s.firstName} ${s.lastName}` }
+// })
+
 /* ===== Transcript rows (swap with API) ===== */
-interface CourseRow {
-  id: string
-  term: string
-  code: string
-  title: string
-  credits: number
-  grade: string
+// interface CourseRow {
+//   id: string
+//   term: string
+//   code: string
+//   title: string
+//   credits: number
+//   grade: string
+// }
+
+// const transcript = ref<CourseRow[]>([
+//   { id: '1', term: 'Fall 2024', code: 'CS 1013',   title: 'Intro to CS',            credits: 3, grade: 'A'  },
+//   { id: '2', term: 'Fall 2024', code: 'MATH 1404', title: 'Calculus I',             credits: 4, grade: 'A'  },
+//   { id: '3', term: 'Fall 2024', code: 'ENGL 1213', title: 'Composition I',          credits: 3, grade: 'B'  },
+//   { id: '4', term: 'Spring 2025', code: 'CS 2023', title: 'Data Structures',        credits: 3, grade: 'A'  },
+//   { id: '5', term: 'Spring 2025', code: 'MATH 1454', title: 'Calculus II',          credits: 4, grade: 'B'  },
+//   { id: '6', term: 'Spring 2025', code: 'PHYS 2054', title: 'Physics I',            credits: 4, grade: 'B'  },
+//   { id: '7', term: 'Fall 2025', code: 'CS 3013',   title: 'Algorithms',             credits: 3, grade: 'A'  },
+//   { id: '8', term: 'Fall 2025', code: 'STAT 2503', title: 'Statistics',             credits: 3, grade: 'B'  },
+//   { id: '9', term: 'Fall 2025', code: 'HIST 1113', title: 'US History',             credits: 3, grade: 'A'  },
+// ])
+
+interface TranscriptCourseAPI {
+  code: string;
+  title: string;
+  credits: string;
+  grade: string;
+  term?: string;
 }
 
-const transcript = ref<CourseRow[]>([
-  { id: '1', term: 'Fall 2024', code: 'CS 1013',   title: 'Intro to CS',            credits: 3, grade: 'A'  },
-  { id: '2', term: 'Fall 2024', code: 'MATH 1404', title: 'Calculus I',             credits: 4, grade: 'A'  },
-  { id: '3', term: 'Fall 2024', code: 'ENGL 1213', title: 'Composition I',          credits: 3, grade: 'B'  },
-  { id: '4', term: 'Spring 2025', code: 'CS 2023', title: 'Data Structures',        credits: 3, grade: 'A'  },
-  { id: '5', term: 'Spring 2025', code: 'MATH 1454', title: 'Calculus II',          credits: 4, grade: 'B'  },
-  { id: '6', term: 'Spring 2025', code: 'PHYS 2054', title: 'Physics I',            credits: 4, grade: 'B'  },
-  { id: '7', term: 'Fall 2025', code: 'CS 3013',   title: 'Algorithms',             credits: 3, grade: 'A'  },
-  { id: '8', term: 'Fall 2025', code: 'STAT 2503', title: 'Statistics',             credits: 3, grade: 'B'  },
-  { id: '9', term: 'Fall 2025', code: 'HIST 1113', title: 'US History',             credits: 3, grade: 'A'  },
-])
+interface CourseRow extends TranscriptCourseAPI {
+  id: string | number;
+  term: string;
+  credits: number;
+  points: number;
+}
+
+interface SemesterData {
+    semester: string;
+    year: number;
+    courses: TranscriptCourseAPI[]; // Array of courses in that semester
+    semester_gpa: number;
+}
+
+const transcript = ref<CourseRow[]>([])
+const allTranscripts = ref<any[]>([]) 
 
 /* ===== Headers (degree-plan style: simple titles) ===== */
 const headers = [
@@ -104,7 +140,98 @@ function summarize(rows: CourseRow[]) {
 const termSummary = computed(() => summarize(filteredCourses.value))
 const cumulative  = computed(() => summarize(transcript.value))
 
-/* ===== Actions ===== */
+/* ===== Actions and Fetching ===== */
+async function fetchAndProcessData() {
+  if (!studentIdParam) {
+    console.error("No student ID provided in route params.")
+    return
+  }
+
+  // --- Student Data Fetching ---
+  try {
+    const userData = await StudentAPI.getStudentById(studentIdParam)
+    console.log('Transcript View: Fetched Student Data:', userData)
+    
+    if (userData) {
+      student.value = {
+          studentID: userData.studentid?.toString() || studentIdParam,
+          firstName: userData.firstname || 'N/A',
+          lastName: userData.lastname || 'N/A',
+          level: userData.classstanding || 'Undergraduate',
+          major: userData.major || 'N/A',
+          minor: userData.minor,
+          fullName: `${userData.firstname || ''} ${userData.lastname || ''}`.trim() || 'N/A'
+      }
+    }
+  } catch(e) {
+      console.error('Failed to fetch student profile data:', e)
+  }
+
+  // --- Transcript Data Fetching and Processing ---
+  try {
+    const fetchedTranscripts = await StudentAPI.getTranscripts(studentIdParam)
+    allTranscripts.value = fetchedTranscripts
+
+    const processedCourses: CourseRow[] = []
+    let uniqueIdCounter = 1
+
+    for (const trans of fetchedTranscripts) {
+      if (trans.coursemap) {
+        let semesterList: SemesterData[] = []
+        
+        if (Array.isArray(trans.coursemap)) {
+             semesterList = trans.coursemap 
+        } else if (typeof trans.coursemap === 'string') {
+          try {
+             semesterList = JSON.parse(trans.coursemap) as SemesterData[]
+          } catch(e) {
+            console.error(`Failed to parse coursemap string for transcript ID ${trans.transcriptid}:`, e)
+            continue
+          }
+        }
+        
+        if (!Array.isArray(semesterList)) {
+             console.error(`Coursemap data is not an array for transcript ID ${trans.transcriptid}. Skipping.`)
+             continue
+        }
+
+        for (const semester of semesterList) {
+            const termName = `${semester.semester} ${semester.year}` // ex "Freshman Fall 2024"
+            
+            if (Array.isArray(semester.courses)) {
+                for (const course of semester.courses) {
+                  const credits = parseFloat(course.credits as string) || 0
+                  const grade = course.grade ? course.grade.toUpperCase() : 'W'
+                  
+                  processedCourses.push({
+                    id: uniqueIdCounter++,
+                    term: termName, 
+                    code: course.code || 'N/A',
+                    title: course.title || 'N/A',
+                    credits: credits,
+                    grade: grade,
+                    points: credits * gradePoint(grade),
+                  })
+                }
+            }
+        }
+      }
+    }
+
+    transcript.value = processedCourses.sort((a, b) => 
+        a.term.localeCompare(b.term)
+    )
+
+  } catch (e) {
+    console.error('Failed to fetch or process transcript data:', e)
+  }
+}
+
+onMounted(() => {
+  fetchAndProcessData()
+})
+
+
 function goBack() {
   if (router && router.currentRoute.value.name !== 'students') {
     router.push({ name: 'students' }).catch(() => window.history.back())

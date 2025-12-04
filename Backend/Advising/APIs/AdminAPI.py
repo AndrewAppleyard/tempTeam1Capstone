@@ -10,8 +10,8 @@ import sys
 import os
 from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
 from functools import wraps
-from Advising.APIs import URL
 from UserClasses import Advisor, User, Student, Admin
+from Advising.APIs import URL
 from Advising.APIs.LDAPservice import addUser, deleteUser, updateUser
 
 bp = Blueprint('AdminAPI', __name__, url_prefix='/Admin')

@@ -8,6 +8,7 @@ from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
 from functools import wraps
 from Advising.APIs import URL
 from UserClasses import Student, User
+import json
 
 #TODO: Currently throws 500 error because theres something wrong with the logic
 bp = Blueprint('AgentAPI', __name__, url_prefix="/Schedule")
@@ -98,7 +99,7 @@ def generate_schedule(student_id):
             if not student:
                 return jsonify({"message": "Student not found."}), 404
 
-            student.classes = data["courses"]
+            student.classes = json.dumps(data["courses"])
 
             session.commit()
 

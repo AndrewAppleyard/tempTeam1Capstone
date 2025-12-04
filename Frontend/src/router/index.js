@@ -13,11 +13,9 @@ import DegreePlanView from '../views/DegreePlanView.vue'
 const routes = [
   { path: '/', component: LoginView },
   { path: '/admin', component: AdminView },
-  { path: '/advisor', component: AdvisorView },
   { path: '/advisor/:advisorid', component: AdvisorView },
-  { path: '/student', component: StudentView },
   { path: '/student/:studentid', component: StudentView },
-  { path: '/transcript', component: TranscriptView },
+  { path: '/transcript/:studentid', component: TranscriptView },
   { path: '/courseCatalog', component: CourseCatalogView },
   { path: '/DegreePlanView', component: DegreePlanView },
   { path: '/UserProfilePage', component: UserProfilePage },
@@ -67,10 +65,10 @@ router.beforeEach((to, from, next) => {
     const role = userStore.userRole
 
     if (role === 'UAFS_STUDENTS') {
-      return next(`/student/${userStore.userID}`)
+      return next(`/student/${userStore.roleID}`)
     }
     if (role === 'UAFS_ADVISORS') {
-      return next(`/advisor/${userStore.userID}`)
+      return next(`/advisor/${userStore.roleID}`)
     }
     if (role === 'UAFS_ADMINS') {
       return next('/admin')
@@ -79,24 +77,22 @@ router.beforeEach((to, from, next) => {
     return next('/')
   }
 
-  const allowed = roleRoutes[userStore.userRole] || []
-  const match = allowed.some(prefix => to.path.startsWith(prefix))
-  if (userStore.isLoggedIn) {
-    if (!match && !isPublic) {
-      return next(allowed[0])
+  if (to.params.advisorid && userStore.userRole === 'UAFS_ADVISORS') {
+    if (parseInt(to.params.advisorid) !== userStore.roleID) {
+      return next(`/advisor/${userStore.roleID}`)
     }
   }
 
+  if (to.params.studentid && userStore.userRole === 'UAFS_STUDENTS') {
+    if (parseInt(to.params.studentid) !== userStore.roleID) {
+      return next(`/student/${userStore.roleID}`)
+    }
+  }
+
+  const allowed = roleRoutes[userStore.userRole] || []
+  const match = allowed.some(prefix => to.path.startsWith(prefix))
   if (!match && !isPublic) {
-      if (role === 'UAFS_STUDENTS') {
-        return next(`/student/${userStore.userID}`)
-      }
-      if (role === 'UAFS_ADVISORS') {
-        return next(`/advisor/${userStore.userID}`)
-      }
-      if (role === 'UAFS_ADMINS') {
-        return next('/admin')
-      }
+    return next(allowed[0])
   }
 
   return next()

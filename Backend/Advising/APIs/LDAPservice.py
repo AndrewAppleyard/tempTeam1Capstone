@@ -1,4 +1,4 @@
-from ldap3 import Server, Connection, ALL, MODIFY_REPLACE
+from ldap3 import Server, Connection, ALL, MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
 import os
 from dotenv import load_dotenv
 # load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'))
@@ -128,7 +128,7 @@ def updateUser(oldEmail, newEmail, firstname, lastname):
             }
         )
 
-        if not update_ok:
+        if not updateOk:
             print("LDAP update error:", conn.result)
             return False
 
