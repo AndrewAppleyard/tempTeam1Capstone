@@ -19,6 +19,7 @@ const currentAdvisor = ref(null)
 
 const datePickerVisible = ref(false)
 const tempDate = ref(null)
+const displayDate = ref('')
 
 //For select fields
 const holdsOptions = [
@@ -46,10 +47,11 @@ const emailRule = value => {
   return emailRegex.test(value) || 'Please enter a valid email';
 }
 
-const requiredRule = value => !!value || 'This field is required'
+const requiredRule = value => (value !== null && value !== undefined && value !== '') || 'This field is required'
 
 const charRule = (value, maxLength = 5, type = "string") => {
-  if (!value) return true
+  
+  if (value === null || value === undefined || value === '') return true
 
   if (value.length > maxLength) return `Max ${maxLength} characters allowed`
 
@@ -59,7 +61,7 @@ const charRule = (value, maxLength = 5, type = "string") => {
   if (type === 'decimal') {
     if (!decimalPattern.test(value)) return 'Must be a number (integer or decimal)'
   } else if (type === 'int') {
-    if (!intPattern.test(value)) return 'Must be an integer'
+    if (!intPattern.test(value)) return 'Must consist of only whole numbers'
   }
 
   return true
@@ -76,12 +78,12 @@ const form = ref({
   majorconcentration: '',
   minor: '',
   classstanding: '',
-  financialhold: false,
-  advisinghold: false,
-  academichold: false,
-  registrationstatus: false,
-  advisingstatus: false,
-  activestatus: true,
+  financialhold: null,
+  advisinghold: null,
+  academichold: null,
+  registrationstatus: null,
+  advisingstatus: null,
+  activestatus: null,
   dateadvised: null // needs to be null at first 
 })
 
@@ -94,7 +96,6 @@ const requiredFields = [
   'gpa',
   'major',
   'majorconcentration',
-  'minor',
   'classstanding',
   'financialhold',
   'advisinghold',
@@ -116,7 +117,9 @@ const isFormValid = computed(() => {
       if (charRule(value, 10, 'decimal') !== true) return false
     } else if (field === 'phonenumber') {
       if (charRule(value, 10, 'int') !== true) return false
-    } 
+    } else if (field === 'email') {
+      if (emailRule(value) !== true || charRule(value, 50, 'string') !== true) return false
+    }
     else {
       if (charRule(value, 50, 'string') !== true) return false
     }
@@ -172,13 +175,13 @@ function resetForm() { // need to reset id
     majorconcentration: '',
     minor: '',
     classstanding: '',
-    financialhold: false,
-    advisinghold: false,
-    academichold: false,
-    registrationstatus: false,
-    advisingstatus: false,
-    activestatus: true,
-    dateadvised: '' // needs to be null until set
+    financialhold: null,
+    advisinghold: null,
+    academichold: null,
+    registrationstatus: null,
+    advisingstatus: null,
+    activestatus: null,
+    dateadvised: null // needs to be null until set
   }
 }
 
@@ -193,8 +196,10 @@ function convertToYDM(date) {
 
 function onDateSelect(value) {
   if (value) {
+    displayDate.value = value
     form.value.dateadvised = convertToYDM(value)
   } else {
+    displayDate.value = ''
     form.value.dateadvised = null
   }
 
@@ -217,6 +222,7 @@ async function removeAdvisor() {
 function close() {
   localVisible.value = false
   datePickerVisible.value = false
+  resetForm()
   emits('close')
 }
 
@@ -350,6 +356,7 @@ onMounted(async () => {
                 item-value="value"
                 label="Financial Hold"
                 placeholder="Hold"
+                persistent-placeholder
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -364,6 +371,7 @@ onMounted(async () => {
                 item-value="value"
                 label="Advising Hold"
                 placeholder="Hold"
+                persistent-placeholder
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -378,6 +386,7 @@ onMounted(async () => {
                 item-value="value"
                 label="Academic Hold"
                 placeholder="Hold"
+                persistent-placeholder
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -392,6 +401,7 @@ onMounted(async () => {
                 item-value="value"
                 label="Registration Status"
                 placeholder="Status"
+                persistent-placeholder
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -406,6 +416,7 @@ onMounted(async () => {
                 item-value="value"
                 label="Advising Status"
                 placeholder="Status"
+                persistent-placeholder
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -420,6 +431,7 @@ onMounted(async () => {
                 item-value="value"
                 label="Active Status"
                 placeholder="Status"
+                persistent-placeholder
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -428,7 +440,7 @@ onMounted(async () => {
           <v-row>
             <v-col cols="12">
               <v-text-field
-                v-model="form.dateadvised"
+                v-model="displayDate"
                 label="Date Advised"
                 readonly
                 prepend-icon="mdi-calendar"
