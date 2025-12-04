@@ -1,1 +1,13 @@
-venv/
+.env
+# Terraform state
+*.tfstate
+*.tfstate.backup
+
+# Local .terraform directories
+.terraform/
+
+# Terraform lock file (optional, some people track it)
+.terraform.lock.hcl
+
+# Crash logs
+crash.log

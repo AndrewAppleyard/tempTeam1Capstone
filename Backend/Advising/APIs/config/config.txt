@@ -1,0 +1,1 @@
+postgresql+psycopg2://postgres:us3URownP45sword8410@db:5432/advising

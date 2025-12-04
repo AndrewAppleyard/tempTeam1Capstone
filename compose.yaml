@@ -1,0 +1,63 @@
+services:
+  # 389 Directory Server (LDAP)
+  dirsrv:
+    hostname: uafs
+    container_name: uafs_ldap
+    build:
+      context: .
+      dockerfile: Dockerfile-ldap
+    ports:
+      - "7389:3389"
+      - "3636:3636"
+    environment:
+      DS_DM_PASSWORD: ${DS_DM_PASSWORD}
+      DS_SUFFIX_NAME: ${DS_SUFFIX_NAME}
+      DS_BACKEND_NAME: ${DS_BACKEND_NAME}
+    volumes:
+      - dirsrvdata:/data
+      - ./scripts/datas/initdb.d:/container-entrypoint-initdb.d:Z
+
+  # Vue Frontend
+  frontend:
+    container_name: uafs_frontend
+    build:
+      context: .
+      dockerfile: Dockerfile-frontend
+      target: prod # dev  # dev for dev server, builder for prod 
+    ports:
+      - 8080:80 # "5173:5173" # "8080:80" for apache prod
+    depends_on:
+      - backend
+
+  # PostgreSQL Database
+  db:
+    container_name: uafs_postgres
+    build:
+      context: .
+      dockerfile: Dockerfile-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  # Flask Backend
+  backend:
+    container_name: uafs_backend
+    build:
+      context: .
+      dockerfile: Dockerfile-api
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+
+volumes:
+  dirsrvdata:
+  pgdata:

@@ -1,30 +1,52 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import NavBar from './components/NavBar.vue'
+import { computed, onMounted } from 'vue'
+import { useUserStore } from './store/user.js'
+import { storeToRefs } from 'pinia'
+import { useRoute, useRouter } from 'vue-router'
+
+const userStore = useUserStore()
+const route = useRoute()
+
+const showNavBar = computed(() => {
+  return userStore.isLoggedIn && route.path !== '/'
+})
+
+// restore token if available
+// onMounted(() => {
+//   userStore.restoreSession()
+// })
 </script>
 
 <template>
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
-  </div>
-  <HelloWorld msg="Vite + Vue" />
+  <v-app>
+    <div id="app">
+      <NavBar v-if="showNavBar" />
+
+      <v-main>
+        <!-- <nav>
+          <RouterLink to="/UserProfilePage">User Profile</RouterLink> |
+          <RouterLink to="/admin">Admin</RouterLink> |
+          <RouterLink to="/advisor">Advisor</RouterLink> |
+          <RouterLink to="/student">Student</RouterLink> |
+          <RouterLink to="/transcript">Transcript</RouterLink> |
+          <RouterLink to="/courseCatalog">Course Catalog</RouterLink> |
+          <RouterLink to="/DegreePlanView">Degree Plan</RouterLink>
+        </nav> -->
+
+        <router-view />
+
+      </v-main>
+    </div>
+  </v-app>
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+<style>
+.v-application {
+  background-color: #E5F3FD !important;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+
+body {
+  background-color: #E5F3FD;
 }
 </style>
