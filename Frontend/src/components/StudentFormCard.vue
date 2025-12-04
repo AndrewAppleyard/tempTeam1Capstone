@@ -18,7 +18,7 @@ const selectedAdvisor = ref(null)
 const currentAdvisor = ref(null)
 
 const datePickerVisible = ref(false)
-const tempDate = ref('')
+const tempDate = ref(null)
 
 //For select fields
 const holdsOptions = [
@@ -46,6 +46,25 @@ const emailRule = value => {
   return emailRegex.test(value) || 'Please enter a valid email';
 }
 
+const requiredRule = value => !!value || 'This field is required'
+
+const charRule = (value, maxLength = 5, type = "string") => {
+  if (!value) return true
+
+  if (value.length > maxLength) return `Max ${maxLength} characters allowed`
+
+  const intPattern = /^\d+$/             
+  const decimalPattern = /^\d+(\.\d+)?$/ 
+
+  if (type === 'decimal') {
+    if (!decimalPattern.test(value)) return 'Must be a number (integer or decimal)'
+  } else if (type === 'int') {
+    if (!intPattern.test(value)) return 'Must be an integer'
+  }
+
+  return true
+}
+
 const form = ref({
   firstname: '',
   lastname: '',
@@ -63,20 +82,67 @@ const form = ref({
   registrationstatus: false,
   advisingstatus: false,
   activestatus: true,
-  dateadvised: '' // needs to be null at first 
+  dateadvised: null // needs to be null at first 
+})
+
+const requiredFields = [
+  'firstname',
+  'lastname',
+  'email',
+  'phonenumber',
+  'school',
+  'gpa',
+  'major',
+  'majorconcentration',
+  'minor',
+  'classstanding',
+  'financialhold',
+  'advisinghold',
+  'academichold',
+  'registrationstatus',
+  'advisingstatus',
+  'activestatus',
+]
+
+const isFormValid = computed(() => {
+  return requiredFields.every(field => {
+    const value = form.value[field]
+
+    if (value === false || value === true) return true
+
+    if (value === null || value === '' || value === undefined) return false
+
+    if (field === 'gpa') {
+      if (charRule(value, 10, 'decimal') !== true) return false
+    } else if (field === 'phonenumber') {
+      if (charRule(value, 10, 'int') !== true) return false
+    } 
+    else {
+      if (charRule(value, 50, 'string') !== true) return false
+    }
+
+    return true
+  })
 })
 
 async function save() {
   try {
     let studentid = null
+    const payload = { ...form.value }
+
+    if(!payload.dateadvised) {
+      delete payload.dateadvised
+    }
+
     if (props.student) {
       studentid = props.student.studentid
-      await StudentAPI.updateStudent(studentid, form.value)
+      await StudentAPI.updateStudent(studentid, payload)
+      //await StudentAPI.updateStudent(studentid, form.value)
       
     } else {
       form.value.role = 'student'
-      form.value.dateadvised = '2025-01-01' // should be empty
-      const response = await AdminAPI.addStudent(form.value)
+      //form.value.dateadvised = '2025-01-01' 
+      const response = await AdminAPI.addStudent(payload)
 
       console.log('AddStudent response:', response);
     }
@@ -119,15 +185,21 @@ function resetForm() { // need to reset id
 function convertToYDM(date) {
   if (!date) {
 
-    return ''
+    return null
   }
   const [y, m, d] = date.split('-')
   return `${y}-${d}-${m}`
 }
 
 function onDateSelect(value) {
+  if (value) {
+    form.value.dateadvised = convertToYDM(value)
+  } else {
+    form.value.dateadvised = null
+  }
+
+  tempDate.value = value || null
   datePickerVisible.value = false
-  form.value.dateadvised = convertToYDM(value)
 }
 
 async function removeAdvisor() {
@@ -144,6 +216,7 @@ async function removeAdvisor() {
 
 function close() {
   localVisible.value = false
+  datePickerVisible.value = false
   emits('close')
 }
 
@@ -206,42 +279,42 @@ onMounted(async () => {
 
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model="form.firstname" label="First Name" />
+              <v-text-field v-model="form.firstname" label="First Name" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model="form.lastname" label="Last Name" />
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field v-model="form.email" label="Email" :rules="[emailRule]" />
-            </v-col>
-            <v-col cols="6">
-              <v-text-field v-model="form.phonenumber" label="Phone Number" />
+              <v-text-field v-model="form.lastname" label="Last Name" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
             </v-col>
           </v-row>
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model="form.school" label="School" />
+              <v-text-field v-model="form.email" label="Email" :rules="[requiredRule, emailRule, value => charRule(value, 50, 'string')]" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model="form.gpa" label="GPA" type="number" />
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field v-model="form.major" label="Major" />
-            </v-col>
-            <v-col cols="6">
-              <v-text-field v-model="form.majorconcentration" label="Major Concentration" />
+              <v-text-field v-model="form.phonenumber" label="Phone Number" :rules="[requiredRule, value => charRule(value, 10, 'int')]" />
             </v-col>
           </v-row>
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model="form.minor" label="Minor" />
+              <v-text-field v-model="form.school" label="School" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model="form.classstanding" label="Class Standing" />
+              <v-text-field v-model="form.gpa" label="GPA" type="number" :rules="[requiredRule, value => charRule(value, 10, 'decimal')]" />
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field v-model="form.major" label="Major" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
+            </v-col>
+            <v-col cols="6">
+              <v-text-field v-model="form.majorconcentration" label="Major Concentration" :rules="[requiredRule, value => charRule(value, 50, 'string')]"/>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field v-model="form.minor" label="Minor" :rules="[value => charRule(value, 50, 'string')]"/>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field v-model="form.classstanding" label="Class Standing" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
             </v-col>
 
             <v-spacer></v-spacer>
@@ -257,6 +330,7 @@ onMounted(async () => {
                 label="Advisor"
                 placeholder="Select Advisor"
                 persistent-placeholder
+                :rules="[requiredRule]"
               />
             </v-col>
           </v-row>
@@ -268,73 +342,85 @@ onMounted(async () => {
           </v-row>
 
           <v-row>
-            <v-col cols="6">
+            <v-col>
               <v-select 
                 v-model="form.financialhold"
                 :items="holdsOptions"
                 item-title="text"
                 item-value="value"
                 label="Financial Hold"
+                placeholder="Hold"
+                :rules="[requiredRule]"
                 />
             </v-col>
           </v-row>
 
           <v-row>
-            <v-col cols="6">
+            <v-col>
               <v-select 
                 v-model="form.advisinghold"
                 :items="holdsOptions"
                 item-title="text"
                 item-value="value"
                 label="Advising Hold"
+                placeholder="Hold"
+                :rules="[requiredRule]"
                 />
             </v-col>
           </v-row>
 
           <v-row>
-            <v-col cols="6">
+            <v-col>
               <v-select 
                 v-model="form.academichold"
                 :items="holdsOptions"
                 item-title="text"
                 item-value="value"
                 label="Academic Hold"
+                placeholder="Hold"
+                :rules="[requiredRule]"
                 />
             </v-col>
           </v-row>
 
           <v-row>
-            <v-col cols="6">
+            <v-col>
               <v-select 
                 v-model="form.registrationstatus"
                 :items="registrationStatusOptions"
                 item-title="text"
                 item-value="value"
                 label="Registration Status"
+                placeholder="Status"
+                :rules="[requiredRule]"
                 />
             </v-col>
           </v-row>
 
           <v-row>
-            <v-col cols="6">
+            <v-col>
               <v-select 
                 v-model="form.advisingstatus"
                 :items="advisingStatusOptions"
                 item-title="text"
                 item-value="value"
                 label="Advising Status"
+                placeholder="Status"
+                :rules="[requiredRule]"
                 />
             </v-col>
           </v-row>
 
           <v-row>
-            <v-col cols="6">
+            <v-col>
               <v-select 
                 v-model="form.activestatus"
                 :items="activeStatusOptions"
                 item-title="text"
                 item-value="value"
                 label="Active Status"
+                placeholder="Status"
+                :rules="[requiredRule]"
                 />
             </v-col>
           </v-row>
@@ -370,7 +456,7 @@ onMounted(async () => {
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn color="red" text @click="close">Cancel</v-btn>
-        <v-btn color="primary" @click="save">{{ props.student ? 'Update' : 'Add' }}</v-btn>
+        <v-btn color="primary" :disabled="!isFormValid" @click="save">{{ props.student ? 'Update' : 'Add' }}</v-btn>
       </v-card-actions>
 
     </v-card>
