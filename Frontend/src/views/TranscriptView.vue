@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '../store/user.js'
 import StudentAPI from '../apis/StudentAPI.js'
+import UserAPI from '../apis/UserAPI.js'
+
+
+const userStore = useUserStore()
 
 /* ===== GPA scale (4.0) ===== */
 const GPA_POINTS: Record<string, number> = {
@@ -232,9 +237,11 @@ onMounted(() => {
 })
 
 
-function goBack() {
-  if (router && router.currentRoute.value.name !== 'students') {
-    router.push({ name: 'students' }).catch(() => window.history.back())
+async function goBack() {
+  const roleid = await UserAPI.getStudentByUID(userStore.userID)
+  userStore.roleID = roleid
+  if (router && router.currentRoute.value.name !== 'student') {
+    router.push(`/student/${userStore.roleID}`).catch(() => window.history.back())
   } else {
     window.history.back()
   }

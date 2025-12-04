@@ -134,8 +134,11 @@ async function updateDegreePlans() {
     let count = 2
     const response = await AdminAPI.updateDegreePlans(count)
     console.log("Degree Plan Updated:", response);
+    alert("Successfully updated degree plans.\n" + response);
+    refreshList();
   } catch (err) {
     console.error("Degree Plan Update Error:", err);
+    alert("Error updating degree plans. Check console for details.");
   }
 }
 
@@ -143,8 +146,11 @@ async function updateCurrentCourses() {
   try {
     const response = await AdminAPI.updateCurrentCourses()
     console.log("Current Courses Updated:", response);
+    alert("Successfully updated current courses.\n" + response.count);
+    refreshList();
   } catch (err) {
     console.error("Current Courses Update Error:", err);
+    alert("Error updating current courses. Check console for details.");
   }
 }
 
