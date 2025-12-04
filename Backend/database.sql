@@ -118,11 +118,11 @@ VALUES ('TestAdmin', 'Test', 'ta@uafs.edu', 4445556666, 'admin', 'UAFS');
 -- -- | gpa | major | majorconcentration | minor | classstanding | financialhold | advisinghold | academichold 
 -- -- | registrationstatus | advisingstatus | activestatus | dateadvised 
 
--- INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa, major, majorconcentration,
---             minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,
---             activestatus, dateadvised)
--- VALUES ('Cyrene', 'Aeides', 'ely00@uafs.edu', 4448889999, 'student', 'UAFS', 3.7, 'Astrophysics', 'General',
---             '', 'Senior', FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, CURRENT_TIMESTAMP);
+INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa, major, majorconcentration,
+            minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,
+            activestatus, dateadvised)
+VALUES ('Andrew', 'Appleyard', 'aapply00@uafs.edu', 4448889999, 'student', 'University of Arkansas - Fort Smith', 3.61, 'B.S. in Computer Science', 'General',
+             'Math', 'Sophomore', FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, CURRENT_TIMESTAMP);
 
 -- INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa, major, majorconcentration,
 --             minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,
@@ -176,12 +176,12 @@ VALUES ('TestAdmin', 'Test', 'ta@uafs.edu', 4445556666, 'admin', 'UAFS');
 -- INSERT INTO advisor_and_students (studentid, advisorid)
 -- VALUES (6, 2);
 
--- INSERT INTO transcript (studentid, program, concentration, year, institution, transcript, cumulative_gpa)
-/* VALUES (
+INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
+VALUES (
     1,
     'B.S. in Computer Science',
     'General',
-    'Junior',
+    'Sophomore',
     'University of Arkansas - Fort Smith',
     '[
       {
@@ -218,6 +218,6 @@ VALUES ('TestAdmin', 'Test', 'ta@uafs.edu', 4445556666, 'admin', 'UAFS');
         ],
         "semester_gpa": 3.55
       }
-    ]',
+    ]'::jsonb,
     3.61
-); */
+);

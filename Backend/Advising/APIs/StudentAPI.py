@@ -62,37 +62,49 @@ def getStudents():
     
     try:
         with Session(engine) as session:
+            students = session.query(Student.StudentMap).all()
+            result = []
 
-            studentList = []
+            for s in students:
+                transcript = (session.query(Transcript.TranscriptMap).filter(Transcript.TranscriptMap.studentid == s.studentid).first())
 
-            results = session.execute(session.query(Student.StudentMap)).scalars()
+                transcript_json = None
+                if transcript:
+                    transcript_json = {
+                        "transcriptid": transcript.transcriptid,
+                        "studentid": transcript.studentid,
+                        "program": transcript.program,
+                        "concentration": transcript.concentration,
+                        "year": transcript.year,
+                        "institution": transcript.institution,
+                        "coursemap": transcript.coursemap,
+                        "cumulativegpa": transcript.cumulativegpa
+                    }
 
-            for student in results:
-                
-                s = Student.Student()
-                s.studentid = student.studentid
-                s.firstname = student.firstname
-                s.lastname = student.lastname
-                s.email = student.email
-                s.phonenumber = student.phonenumber
-                s.role = student.role
-                s.school = student.school
-                s.gpa = student.gpa
-                s.major = student.major
-                s.majorconcentration = student.majorconcentration
-                s.minor = student.minor
-                s.classstanding = student.classstanding
-                s.registrationstatus = student.registrationstatus
-                s.advisingstatus = student.advisingstatus
-                s.dateadvised = student.dateadvised
-                s.financialhold = student.financialhold
-                s.advisinghold = student.advisinghold
-                s.academichold = student.academichold
-                s.classes = student.classes
+                result.append({
+                    "studentid": s.studentid,
+                    "firstname": s.firstname,
+                    "lastname": s.lastname,
+                    "email": s.email,
+                    "phonenumber": s.phonenumber,
+                    "role": s.role,
+                    "school": s.school,
+                    "gpa": s.gpa,
+                    "major": s.major,
+                    "majorconcentration": s.majorconcentration,
+                    "minor": s.minor,
+                    "classstanding": s.classstanding,
+                    "registrationstatus": s.registrationstatus,
+                    "advisingstatus": s.advisingstatus,
+                    "dateadvised": s.dateadvised,
+                    "financialhold": s.financialhold,
+                    "advisinghold": s.advisinghold,
+                    "academichold": s.academichold,
+                    "classes": s.classes,
+                    "transcript": transcript_json
+                })
 
-                studentList.append(s.__dict__)
-
-            return studentList
+            return jsonify(result)
         
     except Exception as e:
         
@@ -101,41 +113,61 @@ def getStudents():
     finally:
         session.close()
 
+from UserClasses import Transcript
+
 @bp.route("/<int:studentid>",methods = ['GET', 'POST'])
 @role_required("UAFS_STUDENTS", "UAFS_ADVISORS")
 def getStudentInfo(studentid: int):
 
     try:
         with Session(engine) as session:
-            studentData = Student.Student()
+            student = session.query(Student.StudentMap).filter(Student.StudentMap.studentid == studentid).first()
+            if not student:
+                return jsonify({"error": "Student not found"}), 404
 
-            result = session.query(Student.StudentMap) \
-                    .filter(Student.StudentMap.studentid == studentid) \
-                    .first()
+            student_result = {}
+            student_result["studentid"] = student.studentid
+            student_result["firstname"] = student.firstname
+            student_result["lastname"] = student.lastname
+            student_result["email"] = student.email
+            student_result["phonenumber"] = student.phonenumber
+            student_result["role"] = student.role
+            student_result["school"] = student.school
+            student_result["gpa"] = student.gpa
+            student_result["major"] = student.major
+            student_result["majorconcentration"] = student.majorconcentration
+            student_result["minor"] = student.minor
+            student_result["classstanding"] = student.classstanding
+            student_result["registrationstatus"] = student.registrationstatus
+            student_result["advisingstatus"] = student.advisingstatus
+            student_result["dateadvised"] = student.dateadvised
+            student_result["financialhold"] = student.financialhold
+            student_result["advisinghold"] = student.advisinghold
+            student_result["academichold"] = student.academichold
+            student_result["classes"] = student.classes
 
-            student = Student.Student()
 
-            student.studentid = result.studentid
-            student.firstname = result.firstname
-            student.lastname = result.lastname
-            student.email = result.email
-            student.phonenumber = result.phonenumber
-            student.role = result.role
-            student.school = result.school
-            student.gpa = result.gpa
-            student.major = result.major
-            student.majorconcentration = result.majorconcentration
-            student.minor = result.minor
-            student.classstanding = result.classstanding
-            student.registrationstatus = result.registrationstatus
-            student.advisingstatus = result.advisingstatus
-            student.dateadvised = result.dateadvised
-            student.finanicalHold = result.financialhold
-            student.advisinghold = result.advisinghold
-            student.academichold = result.academichold
-            student.classes = result.classes
+            transcript = session.query(Transcript.TranscriptMap).filter(Transcript.TranscriptMap.studentid == studentid).first()
 
-            return student.__dict__
+            if transcript:
+                transcript_result = {}
+                transcript_result["transcriptid"] = transcript.transcriptid
+                transcript_result["studentid"] = transcript.studentid
+                transcript_result["program"] = transcript.program
+                transcript_result["concentration"] = transcript.concentration
+                transcript_result["year"] = transcript.year
+                transcript_result["institution"] = transcript.institution
+                transcript_result["coursemap"] = transcript.coursemap
+                transcript_result["cumulativegpa"] = transcript.cumulativegpa
+            else:
+                transcript_result = None
+
+            return jsonify({
+                "student": student_result,
+                "transcript": transcript_result
+            }), 200
+
+
     except Exception as e:
         traceback.print_exc()
         return "Failed to Execute Search"
