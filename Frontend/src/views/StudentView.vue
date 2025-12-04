@@ -82,10 +82,9 @@ const greetingName = computed(() => (studentName.value.trim() ? studentName.valu
 const advisorName = ref('TBA')
 const advisorEmail = ref('TBA')
 const advisorPhone = ref('TBA')
-const advisorOffice = ref('TBA') // not stored in db
+// const advisorOffice = ref('TBA') // not stored in db
 
-interface StudentClass { number: string; name: string }
-const studentClasses = ref<StudentClass[]>([])
+interface SemesterData { coursemap: any; courses: TranscriptCourse[] }
 
 function formatPhoneNumber(rawNumber: string | null | undefined): string {
   if (!rawNumber) return 'N/A' 
@@ -265,8 +264,34 @@ onMounted(async () => {
     const transcripts = await StudentAPI.getTranscripts(studentid)
     console.log("Transcripts Loaded for Current Schedule:", transcripts)
     
+    let semesterCourses: SemesterData[] = []
+    
     if (transcripts.length > 0) {
+      
+      transcripts.sort((a, b) => b.year - a.year); 
+      const mostRecentTranscript = transcripts[0]
+      
+      if (mostRecentTranscript.coursemap) {
+        let coursemapData = mostRecentTranscript.coursemap
+        
+        if (Array.isArray(coursemapData)) {
+            semesterCourses = coursemapData
+        } 
+        else if (typeof coursemapData === 'string') {
+             try {
+                semesterCourses = JSON.parse(coursemapData) 
+             } catch(e) {
+                console.error("Error parsing coursemap string:", e)
+             }
+        }
+        
+        if (!Array.isArray(semesterCourses)) {
+            semesterCourses = [] 
+        }
+      }
+      
       let allCourses: TranscriptCourse[] = semesterCourses.flatMap(semester => semester.courses || [])
+      
       const coursesForCard = allCourses.slice(-6) 
       
       const cardCourses: CurrentRow[] = coursesForCard.map(c => ({
@@ -278,6 +303,21 @@ onMounted(async () => {
           cardCourses.push({ number: '—', name: '—' })
       }
       currentSchedule.value = cardCourses
+      
+      currentPopupRows.value = allCourses.map(c => ({
+          number: c.code || '—',
+          course: c.title || '—',
+          time: 'N/A (Completed)', 
+          location: mostRecentTranscript.institution || 'N/A',
+          professor: 'N/A',
+          availability: 'Complete',
+          waitlist: '—' 
+      }))
+      
+      while (currentPopupRows.value.length < 5) {
+          currentPopupRows.value.push({ number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' })
+      }
+      
     } else {
         const emptyCardCourses: CurrentRow[] = []
         while (emptyCardCourses.length < 6) {
