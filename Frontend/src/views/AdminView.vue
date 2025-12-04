@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useViewModeStore } from '../store/pinia.js'
 import { storeToRefs } from 'pinia'
@@ -18,6 +18,7 @@ const router = useRouter()
 
 const advisors = ref([])
 const students = ref([])
+
 const selectedItem = ref(null)
 const editMode = ref(false)
 
@@ -26,13 +27,23 @@ const studentToEdit = ref(null)
 const showAdvisorForm = ref(false)
 const advisorToEdit = ref(null)
 
+/**
+ * Used as the default advisor type when creating a NEW advisor.
+ * The actual <v-select> for type should live in AdvisorFormCard.
+ */
+const newAdvisorType = ref('ROAR') // 'ROAR' | 'COLLEGE'
+
+// Search terms
+const advisorSearch = ref('')
+const studentSearch = ref('')
+
 /* =========================================================
    FETCH FUNCTIONS
 ========================================================= */
 async function fetchAdvisors() {
   try {
     const data = await AdvisorAPI.getAllAdvisors()
-    advisors.value = data
+    advisors.value = data || []
   } catch (err) {
     console.error('Error fetching advisors:', err)
   }
@@ -43,7 +54,7 @@ async function fetchStudents() {
     const data = await StudentAPI.getAllStudents()
     const now = new Date()
 
-    students.value = data.sort((a, b) => {
+    students.value = (data || []).sort((a, b) => {
       const aHold = a.advisinghold || a.academichold || a.financialhold
       const bHold = b.advisinghold || b.academichold || b.financialhold
       if (aHold !== bHold) return bHold - aHold
@@ -67,6 +78,58 @@ async function fetchStudents() {
 }
 
 /* =========================================================
+   COMPUTED: ADVISOR GROUPS + FILTERING
+========================================================= */
+const roarAdvisors = computed(() =>
+  advisors.value.filter((a) => (a.advisortype || '').toUpperCase() === 'ROAR')
+)
+
+const collegeAdvisors = computed(() =>
+  advisors.value.filter((a) => (a.advisortype || '').toUpperCase() === 'COLLEGE')
+)
+
+const filteredRoarAdvisors = computed(() => {
+  const q = advisorSearch.value.trim().toLowerCase()
+  if (!q) return roarAdvisors.value
+
+  return roarAdvisors.value.filter((a) => {
+    const fullName = `${a.firstname || ''} ${a.lastname || ''}`.toLowerCase()
+    const email = (a.email || '').toLowerCase()
+    return fullName.includes(q) || email.includes(q)
+  })
+})
+
+const filteredCollegeAdvisors = computed(() => {
+  const q = advisorSearch.value.trim().toLowerCase()
+  if (!q) return collegeAdvisors.value
+
+  return collegeAdvisors.value.filter((a) => {
+    const fullName = `${a.firstname || ''} ${a.lastname || ''}`.toLowerCase()
+    const email = (a.email || '').toLowerCase()
+    return fullName.includes(q) || email.includes(q)
+  })
+})
+
+/* =========================================================
+   COMPUTED: STUDENT FILTERING
+========================================================= */
+const filteredStudents = computed(() => {
+  const q = studentSearch.value.trim().toLowerCase()
+  if (!q) return students.value
+
+  return students.value.filter((s) => {
+    const fullName = `${s.firstname || ''} ${s.lastname || ''}`.toLowerCase()
+    const email = (s.email || '').toLowerCase()
+    const id = (s.studentid || '').toString().toLowerCase()
+    return (
+      fullName.includes(q) ||
+      email.includes(q) ||
+      id.includes(q)
+    )
+  })
+})
+
+/* =========================================================
    ACTIONS & HANDLERS
 ========================================================= */
 function goToUser(id) {
@@ -75,8 +138,12 @@ function goToUser(id) {
 }
 
 function selectUser(item) {
-  if (editMode.value) selectedItem.value = item
-  else goToUser(item[viewMode.value === 'students' ? 'studentid' : 'userid'])
+  if (editMode.value) {
+    selectedItem.value = item
+  } else {
+    const key = viewMode.value === 'students' ? 'studentid' : 'userid'
+    goToUser(item[key])
+  }
 }
 
 function toggleEditMode() {
@@ -84,18 +151,30 @@ function toggleEditMode() {
   selectedItem.value = null
 }
 
+/**
+ * Add new Student / Advisor.
+ * For advisors, we pass NULL to AdvisorFormCard so it knows
+ * this is a "create" form, NOT an update.
+ */
 function addUser() {
+  selectedItem.value = null
+
   if (viewMode.value === 'students') {
     studentToEdit.value = null
     showStudentForm.value = true
   } else {
-    advisorToEdit.value = null
+    advisorToEdit.value = null         // clearly "new advisor"
+    newAdvisorType.value = 'ROAR'      // default value; form can use this
     showAdvisorForm.value = true
   }
 }
 
+/**
+ * Update existing Student / Advisor
+ */
 function updateUser() {
   if (!selectedItem.value) return
+
   if (viewMode.value === 'students') {
     studentToEdit.value = selectedItem.value
     showStudentForm.value = true
@@ -107,14 +186,17 @@ function updateUser() {
 
 async function deleteUser() {
   if (!selectedItem.value) return
-  const id = selectedItem.value[viewMode.value === 'students' ? 'studentid' : 'userid']
+
+  const key = viewMode.value === 'students' ? 'studentid' : 'userid'
+  const id = selectedItem.value[key]
+
   try {
     if (viewMode.value === 'students') {
       await AdminAPI.deleteStudent(id)
-      fetchStudents()
+      await fetchStudents()
     } else {
       await AdminAPI.deleteAdvisor(id)
-      fetchAdvisors()
+      await fetchAdvisors()
     }
     selectedItem.value = null
   } catch (err) {
@@ -129,20 +211,20 @@ function refreshList() {
 
 async function updateDegreePlans() {
   try {
-    let count = 2
+    const count = 2
     const response = await AdminAPI.updateDegreePlans(count)
-    console.log("Degree Plan Updated:", response);
+    console.log('Degree Plans Updated:', response)
   } catch (err) {
-    console.error("Degree Plan Update Error:", err);
+    console.error('Degree Plan Update Error:', err)
   }
 }
 
 async function updateCurrentCourses() {
   try {
     const response = await AdminAPI.updateCurrentCourses()
-    console.log("Current Courses Updated:", response);
+    console.log('Current Courses Updated:', response)
   } catch (err) {
-    console.error("Current Courses Update Error:", err);
+    console.error('Current Courses Update Error:', err)
   }
 }
 
@@ -165,21 +247,21 @@ function getCardStyle(item) {
     const advising = item.advisingstatus
     let bg = 'transparent'
 
-    if (hasHold) bg = '#FF746C'        // red-ish for holds
-    else if (advising) bg = '#ADEBB3'  // green-ish if advised
+    if (hasHold) bg = '#FF746C'
+    else if (advising) bg = '#ADEBB3'
 
     return {
       backgroundColor: selectedItem.value === item ? '#D1E5F4' : bg,
       border: '1px solid #002856',
       borderColor: selectedItem.value === item ? '#0050a0' : '#002856',
-      borderRadius: '10px'
+      borderRadius: '10px',
     }
   } else {
     return {
       backgroundColor: selectedItem.value === item ? '#D1E5F4' : 'transparent',
       border: '1px solid #002856',
       borderColor: selectedItem.value === item ? '#0050a0' : '#002856',
-      borderRadius: '10px'
+      borderRadius: '10px',
     }
   }
 }
@@ -189,9 +271,16 @@ function getCardStyle(item) {
 ========================================================= */
 watch(
   viewMode,
-  (newMode) => {
-    if (newMode === 'students') fetchStudents()
-    else fetchAdvisors()
+  async (newMode) => {
+    advisorSearch.value = ''
+    studentSearch.value = ''
+    selectedItem.value = null
+
+    if (newMode === 'students') {
+      await fetchStudents()
+    } else {
+      await fetchAdvisors()
+    }
   },
   { immediate: true }
 )
@@ -202,9 +291,10 @@ watch(
     <v-row>
       <!-- 95% width shell, centered to match other pages -->
       <v-col cols="12" class="mx-auto admin-shell">
-        <v-card class="pa-5 heavy-page"
-                style="background-color:#BDD5E7;border:1px solid #002856;border-radius:16px;">
-
+        <v-card
+          class="pa-5 heavy-page"
+          style="background-color:#BDD5E7;border:1px solid #002856;border-radius:16px;"
+        >
           <!-- Header / Title -->
           <v-row class="mb-4" align="center" no-gutters>
             <v-col cols="12" md="6" class="d-flex align-center">
@@ -213,13 +303,29 @@ watch(
                   LIST OF {{ viewMode === 'students' ? 'STUDENTS' : 'ADVISORS' }}
                 </v-card-title>
               </v-card>
-              <v-btn @click="updateDegreePlans"> Update Degree Plans </v-btn>
-              <v-btn @click="updateCurrentCourses"> Update Current Courses </v-btn>
             </v-col>
 
-            <!-- (Optional) you can place a mini switch here to swap viewMode if needed -->
-            <v-col cols="12" md="6" class="d-flex justify-end align-center flex-wrap header-actions">
-              <!-- reserved for future filters / search -->
+            <!-- Header actions -->
+            <v-col
+              cols="12"
+              md="6"
+              class="d-flex justify-end align-center flex-wrap header-actions"
+            >
+              <v-btn
+                class="header-update-btn brand-primary-btn"
+                prepend-icon="mdi-file-tree"
+                @click="updateDegreePlans"
+              >
+                Update Degree Plans
+              </v-btn>
+
+              <v-btn
+                class="header-update-btn brand-primary-btn"
+                prepend-icon="mdi-book-open-variant"
+                @click="updateCurrentCourses"
+              >
+                Update Current Courses
+              </v-btn>
             </v-col>
           </v-row>
 
@@ -228,14 +334,24 @@ watch(
             <v-row justify="center">
               <v-col cols="12" class="d-flex flex-column align-center justify-center text-center">
                 <!-- Edit / Exit Edit Mode Button -->
-                <v-btn color="#0032A0" class="text-on-dark mb-3" @click="toggleEditMode">
+                <v-btn
+                  color="#0032A0"
+                  class="text-on-dark mb-3 main-edit-btn"
+                  @click="toggleEditMode"
+                >
                   {{ editMode ? 'Exit Edit Mode' : 'Edit' }}
                 </v-btn>
 
-                <!-- Action Buttons (forced on new line & centered) -->
+                <!-- Action Buttons -->
                 <template v-if="editMode">
-                  <div class="d-flex flex-wrap justify-center" style="gap: 12px;">
-                    <v-btn class="action-btn" color="#002856" variant="flat" style="color:#F5F5F5" @click="addUser">
+                  <div class="d-flex flex-wrap justify-center action-btn-row">
+                    <v-btn
+                      class="action-btn"
+                      color="#002856"
+                      variant="flat"
+                      style="color:#F5F5F5"
+                      @click="addUser"
+                    >
                       Add {{ viewMode === 'students' ? 'Student' : 'Advisor' }}
                     </v-btn>
 
@@ -263,12 +379,33 @@ watch(
           </v-card>
 
           <!-- User List -->
-          <v-card class="pa-4 glass-card">
+          <!-- STUDENTS VIEW -->
+          <v-card
+            v-if="viewMode === 'students'"
+            class="pa-4 glass-card"
+          >
+            <!-- Search Bar for Students -->
+            <v-row class="mb-4" align="center">
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="studentSearch"
+                  label="Search students by name, email, or ID"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="mdi-magnify"
+                  clearable
+                />
+              </v-col>
+            </v-row>
+
             <v-row>
               <v-col
-                v-for="item in (viewMode === 'students' ? students : advisors)"
-                :key="item[viewMode === 'students' ? 'studentid' : 'userid']"
-                cols="12" sm="6" md="4" lg="3"
+                v-for="item in filteredStudents"
+                :key="item.studentid"
+                cols="12"
+                sm="6"
+                md="4"
+                lg="3"
               >
                 <v-card
                   :style="getCardStyle(item)"
@@ -292,17 +429,21 @@ watch(
                         </v-icon>
                       </template>
 
-                      <div style="white-space: pre-line; font-size: 0.9rem;">
-                        <strong>Advising Hold:</strong> {{ item.advisinghold ? 'Yes' : 'No' }}\n
-                        <strong>Academic Hold:</strong> {{ item.academichold ? 'Yes' : 'No' }}\n
-                        <strong>Financial Hold:</strong> {{ item.financialhold ? 'Yes' : 'No' }}\n
-                        <strong>Advising Status:</strong> {{ item.advisingstatus || 'N/A' }}\n
-                        <strong>Registration Status:</strong> {{ item.registrationstatus || 'N/A' }}
+                      <div class="info-tooltip">
+                        <div><strong>Advising Hold:</strong> {{ item.advisinghold ? 'Yes' : 'No' }}</div>
+                        <div><strong>Academic Hold:</strong> {{ item.academichold ? 'Yes' : 'No' }}</div>
+                        <div><strong>Financial Hold:</strong> {{ item.financialhold ? 'Yes' : 'No' }}</div>
+                        <div><strong>Advising Status:</strong> {{ item.advisingstatus || 'N/A' }}</div>
+                        <div><strong>Registration Status:</strong> {{ item.registrationstatus || 'N/A' }}</div>
                       </div>
                     </v-tooltip>
                   </v-card-title>
 
-                  <v-card-subtitle v-if="item.dateadvised" class="text-caption" style="color: black;">
+                  <v-card-subtitle
+                    v-if="item.dateadvised"
+                    class="text-caption"
+                    style="color: black;"
+                  >
                     {{
                       new Date(item.dateadvised) > new Date()
                         ? `Upcoming advising appointment: ${new Date(item.dateadvised).toLocaleDateString()}`
@@ -310,6 +451,100 @@ watch(
                     }}
                   </v-card-subtitle>
                 </v-card>
+              </v-col>
+
+              <v-col v-if="filteredStudents.length === 0" cols="12" class="text-center text-caption">
+                No students found.
+              </v-col>
+            </v-row>
+          </v-card>
+
+          <!-- ADVISORS VIEW (split into ROAR and COLLEGE) -->
+          <v-card
+            v-else
+            class="pa-4 glass-card"
+          >
+            <!-- Search Bar for Advisors -->
+            <v-row class="mb-4" align="center">
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="advisorSearch"
+                  label="Search advisors by name or email"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="mdi-magnify"
+                  clearable
+                />
+              </v-col>
+            </v-row>
+
+            <!-- ROAR ADVISORS -->
+            <v-row>
+              <v-col cols="12">
+                <h3 class="mb-3 brand-primary">ROAR Advisors</h3>
+              </v-col>
+
+              <v-col
+                v-for="item in filteredRoarAdvisors"
+                :key="item.userid"
+                cols="12"
+                sm="6"
+                md="4"
+                lg="3"
+              >
+                <v-card
+                  :style="getCardStyle(item)"
+                  class="pa-4 d-flex flex-column align-center justify-center user-card"
+                  hover
+                  @click="selectUser(item)"
+                >
+                  <v-card-title class="user-name">
+                    {{ item.firstname }} {{ item.lastname }}
+                  </v-card-title>
+                  <v-card-subtitle class="text-caption" style="color:black;">
+                    ROAR Advisor
+                  </v-card-subtitle>
+                </v-card>
+              </v-col>
+
+              <v-col v-if="filteredRoarAdvisors.length === 0" cols="12" class="text-center text-caption">
+                No ROAR advisors found.
+              </v-col>
+            </v-row>
+
+            <v-divider class="my-6" />
+
+            <!-- COLLEGE ADVISORS -->
+            <v-row>
+              <v-col cols="12">
+                <h3 class="mb-3 brand-primary">College Advisors</h3>
+              </v-col>
+
+              <v-col
+                v-for="item in filteredCollegeAdvisors"
+                :key="item.userid"
+                cols="12"
+                sm="6"
+                md="4"
+                lg="3"
+              >
+                <v-card
+                  :style="getCardStyle(item)"
+                  class="pa-4 d-flex flex-column align-center justify-center user-card"
+                  hover
+                  @click="selectUser(item)"
+                >
+                  <v-card-title class="user-name">
+                    {{ item.firstname }} {{ item.lastname }}
+                  </v-card-title>
+                  <v-card-subtitle class="text-caption" style="color:black;">
+                    College Advisor
+                  </v-card-subtitle>
+                </v-card>
+              </v-col>
+
+              <v-col v-if="filteredCollegeAdvisors.length === 0" cols="12" class="text-center text-caption">
+                No college advisors found.
               </v-col>
             </v-row>
           </v-card>
@@ -328,9 +563,13 @@ watch(
       :student="studentToEdit"
       @saved="refreshList"
     />
+
+    <!-- AdvisorFormCard will show its OWN type select.
+         It can use defaultType when creating a new advisor. -->
     <AdvisorFormCard
       v-model:visible="showAdvisorForm"
       :advisor="advisorToEdit"
+      :default-type="newAdvisorType"
       @saved="refreshList"
     />
   </v-container>
@@ -338,58 +577,127 @@ watch(
 
 <style scoped>
 /* 95% width shell, centered to align with your other pages */
-.admin-shell{
-  width:95%;
-  margin-left:auto;
-  margin-right:auto;
+.admin-shell {
+  width: 95%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Heavier but not flashy, consistent with profile/login */
-.heavy-page{
-  font-size:1.06rem;
-  line-height:1.55;
+.heavy-page {
+  font-size: 1.06rem;
+  line-height: 1.55;
 }
 
 /* Title chip */
-.title-chip{
-  color:#002856;
-  border:1px solid #002856;
-  border-radius:8px;
-  font-weight:700;
-  letter-spacing:.25px;
-  font-size:1.15rem;
+.title-chip {
+  color: #002856;
+  border: 1px solid #002856;
+  border-radius: 8px;
+  font-weight: 700;
+  letter-spacing: 0.25px;
+  font-size: 1.15rem;
 }
 
 /* Subtle glass card look */
-.glass-card{
-  background-color:rgba(255,255,255,.6);
-  border:1px solid #002856;
-  border-radius:12px;
+.glass-card {
+  background-color: rgba(255, 255, 255, 0.6);
+  border: 1px solid #002856;
+  border-radius: 12px;
 }
 
 /* Brand helpers */
-.brand-primary{ color:#002856; }
-.text-on-dark{ color:#F5F5F5 !important; }
+.brand-primary {
+  color: #002856;
+}
+.text-on-dark {
+  color: #F5F5F5 !important;
+}
+
+/* HEADER BUTTONS */
+.header-actions {
+  gap: 8px;
+}
+
+.header-update-btn {
+  margin-left: 0.5rem;
+  margin-top: 0.5rem;
+  padding-inline: 16px;
+  text-transform: none;
+  font-weight: 600;
+  border-radius: 999px;
+  font-size: 0.92rem;
+}
+
+/* Brand primary pill-style button */
+.brand-primary-btn {
+  background-color: #0032A0 !important;
+  color: #F5F5F5 !important;
+}
+
+/* Main Edit button */
+.main-edit-btn {
+  text-transform: none;
+  font-weight: 600;
+}
 
 /* Buttons row */
-.action-btn{ min-width:210px; }
+.action-btn-row {
+  gap: 12px;
+}
+.action-btn {
+  min-width: 210px;
+  text-transform: none;
+  font-weight: 600;
+}
 
 /* User card hover & typography */
-.user-card{ transition:transform .15s ease, box-shadow .15s ease; text-align:center; }
-.user-card:hover{ transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.15); }
-.user-name{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  font-weight:600;
-  font-size:1.05rem;
+.user-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  text-align: center;
+}
+.user-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+.user-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+/* Tooltip content */
+.info-tooltip {
+  white-space: normal;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+/* Advisor type select lives inside AdvisorFormCard.
+   This file only defines common styles + cancel buttons. */
+
+/* Cancel buttons -> black text */
+.cancel-btn {
+  color: black !important;
 }
 
 /* Print */
-@media print{
-  .v-btn,.v-select,.v-text-field,.v-tabs{ display:none !important; }
-  body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .v-card{ box-shadow:none !important; }
+@media print {
+  .v-btn,
+  .v-select,
+  .v-text-field,
+  .v-tabs {
+    display: none !important;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .v-card {
+    box-shadow: none !important;
+  }
 }
 </style>
