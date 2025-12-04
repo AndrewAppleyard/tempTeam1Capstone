@@ -2,7 +2,8 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user.js'
-import  TransferAPI  from '../apis/TransferAPI.js'
+import TransferAPI from '../apis/TransferAPI.js'
+import UserAPI from '../apis/UserAPI.js'
 
 /* =========================
    STATE
@@ -29,29 +30,33 @@ const rules = {
    ACTIONS
 ========================= */
 async function login() {
-  // const isValid = await form.value?.validate()
-  // if (!isValid) {
-  //   alert('Login failed. Please check your credentials.')
-  //   return
-  // }
-  
   loading.value = true
 
   try {
-
-    console.log("TransferAPI:", TransferAPI)
-
     await TransferAPI.login(username.value, password.value)
 
     if (userStore.isLoggedIn) {
+      const userInfo = await UserAPI.getUserByEmail(username.value)
+    
+      userStore.userID = userInfo.userid
+      console.log("user info UID: " + userInfo.userid)
+      console.log("user store UID: " + userStore.userID)
       alert('Login successful!')
 
       switch (userStore.userRole) {
         case 'UAFS_STUDENTS':
-          router.replace('/student')
+          const studentid = await UserAPI.getStudentByUID(userStore.userID)
+          userStore.roleID = studentid
+          console.log("studentid: " + studentid)
+          console.log("user store roleid: " + userStore.roleID)
+          router.replace(`/student/${userStore.roleID}`)
           break
         case 'UAFS_ADVISORS':
-          router.replace('/advisor')
+          const advisorid = await UserAPI.getAdvisorByUID(userStore.userID)
+          userStore.roleID = advisorid
+          console.log("advisorid: " + advisorid)
+          console.log("user store roleid: " + userStore.roleID)
+          router.replace(`/advisor/${userStore.roleID}`)
           break
         case 'UAFS_ADMINS':
           router.replace('/admin')

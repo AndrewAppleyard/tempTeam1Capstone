@@ -11,6 +11,7 @@ from UserClasses.Student import StudentMap
 from UserClasses.DegreePlan import DegreePlanMap
 from UserClasses.CurrentCourse import CurrentCourseMap
 from UserClasses.Transcript import TranscriptMap
+from UserClasses import Student, User
 
 bp = Blueprint('AgentAPI', __name__, url_prefix="/Schedule")
 
@@ -176,8 +177,10 @@ def generate_schedule(student_id):
 
             schedule = generate_schedule_with_agent(student, transcript, degreeplan, current_course_list, target_semester)
 
-            if "courses" in schedule:
-                student.classes = schedule["courses"]
+#             if "courses" in schedule:
+#                 student.classes = schedule["courses"]
+
+            student.classes = json.dumps(data["courses"])
 
             session.commit()
 

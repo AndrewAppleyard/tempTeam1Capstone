@@ -1,15 +1,21 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import AdvisorAPI from '../apis/AdvisorAPI'
 
 /* =========================
    STATE
 ========================= */
+const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
 const error = ref(null)
 const students = ref([])
+const advisorid = route.params.advisorid
+const userid = route.params.userid
+
+console.log("advisorid:\t" + advisorid)
+console.log("userid:\t" + userid)
 
 const searchQuery = ref('')
 
@@ -20,7 +26,6 @@ async function fetchStudents() {
   loading.value = true
   error.value = null
   try {
-    const advisorid = 1 // TODO: replace with real advisor id (from auth/store/route)
     const response = await AdvisorAPI.getAdvisorStudents(advisorid)
 
     const now = new Date()
@@ -102,6 +107,10 @@ function getCardStyle(s) {
   }
 }
 
+onMounted(async () => {
+  const userData = await AdvisorAPI.getAdvisorById(userid)
+  console.log(userData)
+})
 onMounted(fetchStudents)
 </script>
 

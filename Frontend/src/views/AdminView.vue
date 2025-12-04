@@ -193,10 +193,12 @@ async function deleteUser() {
   try {
     if (viewMode.value === 'students') {
       await AdminAPI.deleteStudent(id)
-      await fetchStudents()
+      alert("Successfully deleted student.")
+      fetchStudents()
     } else {
       await AdminAPI.deleteAdvisor(id)
-      await fetchAdvisors()
+      alert("Successfully deleted advisor.")
+      fetchAdvisors()
     }
     selectedItem.value = null
   } catch (err) {
@@ -213,18 +215,24 @@ async function updateDegreePlans() {
   try {
     const count = 2
     const response = await AdminAPI.updateDegreePlans(count)
-    console.log('Degree Plans Updated:', response)
+    console.log("Degree Plan Updated:", response);
+    alert("Successfully updated degree plans.\n" + response);
+    refreshList();
   } catch (err) {
-    console.error('Degree Plan Update Error:', err)
+    console.error("Degree Plan Update Error:", err);
+    alert("Error updating degree plans. Check console for details.");
   }
 }
 
 async function updateCurrentCourses() {
   try {
     const response = await AdminAPI.updateCurrentCourses()
-    console.log('Current Courses Updated:', response)
+    console.log("Current Courses Updated:", response);
+    alert("Successfully updated current courses.\n" + response.count);
+    refreshList();
   } catch (err) {
-    console.error('Current Courses Update Error:', err)
+    console.error("Current Courses Update Error:", err);
+    alert("Error updating current courses. Check console for details.");
   }
 }
 

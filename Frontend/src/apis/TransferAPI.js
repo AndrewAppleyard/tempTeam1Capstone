@@ -5,14 +5,13 @@ export default {
 
     async login(username, password) {
         try {
-            console.log("BEGINNING OF LOGIN")
             const response = await api.post("/Transfer/login", { username, password });
-            console.log("AFTER AWAIT LOGIN")
 
             const userStore = useUserStore()
             if (response.data.login) {
-            userStore.isLoggedIn = true
-            userStore.userRole = response.data.Role
+                userStore.isLoggedIn = true
+                userStore.userRole = response.data.Role
+                userStore.email = response.data.email
             } else {
             userStore.isLoggedIn = false
             }
