@@ -1,9 +1,0 @@
-# Enable mod_rewrite (URL rewriting engine)
-RewriteEngine On
-
-# If the request is for an actual file or directory, don't redirect it.
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-
-# Redirect all other requests to index.html for client-side routing (Vue Router).
-RewriteRule ^ /index.html [L]

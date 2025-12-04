@@ -1,3 +1,0 @@
-services:
-  dirsrv:
-    image: aa39853/dirsrv:latest
