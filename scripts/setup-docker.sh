@@ -22,7 +22,7 @@ sudo systemctl restart docker
 #sleep 30
 
 echo "Starting Docker containers..."
-sudo docker-compose up -d
+sudo docker-compose up #-d
 sudo docker ps
 
 echo "Docker containers are now up and running."

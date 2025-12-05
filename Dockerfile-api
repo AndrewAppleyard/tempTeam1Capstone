@@ -33,12 +33,13 @@ RUN pip install gunicorn
 
 
 WORKDIR /app
-COPY Backend/ .
 COPY Backend/Advising/APIs/config/config.txt /app/Advising/APIs/config/config.txt
 COPY Backend/Advising/APIs/config/.gitignore.key /app/Advising/APIs/config/.gitignore.key
 
 ENV FLIT_ROOT_INSTALL=1
+COPY Backend/pyproject.toml ./
 RUN flit install --deps production --symlink
+COPY Backend/ .
 
 COPY scripts/api-entrypoint.sh /api-entrypoint.sh
 RUN chmod +x /api-entrypoint.sh

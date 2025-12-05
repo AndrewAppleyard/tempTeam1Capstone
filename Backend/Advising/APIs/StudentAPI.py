@@ -11,7 +11,7 @@ from ldap3 import Server, Connection, ALL
 from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
 from functools import wraps
 from Advising.APIs import URL
-
+from Advising.APIs.LDAPservice import updateUser
 
 bp = Blueprint('StudentAPI', __name__, url_prefix="/Student")
 
@@ -49,6 +49,7 @@ def role_required(*required_roles):
         return wrapper
     
     return decorator
+
 
 @bp.route("/", methods=['GET'])
 @role_required("UAFS_ADMINS")
@@ -121,53 +122,109 @@ def getStudentInfo(studentid: int):
 
     try:
         with Session(engine) as session:
-            student = session.query(Student.StudentMap).filter(Student.StudentMap.studentid == studentid).first()
-            if not student:
-                return jsonify({"error": "Student not found"}), 404
 
-            student_result = {}
-            student_result["studentid"] = student.studentid
-            student_result["firstname"] = student.firstname
-            student_result["lastname"] = student.lastname
-            student_result["email"] = student.email
-            student_result["phonenumber"] = student.phonenumber
-            student_result["role"] = student.role
-            student_result["school"] = student.school
-            student_result["gpa"] = student.gpa
-            student_result["major"] = student.major
-            student_result["majorconcentration"] = student.majorconcentration
-            student_result["minor"] = student.minor
-            student_result["classstanding"] = student.classstanding
-            student_result["registrationstatus"] = student.registrationstatus
-            student_result["advisingstatus"] = student.advisingstatus
-            student_result["dateadvised"] = student.dateadvised
-            student_result["financialhold"] = student.financialhold
-            student_result["advisinghold"] = student.advisinghold
-            student_result["academichold"] = student.academichold
-            student_result["classes"] = student.classes
+#             student = session.query(Student.StudentMap).filter(Student.StudentMap.studentid == studentid).first()
+#             if not student:
+#                 return jsonify({"error": "Student not found"}), 404
 
-
-            transcript = session.query(Transcript.TranscriptMap).filter(Transcript.TranscriptMap.studentid == studentid).first()
-
-            if transcript:
-                transcript_result = {}
-                transcript_result["transcriptid"] = transcript.transcriptid
-                transcript_result["studentid"] = transcript.studentid
-                transcript_result["program"] = transcript.program
-                transcript_result["concentration"] = transcript.concentration
-                transcript_result["year"] = transcript.year
-                transcript_result["institution"] = transcript.institution
-                transcript_result["coursemap"] = transcript.coursemap
-                transcript_result["cumulativegpa"] = transcript.cumulativegpa
-            else:
-                transcript_result = None
-
-            return jsonify({
-                "student": student_result,
-                "transcript": transcript_result
-            }), 200
+#             student_result = {}
+#             student_result["studentid"] = student.studentid
+#             student_result["firstname"] = student.firstname
+#             student_result["lastname"] = student.lastname
+#             student_result["email"] = student.email
+#             student_result["phonenumber"] = student.phonenumber
+#             student_result["role"] = student.role
+#             student_result["school"] = student.school
+#             student_result["gpa"] = student.gpa
+#             student_result["major"] = student.major
+#             student_result["majorconcentration"] = student.majorconcentration
+#             student_result["minor"] = student.minor
+#             student_result["classstanding"] = student.classstanding
+#             student_result["registrationstatus"] = student.registrationstatus
+#             student_result["advisingstatus"] = student.advisingstatus
+#             student_result["dateadvised"] = student.dateadvised
+#             student_result["financialhold"] = student.financialhold
+#             student_result["advisinghold"] = student.advisinghold
+#             student_result["academichold"] = student.academichold
+#             student_result["classes"] = student.classes
 
 
+#             transcript = session.query(Transcript.TranscriptMap).filter(Transcript.TranscriptMap.studentid == studentid).first()
+
+#             if transcript:
+#                 transcript_result = {}
+#                 transcript_result["transcriptid"] = transcript.transcriptid
+#                 transcript_result["studentid"] = transcript.studentid
+#                 transcript_result["program"] = transcript.program
+#                 transcript_result["concentration"] = transcript.concentration
+#                 transcript_result["year"] = transcript.year
+#                 transcript_result["institution"] = transcript.institution
+#                 transcript_result["coursemap"] = transcript.coursemap
+#                 transcript_result["cumulativegpa"] = transcript.cumulativegpa
+#             else:
+#                 transcript_result = None
+
+#             return jsonify({
+#                 "student": student_result,
+#                 "transcript": transcript_result
+#             }), 200
+
+
+# =======
+            studentData = Student.Student()
+
+            result = session.query(Student.StudentMap) \
+                    .filter(Student.StudentMap.studentid == studentid) \
+                    .first()
+
+            # student = Student.Student()
+
+            # student.studentid = result.studentid
+            # student.firstname = result.firstname
+            # student.lastname = result.lastname
+            # student.email = result.email
+            # student.phonenumber = result.phonenumber
+            # student.role = result.role
+            # student.school = result.school
+            # student.gpa = result.gpa
+            # student.major = result.major
+            # student.majorconcentration = result.majorconcentration
+            # student.minor = result.minor
+            # student.classstanding = result.classstanding
+            # student.registrationstatus = result.registrationstatus
+            # student.advisingstatus = result.advisingstatus
+            # student.dateadvised = result.dateadvised
+            # student.finanicalhold = result.financialhold
+            # student.advisinghold = result.advisinghold
+            # student.academichold = result.academichold
+            # student.classes = result.classes
+
+            #return student.__dict__
+
+            student_info = {
+                "studentid": result.studentid,
+                "firstname": result.firstname,
+                "lastname": result.lastname,
+                "email": result.email,
+                "phonenumber": result.phonenumber,
+                "role": result.role,
+                "school": result.school,
+                "gpa": result.gpa,
+                "major": result.major,
+                "majorconcentration": result.majorconcentration,
+                "minor": result.minor,
+                "classstanding": result.classstanding,
+                "registrationstatus": result.registrationstatus,
+                "advisingstatus": result.advisingstatus,
+                "dateadvised": result.dateadvised.strftime("%Y-%m-%d") if result.dateadvised else None,
+                "financialhold": result.financialhold,
+                "advisinghold": result.advisinghold,
+                "academichold": result.academichold,
+                "classes": result.classes,
+            }
+
+            return jsonify(student_info)
+            
     except Exception as e:
         traceback.print_exc()
         return "Failed to Execute Search"
@@ -183,6 +240,10 @@ def updateStudent(id: int) -> None:
             false = "false"
             true = "true"
             student = session.query(Student.StudentMap).filter(Student.StudentMap.studentid == id).first()
+
+            oldEmail = student.email 
+            oldFirstName = student.firstname 
+            oldLastName = student.lastname
 
             if (token["Role"] == 'UAFS_STUDENTS'):
                 if(request.form.get('phonenumber') != None):
@@ -254,6 +315,12 @@ def updateStudent(id: int) -> None:
                         student.academichold = False
             
             session.commit()
+
+            if oldEmail != student.email or oldFirstName != student.firstname or oldLastName != student.lastname:
+                try:
+                    updateUser(oldEmail, student.email, student.firstname, student.lastname)
+                except Exception as ex:
+                    print("LDAP email update failed:", ex)
 
             return "Student Update Successful"
     except Exception as e:

@@ -12,6 +12,9 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt, \
 create_refresh_token, set_access_cookies, set_refresh_cookies, \
 get_jwt_identity, unset_jwt_cookies
 from extensions import jwt
+from dotenv import load_dotenv
+# load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'))
+load_dotenv()
 
 bp = Blueprint('TransferAPI', __name__, url_prefix="/Transfer")
 
@@ -24,7 +27,7 @@ LDAP_HOST = "dirsrv"
 # 7389 for connection through host
 LDAP_PORT = 3389
 LDAP_USER = "cn=Directory Manager"
-LDAP_PASS = "andrewandrew"
+LDAP_PASS = os.getenv("DS_DM_PASSWORD")
 BASE_DN = "dc=UAFS,dc=COM"
 
 @bp.route('/login', methods=['POST'])

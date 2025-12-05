@@ -45,6 +45,42 @@ def role_required(*required_roles):
     
     return decorator
 
+
+@bp.route("/Student/GetTranscripts/<int:studentid>", methods=['GET'])
+@role_required("UAFS_STUDENTS", "UAFS_ADVISORS")
+def getTranscriptsByStudentId(studentid: int):
+    try:
+        with Session(engine) as session:
+            results = session.query(Transcript.TranscriptMap) \
+                             .filter(Transcript.TranscriptMap.studentid == studentid) \
+                             .all()
+            
+            if not results:
+                return jsonify([]), 200 
+
+            transcript_list = []
+            
+            for transcript in results:
+                transcript_info = {
+                    "transcriptid": transcript.transcriptid,
+                    "studentid": transcript.studentid,
+                    "program": transcript.program,
+                    "concentration": transcript.concentration,
+                    "year": transcript.year,
+                    "institution": transcript.institution,
+                    "coursemap": transcript.coursemap,
+                    "cumulativegpa": transcript.cumulativegpa,
+                }
+                transcript_list.append(transcript_info)
+            
+            return jsonify(transcript_list), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"message": "Failed to retrieve transcripts"}), 500
+    finally:
+        session.close()
+
 @bp.route("/Student/AddTranscript/<int:id>", methods=['GET','POST'])
 @role_required("UAFS_STUDENTS", "UAFS_ADVISORS")
 def addTranscript() -> None:
