@@ -780,18 +780,21 @@ async function runHoldCheck() {
             Request Major / Minor Change
           </v-btn>
 
-          <v-btn color="primary" @click="generateSchedule">
-            <v-icon start>mdi-calendar-refresh</v-icon>
-            Generate Schedule
-          </v-btn>
+          <div class="d-flex flex-wrap justify-end" style="gap:8px;">
+            <v-btn :disabled="!hasStudentId" color="primary" @click="generateSchedule">
+              <v-icon start>mdi-calendar-refresh</v-icon>
+              Generate Schedule
+            </v-btn>
+            <v-btn :disabled="!hasStudentId" color="primary" variant="tonal" @click="runHoldCheck">
+              <v-icon start>mdi-shield-check-outline</v-icon>
+              Check Advising Hold
+            </v-btn>
+            <v-btn :disabled="!hasStudentId" variant="outlined" color="#002856" @click="openPreferencesDialog">
+              <v-icon start>mdi-clipboard-text</v-icon>
+              Schedule Preferences
+            </v-btn>
+          </div>
         </v-col>
-        <v-btn :disabled="!hasStudentId" class="mr-2" color="primary" @click="generateSchedule">Generate Schedule</v-btn>
-        <v-btn :disabled="!hasStudentId" class="mr-2" color="primary" variant="tonal" @click="runHoldCheck">Check Advising Hold</v-btn>
-        <v-btn :disabled="!hasStudentId" variant="outlined" color="#002856" @click="openPreferencesDialog">
-          <v-icon start>mdi-clipboard-text</v-icon>
-          Schedule Preferences
-        </v-btn>
-        <v-col cols="12" md="4">&nbsp;</v-col>
       </v-row>
     </header>
 
