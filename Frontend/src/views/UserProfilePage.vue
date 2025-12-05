@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '../store/user.js'
+import StudentAPI from '../apis/StudentAPI.js'
+import AdvisorAPI from '../apis/AdvisorAPI.js'
+import AdminAPI from '../apis/AdminAPI.js'
+import UserAPI from '../apis/UserAPI.js'
 
 /* GPA map */
 const GPA_POINTS: Record<string, number> = {
