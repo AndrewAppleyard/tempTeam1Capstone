@@ -6,9 +6,25 @@ const api = axios.create({
     withCredentials: true,
 })
 
+let pendingRequests = 0
+function notifyPending() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('api:pending', { detail: pendingRequests }))
+  }
+}
+function incPending() {
+  pendingRequests += 1
+  notifyPending()
+}
+function decPending() {
+  pendingRequests = Math.max(0, pendingRequests - 1)
+  notifyPending()
+}
+
 const publicRoutes = ['/Transfer/login', '/Transfer/refresh']
 
 api.interceptors.request.use((config) => {
+  incPending()
   if (config.url && config.url.includes("/Transfer/refresh")) {
     const refreshCsrf = Cookies.get("csrf_refresh_token") ||
       (document && document.cookie.match(/(?:^|\s*)csrf_refresh_token=([^]+)/)?.[1])
@@ -31,6 +47,7 @@ let refreshPromise = null
 
 api.interceptors.response.use(
   (response) => {
+    decPending()
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log("[api] Response:", response.status, response.config.url)
@@ -38,6 +55,7 @@ api.interceptors.response.use(
     return response
   },
   async (error) => {
+    decPending()
     const originalRequest = error.config
 
     if (!error.response) return Promise.reject(error)

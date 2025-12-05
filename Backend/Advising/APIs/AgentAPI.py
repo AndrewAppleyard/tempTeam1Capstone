@@ -65,6 +65,12 @@ CURRENT COURSE OFFERINGS
 - Make sure meeting patterns do not conflict.
 - Only include open sections ("Status": "Open").
 
+PREFERENCES (soft guidance)
+- Consider student.preferences if provided; they are preferences, not hard rules.
+- Try to align with preferredDays, timeOfDay, modality, avoidBackToBack when possible.
+- preferredCreditHours is most important; if > 15, strongly aim to meet it (often for scholarships).
+- Earliest/Latest times should be respected when feasible, but may be relaxed if needed.
+
 SEMESTER RULES
 - Target semester is always: {target_semester}
 - Choose 12-18 credits unless the degree plan requires otherwise.
@@ -99,7 +105,8 @@ def generate_schedule_with_agent(student, transcript, degreeplan, current_course
             "name": f"{student.firstname} {student.lastname}",
             "student_id": student.studentid,
             "major": student.major,
-            "transcript": transcript.coursemap
+            "transcript": transcript.coursemap if transcript else [],
+            "preferences": student.preferences if getattr(student, "preferences", None) else {}
         },
         "degree_plan": {
             "degree": degreeplan.degree,
@@ -202,8 +209,10 @@ You will receive structured JSON containing:
 - Advising status
 - Registration status
 - Major & concentration
+- Student level (e.g., Freshman/Sophomore/Junior/Senior) is provided in the "year" field of the transcript object.
 
 RULES:
+- The students classes field is not empty.
 - Only lift the advising hold if the student is in good standing.
 - DO NOT lift the hold if there is:
     * An academic hold
@@ -223,19 +232,30 @@ No markdown. No additional text.
 """
 
 def check_advising_hold_with_agent(student, transcript):
+    transcript_payload = None
+    if transcript:
+        transcript_payload = {
+            "coursemap": transcript.coursemap,
+            "year": transcript.year,
+            "program": transcript.program,
+            "concentration": transcript.concentration
+        }
+
     user_content = {
         "student": {
             "id": student.studentid,
             "name": f"{student.firstname} {student.lastname}",
             "major": student.major,
             "gpa": student.gpa,
+            "classstanding": student.classstanding,
             "financial_hold": student.financialhold,
             "academic_hold": student.academichold,
             "advising_hold": student.advisinghold,
             "advising_status": student.advisingstatus,
             "registration_status": student.registrationstatus,
+            "classes": student.classes
         },
-        "transcript": transcript.coursemap
+        "transcript": transcript_payload
     }
 
     completion = client.chat.completions.create(

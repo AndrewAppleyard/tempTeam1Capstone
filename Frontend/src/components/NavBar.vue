@@ -12,6 +12,18 @@ const router = useRouter()
 
 const mode = computed(() => userStore.storedRole)
 const isAdminRoute = computed(() => userStore.userRole === "UAFS_ADMINS")
+const homePath = computed(() => {
+  if (userStore.userRole === 'UAFS_STUDENTS') {
+    return userStore.userID ? `/student/${userStore.userID}` : '/student'
+  }
+  if (userStore.userRole === 'UAFS_ADVISORS') {
+    return '/advisor'
+  }
+  if (userStore.userRole === 'UAFS_ADMINS') {
+    return '/admin'
+  }
+  return '/'
+})
 // const advisorView = computed(() => userStore.userRole.equals("UAFS_ADVISORS"))
 // const studentView = computed(() => userStore.userRole.equals("UAFS_STUDENTS"))
 
@@ -41,6 +53,12 @@ const initials = computed(() => `${advisor.value.firstName[0]}${advisor.value.la
         <v-btn icon @click="drawer = false" style="position: absolute; right: 5px; top: 3px;"> 
           <v-icon color="#002856">mdi-menu</v-icon> 
         </v-btn> 
+      </v-list-item>
+
+      <v-divider></v-divider>
+
+      <v-list-item link :to="{ path: homePath }" @click="drawer = false">
+        <v-list-item-title>Home</v-list-item-title>
       </v-list-item>
 
       <v-divider></v-divider>
@@ -108,7 +126,11 @@ const initials = computed(() => `${advisor.value.firstName[0]}${advisor.value.la
     <v-app-bar-nav-icon color="#F5F5F5" @click="drawer = !drawer"></v-app-bar-nav-icon>
 
     <!-- NUMA ADVISING text -->
-    <span class="ml-3 font-weight-bold text-white" style="font-size: 20px; font-weight: 700;">
+    <span
+      class="ml-3 font-weight-bold text-white"
+      style="font-size: 20px; font-weight: 700; cursor: pointer;"
+      @click="router.push(homePath)"
+    >
       NUMA ADVISING
     </span>
 

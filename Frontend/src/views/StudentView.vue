@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useUserStore } from '../store/user.js'
+import StudentAPI from '../apis/StudentAPI.js'
 
 
 /* =========================================================
@@ -74,6 +76,72 @@ const DEGREE_PLAN: DegreePlanCourse[] = [
 ========================================================= */
 const studentName = ref('')
 const greetingName = computed(() => (studentName.value.trim() ? studentName.value : '[Student Name]'))
+
+interface SchedulePreferences {
+  preferredCreditHours: number | null
+  preferredDays: string[]
+  timeOfDay: string
+  modality: string
+  earliestStart: string
+  latestEnd: string
+  avoidBackToBack: boolean
+}
+
+const preferenceDefaults: SchedulePreferences = {
+  preferredCreditHours: null,
+  preferredDays: [],
+  timeOfDay: 'No preference',
+  modality: 'No preference',
+  earliestStart: '08:00',
+  latestEnd: '17:30',
+  avoidBackToBack: false
+}
+
+const dayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+const timeOfDayOptions = ['Morning', 'Afternoon', 'Evening', 'No preference']
+const modalityOptions = ['In-person', 'Online', 'Hybrid', 'No preference']
+const timeOptions = [
+  { label: '7:00 AM', value: '07:00' },
+  { label: '7:30 AM', value: '07:30' },
+  { label: '8:00 AM', value: '08:00' },
+  { label: '8:30 AM', value: '08:30' },
+  { label: '9:00 AM', value: '09:00' },
+  { label: '9:30 AM', value: '09:30' },
+  { label: '10:00 AM', value: '10:00' },
+  { label: '10:30 AM', value: '10:30' },
+  { label: '11:00 AM', value: '11:00' },
+  { label: '11:30 AM', value: '11:30' },
+  { label: '12:00 PM', value: '12:00' },
+  { label: '12:30 PM', value: '12:30' },
+  { label: '1:00 PM', value: '13:00' },
+  { label: '1:30 PM', value: '13:30' },
+  { label: '2:00 PM', value: '14:00' },
+  { label: '2:30 PM', value: '14:30' },
+  { label: '3:00 PM', value: '15:00' },
+  { label: '3:30 PM', value: '15:30' },
+  { label: '4:00 PM', value: '16:00' },
+  { label: '4:30 PM', value: '16:30' },
+  { label: '5:00 PM', value: '17:00' },
+  { label: '5:30 PM', value: '17:30' },
+  { label: '6:00 PM', value: '18:00' },
+  { label: '6:30 PM', value: '18:30' },
+  { label: '7:00 PM', value: '19:00' },
+  { label: '7:30 PM', value: '19:30' },
+  { label: '8:00 PM', value: '20:00' },
+  { label: '8:30 PM', value: '20:30' },
+  { label: '9:00 PM', value: '21:00' },
+]
+const timeOptionValues = timeOptions.map(t => t.value)
+
+const preferencesDialog = ref(false)
+const preferenceForm = ref<SchedulePreferences>({ ...preferenceDefaults })
+const preferencesLoaded = ref(false)
+const loadingPreferences = ref(false)
+const savingPreferences = ref(false)
+const preferenceLoadError = ref('')
+const preferenceSnackbar = ref(false)
+const preferenceSnackbarColor = ref<'success' | 'error' | 'info'>('success')
+const preferenceSnackbarMessage = ref('')
 
 /* =========================================================
    3) CURRENT SEMESTER DATA
@@ -150,6 +218,118 @@ const filteredDegreeOptions = computed(() =>
   DEGREE_PLAN.filter(c => c.term === nextTerm.value).map(c => ({ label: `${c.code} — ${c.title}`, value: c.code }))
 )
 
+const route = useRoute()
+const userStore = useUserStore()
+
+const studentId = computed<number | null>(() => {
+  const routeId = Number(route.params.studentid)
+  if (!Number.isNaN(routeId)) return routeId
+  const storeId = userStore.userID ? Number(userStore.userID) : NaN
+  return Number.isNaN(storeId) ? null : storeId
+})
+const hasStudentId = computed(() => !!studentId.value)
+
+function showPreferenceSnackbar(message: string, color: 'success' | 'error' | 'info' = 'success') {
+  preferenceSnackbarMessage.value = message
+  preferenceSnackbarColor.value = color
+  preferenceSnackbar.value = true
+}
+
+function normalizeTime(value: any, fallback: string) {
+  if (typeof value !== 'string') return fallback
+  return timeOptionValues.includes(value) ? value : fallback
+}
+
+function normalizePreferences(raw: any): SchedulePreferences {
+  const safe = raw && typeof raw === 'object' ? raw : {}
+  return {
+    preferredCreditHours: typeof safe.preferredCreditHours === 'number'
+      ? safe.preferredCreditHours
+      : safe.preferredCreditHours
+        ? Number(safe.preferredCreditHours)
+        : preferenceDefaults.preferredCreditHours,
+    preferredDays: Array.isArray(safe.preferredDays) ? safe.preferredDays : preferenceDefaults.preferredDays,
+    timeOfDay: typeof safe.timeOfDay === 'string' ? safe.timeOfDay : preferenceDefaults.timeOfDay,
+    modality: typeof safe.modality === 'string' ? safe.modality : preferenceDefaults.modality,
+    earliestStart: normalizeTime(safe.earliestStart, preferenceDefaults.earliestStart),
+    latestEnd: normalizeTime(safe.latestEnd, preferenceDefaults.latestEnd),
+    avoidBackToBack: typeof safe.avoidBackToBack === 'boolean'
+      ? safe.avoidBackToBack
+      : typeof safe.avoidBackToBack === 'string'
+        ? safe.avoidBackToBack.toLowerCase() === 'true'
+        : preferenceDefaults.avoidBackToBack
+  }
+}
+
+async function loadStudentProfile() {
+  if (!studentId.value) return
+  loadingPreferences.value = true
+  preferenceLoadError.value = ''
+  try {
+    const data = await StudentAPI.getStudentById(studentId.value)
+    const student = data?.student
+
+    if (student) {
+      const name = [student.firstname, student.lastname].filter(Boolean).join(' ').trim()
+      if (name) studentName.value = name
+      preferenceForm.value = normalizePreferences(student.preferences)
+    } else {
+      preferenceForm.value = { ...preferenceDefaults }
+    }
+    preferencesLoaded.value = true
+  } catch (err) {
+    console.error('Get Student error: ', err)
+    preferenceLoadError.value = 'Unable to load your saved preferences right now.'
+  } finally {
+    loadingPreferences.value = false
+  }
+}
+
+function openPreferencesDialog() {
+  if (!studentId.value) {
+    showPreferenceSnackbar('No student selected to save preferences.', 'error')
+    return
+  }
+  preferencesDialog.value = true
+  if (!preferencesLoaded.value && !loadingPreferences.value) {
+    loadStudentProfile()
+  }
+}
+
+async function savePreferences() {
+  if (!studentId.value) {
+    showPreferenceSnackbar('No student selected to save preferences.', 'error')
+    return
+  }
+  savingPreferences.value = true
+  try {
+    const preferredHours = preferenceForm.value.preferredCreditHours
+    const startValue = typeof preferenceForm.value.earliestStart === 'string' && timeOptionValues.includes(preferenceForm.value.earliestStart)
+      ? preferenceForm.value.earliestStart
+      : preferenceDefaults.earliestStart
+    const endValue = typeof preferenceForm.value.latestEnd === 'string' && timeOptionValues.includes(preferenceForm.value.latestEnd)
+      ? preferenceForm.value.latestEnd
+      : preferenceDefaults.latestEnd
+    const payload = {
+      ...preferenceForm.value,
+      preferredCreditHours: preferredHours === null || Number.isNaN(Number(preferredHours))
+        ? null
+        : Number(preferredHours),
+      earliestStart: startValue,
+      latestEnd: endValue
+    }
+    await StudentAPI.savePreferences(studentId.value, payload)
+    showPreferenceSnackbar('Preferences saved to your student record.', 'success')
+    preferencesDialog.value = false
+    preferencesLoaded.value = true
+  } catch (err) {
+    console.error('Save preferences error: ', err)
+    showPreferenceSnackbar('Could not save preferences. Please try again.', 'error')
+  } finally {
+    savingPreferences.value = false
+  }
+}
+
 /* =========================================================
    5) PERSISTENCE (load / save)
 ========================================================= */
@@ -165,12 +345,21 @@ onMounted(() => {
     // ignore invalid payloads
   }
   syncNextCardFromPopup()
+  if (studentId.value) loadStudentProfile()
 })
 
 watch([nextSchedule, nextPopupRows, nextTerm], () => {
   const payload = { nextSchedule: nextSchedule.value, nextPopupRows: nextPopupRows.value, nextTerm: nextTerm.value }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
 }, { deep: true })
+
+watch(studentId, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    preferencesLoaded.value = false
+    preferenceLoadError.value = ''
+    loadStudentProfile()
+  }
+})
 
 /* =========================================================
    6) ACTIONS
@@ -204,15 +393,14 @@ function removeNextRow(index: number) {
   syncNextCardFromPopup()
 }
 
-import StudentAPI from '../apis/StudentAPI.js'
-
-const route = useRoute()
-const studentId = computed(() => Number(route.params.studentid))
-
 async function generateSchedule() {
+  if (!studentId.value) {
+    showPreferenceSnackbar('No student selected to generate a schedule.', 'error')
+    return
+  }
   try {
-    console.log(studentId.value)
-    const data = await StudentAPI.addSchedule(studentId.value)
+    await StudentAPI.addSchedule(studentId.value)
+    showPreferenceSnackbar('Schedule generation submitted.', 'info')
   } catch (err) {
     console.error('Generate Schedule error: ', err)
     alert('Failed to generate schedule.')
@@ -220,8 +408,13 @@ async function generateSchedule() {
 }
 
 async function runHoldCheck() {
+  if (!studentId.value) {
+    showPreferenceSnackbar('No student selected to check advising holds.', 'error')
+    return
+  }
   try {
-    const result = await StudentAPI.checkAdvisingHold(studentId.value);
+    await StudentAPI.checkAdvisingHold(studentId.value);
+    showPreferenceSnackbar('Advising hold check submitted.', 'info')
   } catch (err) {
     console.error(err);
     alert("Error checking advising hold.");
@@ -245,8 +438,12 @@ async function runHoldCheck() {
         <v-col cols="12" md="4" class="text-center">
           <h1 class="welcome-center" :style="{ color: COLOR_PRIMARY }">Welcome, {{ greetingName }}!</h1>
         </v-col>
-        <v-btn @click="generateSchedule">Generate Schedule</v-btn>
-        <v-btn color="primary" @click="runHoldCheck">Check Advising Hold</v-btn>
+        <v-btn :disabled="!hasStudentId" class="mr-2" color="primary" @click="generateSchedule">Generate Schedule</v-btn>
+        <v-btn :disabled="!hasStudentId" class="mr-2" color="primary" variant="tonal" @click="runHoldCheck">Check Advising Hold</v-btn>
+        <v-btn :disabled="!hasStudentId" variant="outlined" color="#002856" @click="openPreferencesDialog">
+          <v-icon start>mdi-clipboard-text</v-icon>
+          Schedule Preferences
+        </v-btn>
         <v-col cols="12" md="4">&nbsp;</v-col>
       </v-row>
     </header>
@@ -460,6 +657,135 @@ async function runHoldCheck() {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- PREFERENCES: Dialog -->
+    <v-dialog v-model="preferencesDialog" width="780" aria-label="Schedule Preferences Dialog">
+      <v-card class="dialog-card">
+        <v-card-title class="dialog-title">
+          Schedule Preferences
+        </v-card-title>
+        <v-divider />
+        <v-card-text>
+          <v-alert
+            v-if="preferenceLoadError"
+            type="error"
+            density="comfortable"
+            class="mb-3"
+            variant="tonal"
+          >
+            {{ preferenceLoadError }}
+          </v-alert>
+          <v-progress-linear
+            v-if="loadingPreferences"
+            color="primary"
+            indeterminate
+            class="mb-3"
+          />
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model.number="preferenceForm.preferredCreditHours"
+                type="number"
+                min="1"
+                max="21"
+                step="1"
+                label="Preferred credit hours"
+                density="comfortable"
+                :disabled="loadingPreferences"
+                hint="Total hours you want to carry next term"
+                persistent-hint
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="preferenceForm.preferredDays"
+                :items="dayOptions"
+                label="Days you prefer on campus"
+                multiple
+                chips
+                closable-chips
+                density="comfortable"
+                :disabled="loadingPreferences"
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="preferenceForm.timeOfDay"
+                :items="timeOfDayOptions"
+                label="Time of day"
+                density="comfortable"
+                :disabled="loadingPreferences"
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="preferenceForm.modality"
+                :items="modalityOptions"
+                label="Course modality"
+                density="comfortable"
+                :disabled="loadingPreferences"
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="preferenceForm.earliestStart"
+                :items="timeOptions"
+                item-title="label"
+                item-value="value"
+                label="Earliest start time"
+                density="comfortable"
+                :disabled="loadingPreferences"
+                clearable
+                hint="Pick a start time"
+                persistent-hint
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="preferenceForm.latestEnd"
+                :items="timeOptions"
+                item-title="label"
+                item-value="value"
+                label="Latest end time"
+                density="comfortable"
+                :disabled="loadingPreferences"
+                clearable
+                hint="Pick an end time"
+                persistent-hint
+              />
+            </v-col>
+            <v-col cols="12">
+              <v-checkbox
+                v-model="preferenceForm.avoidBackToBack"
+                label="Try to avoid back-to-back classes"
+                density="comfortable"
+                :disabled="loadingPreferences"
+              />
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" @click="preferencesDialog = false">Cancel</v-btn>
+          <v-btn
+            color="primary"
+            :loading="savingPreferences"
+            :disabled="savingPreferences || loadingPreferences || !hasStudentId"
+            @click="savePreferences"
+          >
+            Save preferences
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-snackbar
+      v-model="preferenceSnackbar"
+      :color="preferenceSnackbarColor"
+      location="bottom right"
+      :timeout="3000"
+    >
+      {{ preferenceSnackbarMessage }}
+    </v-snackbar>
       <div class="text-center mt-4" style="color:#002856;">
         © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
       </div>

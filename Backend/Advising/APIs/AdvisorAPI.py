@@ -133,6 +133,7 @@ def getAdvisorStudents(advisorid: int):
             s.financialhold = student.financialhold
             s.advisinghold = student.advisinghold
             s.academichold = student.academichold
+            s.preferences = student.preferences
             s.classes = student.classes
             students.append(s.__dict__)
 

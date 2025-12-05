@@ -13,8 +13,12 @@ export default {
             if (response.data.login) {
             userStore.isLoggedIn = true
             userStore.userRole = response.data.Role
+            userStore.userID = response.data.UserID || null
+            userStore.email = response.data.Email || username
             } else {
             userStore.isLoggedIn = false
+            userStore.userID = null
+            userStore.email = null
             }
 
             console.log("Login successful:", response.data, "\nRole:", userStore.userRole);

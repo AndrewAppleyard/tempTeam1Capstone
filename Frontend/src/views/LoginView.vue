@@ -48,7 +48,7 @@ async function login() {
 
       switch (userStore.userRole) {
         case 'UAFS_STUDENTS':
-          router.replace('/student')
+          router.replace(userStore.userID ? `/student/${userStore.userID}` : '/student')
           break
         case 'UAFS_ADVISORS':
           router.replace('/advisor')
