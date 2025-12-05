@@ -222,7 +222,6 @@ async function removeAdvisor() {
 function close() {
   localVisible.value = false
   datePickerVisible.value = false
-  resetForm()
   emits('close')
 }
 
