@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useUserStore } from '../store/user.js'
 import StudentAPI from '../apis/StudentAPI.js'
+import AdvisorAPI from '../apis/AdvisorAPI.js'
 
+const route = useRoute()
+const studentid = route.params.studentid
+import { useRoute } from 'vue-router'
+import { useUserStore } from '../store/user.js'
 
 /* =========================================================
    THEME — same palette, more respectful visuals (centralized)
@@ -76,6 +80,27 @@ const DEGREE_PLAN: DegreePlanCourse[] = [
 ========================================================= */
 const studentName = ref('')
 const greetingName = computed(() => (studentName.value.trim() ? studentName.value : '[Student Name]'))
+
+const advisorName = ref('TBA')
+const advisorEmail = ref('TBA')
+const advisorPhone = ref('TBA')
+// const advisorOffice = ref('TBA') // not stored in db
+
+interface SemesterData { coursemap: any; courses: TranscriptCourse[] }
+
+function formatPhoneNumber(rawNumber: string | null | undefined): string {
+  if (!rawNumber) return 'N/A' 
+  
+  const cleaned = ('' + rawNumber).replace(/\D/g, '')
+
+  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/)
+
+  if (match) {
+    return `(${match[1]}) ${match[2]}-${match[3]}`
+  }
+  
+  return rawNumber
+}
 
 interface SchedulePreferences {
   preferredCreditHours: number | null
@@ -157,24 +182,32 @@ interface CurrentPopupRow {
   waitlist: string
 }
 
+interface TranscriptCourse {
+    code: string;
+    title: string;
+}
+
 const currentDialog = ref(false)
 
-const currentSchedule = ref<CurrentRow[]>([
-  { number: 'CS 4303', name: 'Cybersecurity Fundamentals' },
-  { number: 'CS 4403', name: 'Artificial Intelligence' },
-  { number: 'CS 4983', name: 'Senior Capstone I' },
-  { number: 'COMM 1303', name: 'Oral Communication' },
-  { number: '—', name: '—' },
-  { number: '—', name: '—' }
-])
+const currentSchedule = ref<CurrentRow[]>([]) 
+const currentPopupRows = ref<CurrentPopupRow[]>([])
 
-const currentPopupRows = ref<CurrentPopupRow[]>([
-  { number: 'CS 4303', course: 'Cybersecurity Fundamentals', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
-  { number: 'CS 4403', course: 'Artificial Intelligence', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
-  { number: 'CS 4983', course: 'Senior Capstone I', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'By Permit', waitlist: '—' },
-  { number: 'COMM 1303', course: 'Oral Communication', time: 'TBA', location: 'Campus TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
-  { number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' }
-])
+// const currentSchedule = ref<CurrentRow[]>([
+//   { number: 'CS 4303', name: 'Cybersecurity Fundamentals' },
+//   { number: 'CS 4403', name: 'Artificial Intelligence' },
+//   { number: 'CS 4983', name: 'Senior Capstone I' },
+//   { number: 'COMM 1303', name: 'Oral Communication' },
+//   { number: '—', name: '—' },
+//   { number: '—', name: '—' }
+// ])
+
+// const currentPopupRows = ref<CurrentPopupRow[]>([
+//   { number: 'CS 4303', course: 'Cybersecurity Fundamentals', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+//   { number: 'CS 4403', course: 'Artificial Intelligence', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+//   { number: 'CS 4983', course: 'Senior Capstone I', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'By Permit', waitlist: '—' },
+//   { number: 'COMM 1303', course: 'Oral Communication', time: 'TBA', location: 'Campus TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+//   { number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' }
+// ])
 
 /* =========================================================
    4) NEXT SEMESTER DATA (editable + saved)
@@ -196,22 +229,26 @@ const nextTerm = ref<string>('Spring Y4')
 
 const STORAGE_KEY = 'uafs-cs-next-semester-schedule'
 
-const nextSchedule = ref<NextCardRow[]>([
-  { number: 'CSCE 40203', name: 'Senior Capstone' },
-  { number: 'CSCE 40433', name: 'Formal Languages' },
-  { number: 'Conc/Elective 4', name: 'Concentration / CS/MATH/STAT' },
-  { number: 'MATH/STAT UL', name: 'Upper-Level Math/Stat' },
-  { number: '—', name: '—' },
-  { number: '—', name: '—' }
-])
+const nextSchedule = ref<NextCardRow[]>([])
 
-const nextPopupRows = ref<NextPopupRow[]>([
-  { number: 'CSCE 40203', course: 'Senior Capstone', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'By Permit', waitlist: '—' },
-  { number: 'CSCE 40433', course: 'Formal Languages', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
-  { number: 'Conc/Elective 4', course: 'Concentration / CS/MATH/STAT', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
-  { number: 'MATH/STAT UL', course: 'Upper-Level Math/Stat', time: 'TBA', location: 'Campus TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
-  { number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' }
-])
+const nextPopupRows = ref<NextPopupRow[]>([])
+
+// const nextSchedule = ref<NextCardRow[]>([
+//   { number: 'CSCE 40203', name: 'Senior Capstone' },
+//   { number: 'CSCE 40433', name: 'Formal Languages' },
+//   { number: 'Conc/Elective 4', name: 'Concentration / CS/MATH/STAT' },
+//   { number: 'MATH/STAT UL', name: 'Upper-Level Math/Stat' },
+//   { number: '—', name: '—' },
+//   { number: '—', name: '—' }
+// ])
+
+// const nextPopupRows = ref<NextPopupRow[]>([
+//   { number: 'CSCE 40203', course: 'Senior Capstone', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'By Permit', waitlist: '—' },
+//   { number: 'CSCE 40433', course: 'Formal Languages', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+//   { number: 'Conc/Elective 4', course: 'Concentration / CS/MATH/STAT', time: 'TBA', location: 'Baldor TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+//   { number: 'MATH/STAT UL', course: 'Upper-Level Math/Stat', time: 'TBA', location: 'Campus TBA', professor: 'TBA', availability: 'Open', waitlist: '0' },
+//   { number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' }
+// ])
 
 const selectedDegreeCourse = ref<string | null>(null)
 const filteredDegreeOptions = computed(() =>
@@ -346,6 +383,151 @@ onMounted(() => {
   }
   syncNextCardFromPopup()
   if (studentId.value) loadStudentProfile()
+})
+
+onMounted(async () => {
+  try {
+    const userData = await StudentAPI.getStudentById(studentid)
+    console.log('Fetched Student Data:', userData)
+    
+    if (userData && userData.firstname && userData.lastname) {
+      studentName.value = `${userData.firstname} ${userData.lastname}`
+    } else if (userData && userData.firstname) {
+      studentName.value = userData.firstname
+    }
+
+    let fetchedClasses: { number: string; name: string }[] = []
+
+    if (userData && Array.isArray(userData.classes)) {
+      fetchedClasses = userData.classes.map(cls => ({ 
+        number: cls.number || '—', 
+        name: cls.name || '—'
+      }))
+    } else if (userData && typeof userData.classes === 'string') {
+      try {
+        const parsedClasses = JSON.parse(userData.classes)
+        if (Array.isArray(parsedClasses)) {
+            fetchedClasses = parsedClasses.map(cls => ({ 
+                number: cls.number || '—', 
+                name: cls.name || '—'
+            }))
+        }
+      } catch (e) {
+        console.error("Failed to parse student classes JSON string:", e)
+      }
+    }
+    const classesForCard = fetchedClasses.slice(0, 6) 
+    
+    while (classesForCard.length < 6) {
+        classesForCard.push({ number: '—', name: '—' })
+    }
+    nextSchedule.value = classesForCard
+    
+    nextPopupRows.value = fetchedClasses.map(cls => ({
+        number: cls.number,
+        course: cls.name,
+        time: 'TBA', 
+        location: 'TBA',
+        professor: 'TBA',
+        availability: 'Open',
+        waitlist: '0'
+    }))
+    
+    while (nextPopupRows.value.length < 5) {
+        nextPopupRows.value.push({ number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' })
+    }
+    
+  } catch (err) {
+    console.error('Failed to fetch student data:', err)
+  }
+
+  try {
+    const transcripts = await StudentAPI.getTranscripts(studentid)
+    console.log("Transcripts Loaded for Current Schedule:", transcripts)
+    
+    let semesterCourses: SemesterData[] = []
+    
+    if (transcripts.length > 0) {
+      
+      transcripts.sort((a, b) => b.year - a.year); 
+      const mostRecentTranscript = transcripts[0]
+      
+      if (mostRecentTranscript.coursemap) {
+        let coursemapData = mostRecentTranscript.coursemap
+        
+        if (Array.isArray(coursemapData)) {
+            semesterCourses = coursemapData
+        } 
+        else if (typeof coursemapData === 'string') {
+             try {
+                semesterCourses = JSON.parse(coursemapData) 
+             } catch(e) {
+                console.error("Error parsing coursemap string:", e)
+             }
+        }
+        
+        if (!Array.isArray(semesterCourses)) {
+            semesterCourses = [] 
+        }
+      }
+      
+      let allCourses: TranscriptCourse[] = semesterCourses.flatMap(semester => semester.courses || [])
+      
+      const coursesForCard = allCourses.slice(-6) 
+      
+      const cardCourses: CurrentRow[] = coursesForCard.map(c => ({
+          number: c.code || '—',
+          name: c.title || '—'
+      }))
+      
+      while (cardCourses.length < 6) {
+          cardCourses.push({ number: '—', name: '—' })
+      }
+      currentSchedule.value = cardCourses
+      
+      currentPopupRows.value = allCourses.map(c => ({
+          number: c.code || '—',
+          course: c.title || '—',
+          time: 'N/A (Completed)', 
+          location: mostRecentTranscript.institution || 'N/A',
+          professor: 'N/A',
+          availability: 'Complete',
+          waitlist: '—' 
+      }))
+      
+      while (currentPopupRows.value.length < 5) {
+          currentPopupRows.value.push({ number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' })
+      }
+      
+    } else {
+        const emptyCardCourses: CurrentRow[] = []
+        while (emptyCardCourses.length < 6) {
+            emptyCardCourses.push({ number: '—', name: '—' })
+        }
+        currentSchedule.value = emptyCardCourses
+        currentPopupRows.value = []
+    }
+  } catch(e) {
+    console.error("Failed to load or process transcripts for current schedule:", e)
+    const emptyCardCourses: CurrentRow[] = []
+    while (emptyCardCourses.length < 6) {
+        emptyCardCourses.push({ number: '—', name: '—' })
+    }
+    currentSchedule.value = emptyCardCourses
+  }
+
+  try {
+    const advisorData = await AdvisorAPI.getAdvisorByStudent(studentid)
+    console.log('Fetched Advisor Data:', advisorData)
+    if (advisorData) {
+      advisorName.value = `${advisorData.firstname} ${advisorData.lastname}`
+      advisorEmail.value = advisorData.email || 'N/A'
+      advisorPhone.value = advisorData.phonenumber || 'N/A'
+      // advisorOffice 
+    }
+  } catch (err) {
+    console.error('Failed to fetch advisor data:', err)
+  }
 })
 
 watch([nextSchedule, nextPopupRows, nextTerm], () => {
@@ -534,10 +716,14 @@ async function runHoldCheck() {
           </v-card-title>
           <v-divider />
           <v-list density="comfortable" class="info-list">
-            <v-list-item class="info-item"><strong>Name:</strong> Dr. Dave Stevens</v-list-item>
-            <v-list-item class="info-item"><strong>Email:</strong> <a href="mailto:dsteve@uafs.edu">dsteve@uafs.edu</a></v-list-item>
-            <v-list-item class="info-item"><strong>Phone:</strong> (555) 123-4567</v-list-item>
-            <v-list-item class="info-item"><strong>Office:</strong> Campus Center 201</v-list-item>
+            <v-list-item class="info-item"><strong>Name:</strong> {{ advisorName }}</v-list-item>
+            <v-list-item class="info-item">
+              <strong>Email: </strong> 
+              <a :href="'mailto:' + advisorEmail" v-if="advisorEmail !== 'TBA'">{{ advisorEmail }}</a>
+              <span v-else>{{ advisorEmail }}</span>
+            </v-list-item>
+            <v-list-item class="info-item"><strong>Phone:</strong> {{ formatPhoneNumber(advisorPhone) }}</v-list-item>
+            <!-- <v-list-item class="info-item"><strong>Office:</strong> {{ advisorOffice }}</v-list-item> -->
           </v-list>
         </v-card>
       </v-col>

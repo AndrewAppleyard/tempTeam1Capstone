@@ -100,7 +100,7 @@ CREATE TABLE degreeplans (
 );
 
 INSERT INTO admin (firstname, lastname, email, phonenumber, role, school)
-VALUES ('TestAdmin', 'Test', 'ta@uafs.edu', 4445556666, 'admin', 'UAFS');
+VALUES ('Andrew', 'Appleyard', 'aapply00@uafs.edu', 1112223334, 'admin', 'UAFS');
 
 
 
@@ -227,7 +227,19 @@ VALUES (
       }
     ]'::jsonb,
     3.61
-);
+); */
+
+-- UPDATE student
+-- SET 
+--     classes = '[
+--       { "number": "CSCE 20003", "name": "Data Structures" },
+--       { "number": "CSCE 20303", "name": "Web Systems" },
+--       { "number": "MATH 26103", "name": "Discrete Mathematics I" },
+--       { "number": "SPCH 10003", "name": "Intro to Speech Communication" },
+--       { "number": "PHYS 2064", "name": "General Physics II (Lab Science II)" }
+--     ]'::jsonb
+-- WHERE studentid = 1; 
+
 
 INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
 VALUES (

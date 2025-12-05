@@ -13,11 +13,9 @@ import DegreePlanView from '../views/DegreePlanView.vue'
 const routes = [
   { path: '/', component: LoginView },
   { path: '/admin', component: AdminView },
-  { path: '/advisor', component: AdvisorView },
   { path: '/advisor/:advisorid', component: AdvisorView },
-  { path: '/student', component: StudentView },
   { path: '/student/:studentid', component: StudentView },
-  { path: '/transcript', component: TranscriptView },
+  { path: '/transcript/:studentid', component: TranscriptView },
   { path: '/courseCatalog', component: CourseCatalogView },
   { path: '/DegreePlanView', component: DegreePlanView },
   { path: '/UserProfilePage', component: UserProfilePage },
@@ -68,7 +66,7 @@ router.beforeEach((to, from, next) => {
     //console.log("INDEX ROLE:\t" + userStore.storedRole)
     switch (userStore.userRole) {
       case 'UAFS_STUDENTS': return next(userStore.userID ? `/student/${userStore.userID}` : '/student')
-      case 'UAFS_ADVISORS': return next('/advisor')
+      case 'UAFS_ADVISORS': return next(userStore.userID ? `/advisor/${userStore.userID}` : '/advisor')
       case 'UAFS_ADMINS': return next('/admin')
       default: return next('/')
     }

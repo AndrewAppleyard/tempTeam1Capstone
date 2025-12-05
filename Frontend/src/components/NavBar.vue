@@ -26,6 +26,8 @@ const homePath = computed(() => {
 })
 // const advisorView = computed(() => userStore.userRole.equals("UAFS_ADVISORS"))
 // const studentView = computed(() => userStore.userRole.equals("UAFS_STUDENTS"))
+console.log("is admin route?\t" + isAdminRoute.value)
+console.log("ROLE:\t" + userStore.userRole)
 
 function handleSetMode(mode) {
   console.log('Setting view mode to:', mode)

@@ -16,9 +16,9 @@ current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, '..')
 sys.path.append(parent_dir)
 
-from UserClasses import Advisor, User, Student, Admin
-
 bp = Blueprint('AdvisorAPI', __name__, url_prefix='/Advisor')
+
+from UserClasses import Advisor, User, Student, Admin
 
 path = os.path.abspath(__file__)
 directory = os.path.dirname(path)

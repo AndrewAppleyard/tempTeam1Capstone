@@ -10,8 +10,9 @@ import sys
 import os
 from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
 from functools import wraps
-from Advising.APIs import URL
 from UserClasses import Advisor, User, Student, Admin
+from Advising.APIs import URL
+from Advising.APIs.LDAPservice import addUser, deleteUser, updateUser
 
 bp = Blueprint('AdminAPI', __name__, url_prefix='/Admin')
 
@@ -23,8 +24,6 @@ databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config
 engine = create_engine(databaseURL)
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-app = Flask(__name__)
 
 dateFormatString = "%Y-%d-%m"
 
@@ -47,6 +46,7 @@ def role_required(*required_roles):
     
     return decorator
 
+
 @bp.route("/Advisor/Insert", methods = ['POST'])
 @role_required("UAFS_ADMINS")
 def addAdvisor() -> None:
@@ -64,6 +64,11 @@ def addAdvisor() -> None:
             session.commit()
             session.refresh(advisor)
 
+            try:
+                addUser(advisor.email, advisor.firstname, advisor.lastname, "advisor")
+            except Exception as ex:
+                print("LDAP insert failed:", ex)
+
             return "Advisor Added"
     except Exception as e:
         traceback.print_exc()
@@ -72,7 +77,6 @@ def addAdvisor() -> None:
         return "Advisor Add Failed"
     finally:
         session.close()
-        
 
 @bp.route("/Advisor/<int:id>", methods=['GET','POST'])
 @role_required("UAFS_ADMINS")
@@ -81,8 +85,16 @@ def deleteAdvisor(id: int):
     try:
         with Session(engine) as session:
             result = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap.advisorid == id).first()
+            email = result.email
+
             session.delete(result)
             session.commit()
+
+            try:
+                deleteUser(email)
+            except:
+                print("LDAP delete failed")
+
             return "Advisor Deleted"
     except Exception as e:
         traceback.print_exc()
@@ -97,6 +109,10 @@ def updateAdvisor(id: int) -> None:
     try:
         with Session(engine) as session:
             advisor = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap.advisorid == id).first()
+            oldEmail = advisor.email
+            oldFirstName = advisor.firstname
+            oldLastName = advisor.lastname
+
             if(request.form.get('firstname') != None):
                 advisor.firstname = request.form.get('firstname')
             if(request.form.get('lastname') != None):
@@ -111,6 +127,12 @@ def updateAdvisor(id: int) -> None:
                 advisor.school = request.form.get('school')
 
             session.commit()
+
+            if oldEmail != advisor.email or oldFirstName != advisor.firstname or oldLastName != advisor.lastname:
+                try:
+                    updateUser(oldEmail, advisor.email, advisor.firstname, advisor.lastname)
+                except Exception as ex:
+                    print("LDAP email update failed:", ex)
 
             return "Advisor Update Successful"
     except Exception as e:
@@ -169,7 +191,13 @@ def addStudent():
             session.commit()
             session.refresh(student)
 
-            return "Student Added"
+            try:
+                addUser(student.email, student.firstname, student.lastname, "student")
+            except Exception as ex:
+                print("LDAP insert failed:", ex)
+
+            return jsonify({ "studentid": student.studentid })
+
     except Exception as e:
         traceback.print_exc()
         session.rollback()
@@ -184,8 +212,15 @@ def deleteStudent(id: int):
     try:
         with Session(engine) as session:
             result = session.query(Student.StudentMap).filter(Student.StudentMap.studentid == id).first()
+            email = result.email
             session.delete(result)
             session.commit()
+
+            try:
+                deleteUser(email)
+            except:
+                print("LDAP delete failed")
+                
             return "Student Deleted"
     except Exception as e:
         traceback.print_exc()

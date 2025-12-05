@@ -1,5 +1,5 @@
 from flask import Flask, Blueprint, url_for
-from Advising.APIs import AdvisorAPI, AdminAPI, StudentAPI, TransferAPI, CurrentCourseAPI, AgentAPI, DegreePlanAPI, TranscriptAPI
+from Advising.APIs import UserAPI, AdvisorAPI, AdminAPI, StudentAPI, TransferAPI, CurrentCourseAPI, AgentAPI, DegreePlanAPI, TranscriptAPI
 from extensions import jwt
 from flask_cors import CORS
 import os
@@ -46,6 +46,7 @@ def create_app():
     jwt.init_app(app)
 
     app.register_blueprint(TransferAPI.bp)
+    app.register_blueprint(UserAPI.bp)
     app.register_blueprint(StudentAPI.bp)
     app.register_blueprint(AdvisorAPI.bp)
     app.register_blueprint(AdminAPI.bp)

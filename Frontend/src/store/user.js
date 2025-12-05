@@ -10,6 +10,7 @@ export const useUserStore = defineStore('user', () => {
   const userRole = ref(null)
   const userID = ref(null)
   const email = ref(null)
+  const roleID = ref(null)
   const token = ref(null)
 
   async function restoreLogin() {
@@ -75,8 +76,6 @@ export const useUserStore = defineStore('user', () => {
   //   }
   // }
 
-
-
   async function restoreSession() {
     const storedToken = localStorage.getItem('token')
 
@@ -92,7 +91,7 @@ export const useUserStore = defineStore('user', () => {
 
       token.value = storedToken
       userRole.value = payload.Role
-      userID.value = payload.userID
+      userID.value = payload.userID // double check
       email.value = payload.Email
       isLoggedIn.value = true
 
@@ -110,10 +109,6 @@ export const useUserStore = defineStore('user', () => {
     email.value = null
     token.value = null
 
-    //localStorage.removeItem('token')
-    //localStorage.removeItem('role')
-    //window.location.href = '/'
-
     try{
       const data = await TransferAPI.logout()
       console.log(data.logout)
@@ -124,6 +119,5 @@ export const useUserStore = defineStore('user', () => {
     router.replace('/')
   }
 
-  // return { isLoggedIn, userRole, userID, email, token, login, logout, restoreSession }
-  return { isLoggedIn, userRole, userID, email, token, logout, restoreSession, restoreLogin }
+  return { isLoggedIn, userRole, userID, email, roleID, token, logout, restoreSession, restoreLogin, decodeToken }
 })

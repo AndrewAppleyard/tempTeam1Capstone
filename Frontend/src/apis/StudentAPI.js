@@ -73,5 +73,17 @@ export default {
       console.error("Advising Hold Check Error:", err);
       throw err;
     }
-  }
+  },
+
+  async getTranscripts(studentid) {
+    try {
+      const response = await api.get(`/Transcript/Student/GetTranscripts/${studentid}`);
+      console.log('Fetched Transcripts:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Error fetching student transcripts:', err);
+      throw err;
+    }
+  },
+
 };
