@@ -47,7 +47,7 @@ def role_required(*required_roles):
 
 
 @bp.route("/Student/GetTranscripts/<int:studentid>", methods=['GET'])
-@role_required("UAFS_STUDENTS", "UAFS_ADVISORS")
+@role_required("UAFS_STUDENTS", "UAFS_ADVISORS", "UAFS_ADMINS")
 def getTranscriptsByStudentId(studentid: int):
     try:
         with Session(engine) as session:
