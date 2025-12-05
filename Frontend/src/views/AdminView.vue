@@ -29,7 +29,8 @@ const advisorToEdit = ref(null)
 
 /**
  * Used as the default advisor type when creating a NEW advisor.
- * The actual <v-select> for type should live in AdvisorFormCard.
+ * AdvisorFormCard should show a select for "ROAR" / "COLLEGE"
+ * and initialize from this value.
  */
 const newAdvisorType = ref('ROAR') // 'ROAR' | 'COLLEGE'
 
@@ -78,21 +79,37 @@ async function fetchStudents() {
 }
 
 /* =========================================================
+   ADVISOR CATEGORY HELPER
+========================================================= */
+function advisorCategory(a) {
+  // Support both "advisortype" and "type" in case DB changed
+  const raw = (a.advisortype || a.type || '').toString().trim().toUpperCase()
+
+  if (raw === 'ROAR') return 'ROAR'
+  if (raw === 'COLLEGE') return 'COLLEGE'
+  return 'UNASSIGNED'
+}
+
+/* =========================================================
    COMPUTED: ADVISOR GROUPS + FILTERING
 ========================================================= */
 const roarAdvisors = computed(() =>
-  advisors.value.filter((a) => (a.advisortype || '').toUpperCase() === 'ROAR')
+  advisors.value.filter(a => advisorCategory(a) === 'ROAR')
 )
 
 const collegeAdvisors = computed(() =>
-  advisors.value.filter((a) => (a.advisortype || '').toUpperCase() === 'COLLEGE')
+  advisors.value.filter(a => advisorCategory(a) === 'COLLEGE')
+)
+
+const unassignedAdvisors = computed(() =>
+  advisors.value.filter(a => advisorCategory(a) === 'UNASSIGNED')
 )
 
 const filteredRoarAdvisors = computed(() => {
   const q = advisorSearch.value.trim().toLowerCase()
   if (!q) return roarAdvisors.value
 
-  return roarAdvisors.value.filter((a) => {
+  return roarAdvisors.value.filter(a => {
     const fullName = `${a.firstname || ''} ${a.lastname || ''}`.toLowerCase()
     const email = (a.email || '').toLowerCase()
     return fullName.includes(q) || email.includes(q)
@@ -103,7 +120,18 @@ const filteredCollegeAdvisors = computed(() => {
   const q = advisorSearch.value.trim().toLowerCase()
   if (!q) return collegeAdvisors.value
 
-  return collegeAdvisors.value.filter((a) => {
+  return collegeAdvisors.value.filter(a => {
+    const fullName = `${a.firstname || ''} ${a.lastname || ''}`.toLowerCase()
+    const email = (a.email || '').toLowerCase()
+    return fullName.includes(q) || email.includes(q)
+  })
+})
+
+const filteredUnassignedAdvisors = computed(() => {
+  const q = advisorSearch.value.trim().toLowerCase()
+  if (!q) return unassignedAdvisors.value
+
+  return unassignedAdvisors.value.filter(a => {
     const fullName = `${a.firstname || ''} ${a.lastname || ''}`.toLowerCase()
     const email = (a.email || '').toLowerCase()
     return fullName.includes(q) || email.includes(q)
@@ -117,15 +145,11 @@ const filteredStudents = computed(() => {
   const q = studentSearch.value.trim().toLowerCase()
   if (!q) return students.value
 
-  return students.value.filter((s) => {
+  return students.value.filter(s => {
     const fullName = `${s.firstname || ''} ${s.lastname || ''}`.toLowerCase()
     const email = (s.email || '').toLowerCase()
     const id = (s.studentid || '').toString().toLowerCase()
-    return (
-      fullName.includes(q) ||
-      email.includes(q) ||
-      id.includes(q)
-    )
+    return fullName.includes(q) || email.includes(q) || id.includes(q)
   })
 })
 
@@ -153,8 +177,7 @@ function toggleEditMode() {
 
 /**
  * Add new Student / Advisor.
- * For advisors, we pass NULL to AdvisorFormCard so it knows
- * this is a "create" form, NOT an update.
+ * For advisors, we pass null so AdvisorFormCard knows this is "create".
  */
 function addUser() {
   selectedItem.value = null
@@ -163,8 +186,8 @@ function addUser() {
     studentToEdit.value = null
     showStudentForm.value = true
   } else {
-    advisorToEdit.value = null         // clearly "new advisor"
-    newAdvisorType.value = 'ROAR'      // default value; form can use this
+    advisorToEdit.value = null
+    newAdvisorType.value = 'ROAR' // default category for new advisor
     showAdvisorForm.value = true
   }
 }
@@ -193,11 +216,11 @@ async function deleteUser() {
   try {
     if (viewMode.value === 'students') {
       await AdminAPI.deleteStudent(id)
-      alert("Successfully deleted student.")
+      alert('Successfully deleted student.')
       fetchStudents()
     } else {
       await AdminAPI.deleteAdvisor(id)
-      alert("Successfully deleted advisor.")
+      alert('Successfully deleted advisor.')
       fetchAdvisors()
     }
     selectedItem.value = null
@@ -215,24 +238,24 @@ async function updateDegreePlans() {
   try {
     const count = 2
     const response = await AdminAPI.updateDegreePlans(count)
-    console.log("Degree Plan Updated:", response);
-    alert("Successfully updated degree plans.\n" + response);
-    refreshList();
+    console.log('Degree Plan Updated:', response)
+    alert('Successfully updated degree plans.\n' + response)
+    refreshList()
   } catch (err) {
-    console.error("Degree Plan Update Error:", err);
-    alert("Error updating degree plans. Check console for details.");
+    console.error('Degree Plan Update Error:', err)
+    alert('Error updating degree plans. Check console for details.')
   }
 }
 
 async function updateCurrentCourses() {
   try {
     const response = await AdminAPI.updateCurrentCourses()
-    console.log("Current Courses Updated:", response);
-    alert("Successfully updated current courses.\n" + response.count);
-    refreshList();
+    console.log('Current Courses Updated:', response)
+    alert('Successfully updated current courses.\n' + response.count)
+    refreshList()
   } catch (err) {
-    console.error("Current Courses Update Error:", err);
-    alert("Error updating current courses. Check console for details.");
+    console.error('Current Courses Update Error:', err)
+    alert('Error updating current courses. Check console for details.')
   }
 }
 
@@ -262,14 +285,14 @@ function getCardStyle(item) {
       backgroundColor: selectedItem.value === item ? '#D1E5F4' : bg,
       border: '1px solid #002856',
       borderColor: selectedItem.value === item ? '#0050a0' : '#002856',
-      borderRadius: '10px',
+      borderRadius: '10px'
     }
   } else {
     return {
       backgroundColor: selectedItem.value === item ? '#D1E5F4' : 'transparent',
       border: '1px solid #002856',
       borderColor: selectedItem.value === item ? '#0050a0' : '#002856',
-      borderRadius: '10px',
+      borderRadius: '10px'
     }
   }
 }
@@ -279,7 +302,7 @@ function getCardStyle(item) {
 ========================================================= */
 watch(
   viewMode,
-  async (newMode) => {
+  async newMode => {
     advisorSearch.value = ''
     studentSearch.value = ''
     selectedItem.value = null
@@ -340,7 +363,10 @@ watch(
           <!-- Centered Control Bar -->
           <v-card class="pa-4 mb-5 glass-card">
             <v-row justify="center">
-              <v-col cols="12" class="d-flex flex-column align-center justify-center text-center">
+              <v-col
+                cols="12"
+                class="d-flex flex-column align-center justify-center text-center"
+              >
                 <!-- Edit / Exit Edit Mode Button -->
                 <v-btn
                   color="#0032A0"
@@ -381,12 +407,16 @@ watch(
                       Delete {{ viewMode === 'students' ? 'Student' : 'Advisor' }}
                     </v-btn>
                   </div>
+
+                  <div class="mt-3 text-caption" style="color:#002856;">
+                    When adding an advisor, be sure to select their category
+                    (ROAR or College) in the advisor form.
+                  </div>
                 </template>
               </v-col>
             </v-row>
           </v-card>
 
-          <!-- User List -->
           <!-- STUDENTS VIEW -->
           <v-card
             v-if="viewMode === 'students'"
@@ -461,13 +491,17 @@ watch(
                 </v-card>
               </v-col>
 
-              <v-col v-if="filteredStudents.length === 0" cols="12" class="text-center text-caption">
+              <v-col
+                v-if="filteredStudents.length === 0"
+                cols="12"
+                class="text-center text-caption"
+              >
                 No students found.
               </v-col>
             </v-row>
           </v-card>
 
-          <!-- ADVISORS VIEW (split into ROAR and COLLEGE) -->
+          <!-- ADVISORS VIEW (ROAR / COLLEGE / UNASSIGNED) -->
           <v-card
             v-else
             class="pa-4 glass-card"
@@ -515,7 +549,11 @@ watch(
                 </v-card>
               </v-col>
 
-              <v-col v-if="filteredRoarAdvisors.length === 0" cols="12" class="text-center text-caption">
+              <v-col
+                v-if="filteredRoarAdvisors.length === 0"
+                cols="12"
+                class="text-center text-caption"
+              >
                 No ROAR advisors found.
               </v-col>
             </v-row>
@@ -551,8 +589,44 @@ watch(
                 </v-card>
               </v-col>
 
-              <v-col v-if="filteredCollegeAdvisors.length === 0" cols="12" class="text-center text-caption">
+              <v-col
+                v-if="filteredCollegeAdvisors.length === 0"
+                cols="12"
+                class="text-center text-caption"
+              >
                 No college advisors found.
+              </v-col>
+            </v-row>
+
+            <v-divider class="my-6" />
+
+            <!-- OTHER / UNASSIGNED ADVISORS -->
+            <v-row v-if="filteredUnassignedAdvisors.length">
+              <v-col cols="12">
+                <h3 class="mb-3 brand-primary">Other / Unassigned Advisors</h3>
+              </v-col>
+
+              <v-col
+                v-for="item in filteredUnassignedAdvisors"
+                :key="item.userid"
+                cols="12"
+                sm="6"
+                md="4"
+                lg="3"
+              >
+                <v-card
+                  :style="getCardStyle(item)"
+                  class="pa-4 d-flex flex-column align-center justify-center user-card"
+                  hover
+                  @click="selectUser(item)"
+                >
+                  <v-card-title class="user-name">
+                    {{ item.firstname }} {{ item.lastname }}
+                  </v-card-title>
+                  <v-card-subtitle class="text-caption" style="color:black;">
+                    Category not set
+                  </v-card-subtitle>
+                </v-card>
               </v-col>
             </v-row>
           </v-card>
@@ -572,8 +646,11 @@ watch(
       @saved="refreshList"
     />
 
-    <!-- AdvisorFormCard will show its OWN type select.
-         It can use defaultType when creating a new advisor. -->
+    <!-- AdvisorFormCard:
+         - must expose "default-type" prop
+         - inside it, show a select for ROAR / COLLEGE
+         - save that to advisortype (or type) on submit
+    -->
     <AdvisorFormCard
       v-model:visible="showAdvisorForm"
       :advisor="advisorToEdit"
@@ -683,9 +760,6 @@ watch(
   font-size: 0.9rem;
   line-height: 1.3;
 }
-
-/* Advisor type select lives inside AdvisorFormCard.
-   This file only defines common styles + cancel buttons. */
 
 /* Cancel buttons -> black text */
 .cancel-btn {
