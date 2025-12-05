@@ -11,13 +11,26 @@ const props = defineProps({
 const emits = defineEmits(['update:visible', 'close', 'saved'])
 
 const form = ref({
-  firstname: '',
-  lastname: '',
-  email: '',
-  phonenumber: '',
+  firstname: props.advisor?.firstname || '',
+  lastname: props.advisor?.lastname || '',
+  email: props.advisor?.email || '',
+  phonenumber: props.advisor?.phonenumber || '',
   role: 'advisor',
-  school: ''
+  school: props.advisor?.school || '',
+
+  // NEW FIELD (mandatory):
+  // When editing → use existing advisortype
+  // When adding → use the defaultType passed from admin view (“ROAR”)
+  advisortype: props.advisor?.advisortype || props.defaultType || 'ROAR'
+
+  
 })
+
+const advisorTypeOptions = [
+  { title: 'ROAR Advisor', value: 'ROAR' },
+  { title: 'College Advisor', value: 'COLLEGE' }
+]
+
 
 const localVisible = ref(props.visible)
 
@@ -91,6 +104,7 @@ async function save() {
   }
 }
 
+
 function resetForm() { // need to reset id
   form.value = {
     firstname: '',
@@ -134,30 +148,63 @@ watch(() => props.advisor, (newAdvisor) => {
         <v-container>
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model="form.firstname" label="First Name" :rules="[requiredRule, value => charRule(value, 50, 'string')]"/>
+              <v-text-field
+                v-model="form.firstname"
+                label="First Name"
+                :rules="[requiredRule, value => charRule(value, 50, 'string')]"
+              />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model="form.lastname" label="Last Name" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
+              <v-text-field
+                v-model="form.lastname"
+                label="Last Name"
+                :rules="[requiredRule, value => charRule(value, 50, 'string')]"
+              />
             </v-col>
           </v-row>
+
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model="form.email" label="Email" :rules="[emailRule, requiredRule, value => charRule(value, 50, 'string')]" />
+              <v-text-field
+                v-model="form.email"
+                label="Email"
+                :rules="[emailRule, requiredRule, value => charRule(value, 50, 'string')]"
+              />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model="form.phonenumber" label="Phone Number" :rules="[requiredRule, value => charRule(value, 10, 'int')]" />
+              <v-text-field
+                v-model="form.phonenumber"
+                label="Phone Number"
+                :rules="[requiredRule, value => charRule(value, 10, 'int')]"
+              />
             </v-col>
           </v-row>
+
           <v-row>
-            <!-- <v-col cols="6">
-              <v-text-field v-model="form.role" label="Role" />
-            </v-col> -->
             <v-col cols="6">
-              <v-text-field v-model="form.school" label="School" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
+              <v-text-field
+                v-model="form.school"
+                label="School"
+                :rules="[requiredRule, value => charRule(value, 50, 'string')]"
+              />
             </v-col>
+
+            <!-- NEW: Advisor Category (ROAR / College) -->
+            <v-col cols="6">
+          <v-select
+            v-model="form.advisortype"
+            :items="advisorTypeOptions"
+            label="Advisor Category"
+            item-title="title"
+            item-value="value"
+            density="comfortable"
+            :rules="[requiredRule]"
+          />
+        </v-col>
           </v-row>
         </v-container>
-      </v-card-text>
+</v-card-text>
+
 
       <v-card-actions>
         <v-spacer></v-spacer>
