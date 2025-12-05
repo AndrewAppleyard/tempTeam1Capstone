@@ -45,11 +45,7 @@ async function login() {
 
       switch (userStore.userRole) {
         case 'UAFS_STUDENTS':
-          const studentid = await UserAPI.getStudentByUID(userStore.userID)
-          userStore.roleID = studentid
-          console.log("studentid: " + studentid)
-          console.log("user store roleid: " + userStore.roleID)
-          router.replace(`/student/${userStore.roleID}`)
+          router.replace(userStore.userID ? `/student/${userStore.userID}` : '/student')
           break
         case 'UAFS_ADVISORS':
           const advisorid = await UserAPI.getAdvisorByUID(userStore.userID)

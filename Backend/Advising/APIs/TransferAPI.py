@@ -15,6 +15,20 @@ from extensions import jwt
 from dotenv import load_dotenv
 # load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'))
 load_dotenv()
+from Advising.APIs import URL
+
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.join(current_dir, '..')
+sys.path.append(parent_dir)
+
+from UserClasses import Student, Advisor, Admin
+
+path = os.path.abspath(__file__)
+directory = os.path.dirname(path)
+databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config/.gitignore.key")
+
+engine = create_engine(databaseURL)
+sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 bp = Blueprint('TransferAPI', __name__, url_prefix="/Transfer")
 
@@ -29,6 +43,22 @@ LDAP_PORT = 3389
 LDAP_USER = "cn=Directory Manager"
 LDAP_PASS = os.getenv("DS_DM_PASSWORD")
 BASE_DN = "dc=UAFS,dc=COM"
+
+def lookup_user_id(username: str, group: str):
+    try:
+        with Session(engine) as session:
+            if "UAFS_STUDENTS" in group:
+                student = session.query(Student.StudentMap).filter(Student.StudentMap.email == username).first()
+                return student.studentid if student else None
+            if "UAFS_ADVISORS" in group:
+                advisor = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap.email == username).first()
+                return advisor.advisorid if advisor else None
+            if "UAFS_ADMINS" in group:
+                admin = session.query(Admin.AdminMap).filter(Admin.AdminMap.email == username).first()
+                return admin.adminid if admin else None
+    except Exception:
+        traceback.print_exc()
+    return None
 
 @bp.route('/login', methods=['POST'])
 def login():
@@ -76,24 +106,35 @@ def login():
                 print(f"The user {username} is in group {group}")
             
             conn.unbind()
+            user_id = lookup_user_id(username, group)
+
             if "UAFS_ADMINS" in group:
-                access_token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADMINS"})
-                refresh_token = create_refresh_token(identity=username, additional_claims={"Role":"UAFS_ADMINS"})
-                resp = jsonify({"login": True, "Role": "UAFS_ADMINS"})
+                claims = {"Role":"UAFS_ADMINS"}
+                if user_id:
+                    claims["UserID"] = user_id
+                access_token = create_access_token(identity=username, additional_claims=claims)
+                refresh_token = create_refresh_token(identity=username, additional_claims=claims)
+                resp = jsonify({"login": True, "Role": "UAFS_ADMINS", "UserID": user_id, "Email": username})
                 set_access_cookies(resp, access_token)
                 set_refresh_cookies(resp, refresh_token)
                 return resp, 200
             elif "UAFS_STUDENTS" in group:
-                access_token = create_access_token(identity=username, additional_claims={"Role":"UAFS_STUDENTS"})
-                refresh_token = create_refresh_token(identity=username, additional_claims={"Role":"UAFS_STUDENTS"})
-                resp = jsonify({"login": True, "Role": "UAFS_STUDENTS"})
+                claims = {"Role":"UAFS_STUDENTS"}
+                if user_id:
+                    claims["UserID"] = user_id
+                access_token = create_access_token(identity=username, additional_claims=claims)
+                refresh_token = create_refresh_token(identity=username, additional_claims=claims)
+                resp = jsonify({"login": True, "Role": "UAFS_STUDENTS", "UserID": user_id, "Email": username})
                 set_access_cookies(resp, access_token)
                 set_refresh_cookies(resp, refresh_token)
                 return resp, 200
             elif "UAFS_ADVISORS" in group:
-                access_token = create_access_token(identity=username, additional_claims={"Role":"UAFS_ADVISORS"})
-                refresh_token = create_refresh_token(identity=username, additional_claims={"Role":"UAFS_ADVISORS"})
-                resp = jsonify({"login": True, "Role": "UAFS_ADVISORS"})
+                claims = {"Role":"UAFS_ADVISORS"}
+                if user_id:
+                    claims["UserID"] = user_id
+                access_token = create_access_token(identity=username, additional_claims=claims)
+                refresh_token = create_refresh_token(identity=username, additional_claims=claims)
+                resp = jsonify({"login": True, "Role": "UAFS_ADVISORS", "UserID": user_id, "Email": username})
                 set_access_cookies(resp, access_token)
                 set_refresh_cookies(resp, refresh_token)
                 return resp, 200
@@ -108,8 +149,11 @@ def login():
 @jwt_required(refresh=True)
 def refresh():
     identity = get_jwt_identity()
-    new_access = create_access_token(identity=identity, additional_claims={"Role": get_jwt().get("Role")})
-    resp = jsonify({"refresh": True})
+    claims = {"Role": get_jwt().get("Role")}
+    if get_jwt().get("UserID"):
+        claims["UserID"] = get_jwt().get("UserID")
+    new_access = create_access_token(identity=identity, additional_claims=claims)
+    resp = jsonify({"refresh": True, "Role": claims.get("Role"), "UserID": claims.get("UserID"), "Email": identity})
     set_access_cookies(resp, new_access)
     return resp
 
