@@ -9,6 +9,7 @@ class Student(User.User):
     gpa: float
     major: str
     minor: str
+    preferences: dict
     registrationstatus: bool
     advisingstatus: bool
     dateadvised: datetime
@@ -46,4 +47,5 @@ class StudentMap(User.Base):
     advisingstatus: Mapped[bool] = mapped_column(Boolean, default=False)
     activestatus: Mapped[bool] = mapped_column(Boolean, default=True)
     dateadvised: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    preferences: Mapped[dict] = mapped_column(JSONB, default={}, nullable=True)
     classes: Mapped[dict] = mapped_column(JSONB, default={}, nullable=True)

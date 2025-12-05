@@ -26,13 +26,30 @@ export default {
   async updateStudent(studentid, updates) {
     try {
       const formData = new FormData();
-        Object.keys(updates).forEach(key => formData.append(key, updates[key]));
-        const response = await api.post(`/Student/Update/${studentid}`, formData);
-        console.log('Student Updated:', response.data);
-        return response.data;
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === undefined || value === null) return;
+        const preparedValue = typeof value === 'object' ? JSON.stringify(value) : value;
+        formData.append(key, preparedValue);
+      });
+      const response = await api.post(`/Student/Update/${studentid}`, formData);
+      console.log('Student Updated:', response.data);
+      return response.data;
     } catch (err) {
         console.error('Update Student Error:', err);
         throw err;
+    }
+  },
+
+  async savePreferences(studentid, preferences) {
+    try {
+      const formData = new FormData();
+      formData.append('preferences', JSON.stringify(preferences));
+      const response = await api.post(`/Student/Update/${studentid}`, formData);
+      console.log('Preferences saved:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Save Preferences Error:', err);
+      throw err;
     }
   },
 
@@ -43,6 +60,17 @@ export default {
       return response.data;
     } catch (err) {
       console.error('Schedule Generated Error:', err);
+      throw err;
+    }
+  },
+
+  async checkAdvisingHold(studentid) {
+    try {
+      const response = await api.post(`/Schedule/CheckAdvisingHold/${studentid}`);
+      console.log(response.data)
+      return response.data;
+    } catch (err) {
+      console.error("Advising Hold Check Error:", err);
       throw err;
     }
   },

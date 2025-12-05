@@ -62,37 +62,27 @@ router.beforeEach((to, from, next) => {
   }
 
   if (userStore.isLoggedIn && to.path === '/') {
-    const role = userStore.userRole
-
-    if (role === 'UAFS_STUDENTS') {
-      return next(`/student/${userStore.roleID}`)
-    }
-    if (role === 'UAFS_ADVISORS') {
-      return next(`/advisor/${userStore.roleID}`)
-    }
-    if (role === 'UAFS_ADMINS') {
-      return next('/admin')
-    }
-
-    return next('/')
-  }
-
-  if (to.params.advisorid && userStore.userRole === 'UAFS_ADVISORS') {
-    if (parseInt(to.params.advisorid) !== userStore.roleID) {
-      return next(`/advisor/${userStore.roleID}`)
+    //console.log("INDEX TOKEN:\t" + userStore.storedToken)
+    //console.log("INDEX ROLE:\t" + userStore.storedRole)
+    switch (userStore.userRole) {
+      case 'UAFS_STUDENTS': return next(userStore.userID ? `/student/${userStore.userID}` : '/student')
+      case 'UAFS_ADVISORS': return next(userStore.userID ? `/advisor/${userStore.userID}` : '/advisor')
+      case 'UAFS_ADMINS': return next('/admin')
+      default: return next('/')
     }
   }
 
-  if (to.params.studentid && userStore.userRole === 'UAFS_STUDENTS') {
-    if (parseInt(to.params.studentid) !== userStore.roleID) {
-      return next(`/student/${userStore.roleID}`)
-    }
+  if (userStore.isLoggedIn && userStore.userRole === 'UAFS_STUDENTS' && to.path === '/student' && userStore.userID) {
+    return next(`/student/${userStore.userID}`)
   }
 
-  const allowed = roleRoutes[userStore.userRole] || []
-  const match = allowed.some(prefix => to.path.startsWith(prefix))
-  if (!match && !isPublic) {
-    return next(allowed[0])
+  if (userStore.isLoggedIn) {
+    const allowed = roleRoutes[userStore.userRole] || []
+    const match = allowed.some(prefix => to.path.startsWith(prefix))
+
+    if (!match && !isPublic) {
+      return next(allowed[0])
+    }
   }
 
   return next()

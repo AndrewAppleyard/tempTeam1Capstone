@@ -21,9 +21,13 @@ export const useUserStore = defineStore('user', () => {
 
       isLoggedIn.value = true
       userRole.value = data.Role || null
+      userID.value = data.UserID || null
+      email.value = data.Email || null
     } catch (err) {
       isLoggedIn.value = false
       userRole.value = null
+      userID.value = null
+      email.value = null
     }
   }
 
