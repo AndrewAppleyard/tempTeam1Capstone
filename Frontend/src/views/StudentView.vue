@@ -6,7 +6,6 @@ import AdvisorAPI from '../apis/AdvisorAPI.js'
 
 const route = useRoute()
 const studentid = route.params.studentid
-import { useRoute } from 'vue-router'
 import { useUserStore } from '../store/user.js'
 
 /* =========================================================
@@ -255,7 +254,6 @@ const filteredDegreeOptions = computed(() =>
   DEGREE_PLAN.filter(c => c.term === nextTerm.value).map(c => ({ label: `${c.code} — ${c.title}`, value: c.code }))
 )
 
-const route = useRoute()
 const userStore = useUserStore()
 
 const studentId = computed<number | null>(() => {

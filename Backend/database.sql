@@ -99,9 +99,6 @@ CREATE TABLE degreeplans (
     concentrations JSONB
 );
 
-INSERT INTO admin (firstname, lastname, email, phonenumber, role, school)
-VALUES ('Andrew', 'Appleyard', 'aapply00@uafs.edu', 1112223334, 'admin', 'UAFS');
-
 
 
 -- INSERT INTO advisor (firstname, lastname, email, phonenumber, role, school)
@@ -122,15 +119,18 @@ VALUES ('Andrew', 'Appleyard', 'aapply00@uafs.edu', 1112223334, 'admin', 'UAFS')
 INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa, major, majorconcentration,
             minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,
             activestatus, dateadvised)
-VALUES ('Andrew', 'Appleyard', 'aapply00@uafs.edu', 4448889999, 'student', 'University of Arkansas - Fort Smith', 3.61, 'B.S. in Computer Science', 'General',
+VALUES ('Andrew', 'Appleyard', 'andrewstudent@uafs.edu', 4448889999, 'student', 'University of Arkansas - Fort Smith', 3.61, 'B.S. in Computer Science', 'General',
              'Math', 'Sophomore', FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, CURRENT_TIMESTAMP);
 
--- Student seeded to match LDAP test account
 INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa, major, majorconcentration,
             minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,
             activestatus, dateadvised)
 VALUES ('Jake', 'Student', 'jake00@uafs.edu', 4790000000, 'student', 'University of Arkansas - Fort Smith', 3.20, 'B.S. in Computer Science', 'General',
             '', 'Junior', FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, CURRENT_TIMESTAMP);
+
+
+INSERT INTO admin (firstname, lastname, email, phonenumber, role, school)
+VALUES ('Andrew', 'Appleyard', 'aapply00@uafs.edu', 1112223334, 'admin', 'UAFS');
 
 -- INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa, major, majorconcentration,
 --             minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,
