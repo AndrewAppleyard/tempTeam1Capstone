@@ -694,6 +694,7 @@ watch(
     <StudentFormCard
       v-model:visible="showStudentForm"
       :student="studentToEdit"
+      :advisors="advisors"
       @saved="refreshList"
     />
 

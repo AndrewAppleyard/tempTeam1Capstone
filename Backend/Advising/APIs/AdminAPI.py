@@ -184,6 +184,10 @@ def addStudent():
         student.academichold = True
     elif(request.form.get('academichold').casefold() == false.casefold()):
         student.academichold = False
+    if(request.form.get('activestatus').casefold() == true.casefold()):
+        student.academichold = True
+    elif(request.form.get('activestatus').casefold() == false.casefold()):
+        student.academichold = False
 
     try:
         with Session(engine) as session:

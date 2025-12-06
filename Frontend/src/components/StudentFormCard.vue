@@ -7,19 +7,27 @@ import Popups from '../components/Popups.vue'
 
 const props = defineProps({
   student: { type: Object, default: null }, 
-  visible: { type: Boolean, default: false }
+  visible: { type: Boolean, default: false },
+  advisors: { type: Array, default: () => [] } 
 })
 
 const emits = defineEmits(['update:visible', 'close', 'saved'])
 
 const localVisible = ref(props.visible)
-const advisors = ref([])
+//const advisors = ref([])
 const selectedAdvisor = ref(null)
 const currentAdvisor = ref(null)
 
 const datePickerVisible = ref(false)
 const tempDate = ref(null)
 const displayDate = ref('')
+
+const advisorsList = computed(() =>
+  (props.advisors || []).map(a => ({
+    fullname: `${a.firstname || ''} ${a.lastname || ''}`.trim(),
+    userid: a.userid
+  }))
+)
 
 //For select fields
 const holdsOptions = [
@@ -84,7 +92,7 @@ const form = ref({
   registrationstatus: null,
   advisingstatus: null,
   activestatus: null,
-  dateadvised: null // needs to be null at first 
+  dateadvised: null  
 })
 
 const requiredFields = [
@@ -106,6 +114,7 @@ const requiredFields = [
 ]
 
 const isFormValid = computed(() => {
+  if (!selectedAdvisor.value) return false //Checks if Advisor is selected
   return requiredFields.every(field => {
     const value = form.value[field]
 
@@ -139,24 +148,15 @@ async function save() {
 
     if (props.student) {
       studentid = props.student.studentid
-// <<<<<<< dev
-//       await StudentAPI.updateStudent(studentid, payload)
-//       //await StudentAPI.updateStudent(studentid, form.value)
-      
-//     } else {
-//       form.value.role = 'student'
-//       //form.value.dateadvised = '2025-01-01' 
-//       const response = await AdminAPI.addStudent(payload)
 
-//       console.log('AddStudent response:', response);
-// =======
-      await StudentAPI.updateStudent(studentid, form.value)
+      await StudentAPI.updateStudent(studentid, payload)
       alert('Successfully updated student!')
     } else {
       form.value.role = 'student'
-      form.value.dateadvised = '2025-01-01' // should be empty
-      await AdminAPI.addStudent(form.value)
-      // studentid = response.data
+      const response = await AdminAPI.addStudent(payload)
+
+      console.log('AddStudent response:', response);
+      studentid = response.data
       alert('Successfully added student!')
     }
     
@@ -193,6 +193,10 @@ function resetForm() { // need to reset id
     activestatus: null,
     dateadvised: null // needs to be null until set
   }
+  selectedAdvisor.value = null
+  currentAdvisor.value = null
+  displayDate.value = ''
+  tempDate.value = null
 }
 
 function convertToYDM(date) {
@@ -200,7 +204,14 @@ function convertToYDM(date) {
 
     return null
   }
-  const [y, m, d] = date.split('-')
+  
+  const parsedDate = new Date(date)
+  if (isNaN(parsedDate)) return null
+
+  const y = parsedDate.getFullYear()
+  const d = String(parsedDate.getDate()).padStart(2, '0')
+  const m = String(parsedDate.getMonth() + 1).padStart(2, '0')
+
   return `${y}-${d}-${m}`
 }
 
@@ -232,7 +243,6 @@ async function removeAdvisor() {
 function close() {
   localVisible.value = false
   datePickerVisible.value = false
-  resetForm()
   emits('close')
 }
 
@@ -270,7 +280,7 @@ watch(() => props.student, async (newStudent) => {
   }
 }, { immediate: true })
 
-onMounted(async () => {
+/*onMounted(async () => {
   try {
     const response = await AdvisorAPI.getAllAdvisors()
     advisors.value = response.map(a => ({
@@ -280,7 +290,7 @@ onMounted(async () => {
   } catch (err) {
     console.error('Failed to load advisors:', err)
   }
-})
+})*/
 </script>
 
 <template>
@@ -340,7 +350,7 @@ onMounted(async () => {
             <v-col>
               <v-select
                 v-model="selectedAdvisor"
-                :items="advisors"
+                :items="advisorsList"
                 item-title="fullname"
                 item-value="userid"
                 label="Advisor"
