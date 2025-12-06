@@ -96,6 +96,7 @@ def getStudents():
                     "classstanding": s.classstanding,
                     "registrationstatus": s.registrationstatus,
                     "advisingstatus": s.advisingstatus,
+                    "activestatus": s.activestatus
                     "dateadvised": s.dateadvised,
                     "financialhold": s.financialhold,
                     "advisinghold": s.advisinghold,
