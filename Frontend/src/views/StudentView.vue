@@ -1359,13 +1359,13 @@ async function runHoldCheck() {
 
 /* Header layout */
 .planner-left {
-  font-size: 1.35rem;
+  font-size: 2.0rem;
   font-weight: 800;
   letter-spacing: .02em;
 }
 .welcome-center {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 2.5rem;
   font-weight: 800;
 }
 .header-actions {
