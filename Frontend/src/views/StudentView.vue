@@ -6,6 +6,7 @@ import AdvisorAPI from '../apis/AdvisorAPI.js'
 
 const route = useRoute()
 const studentid = route.params.id
+console.log("THIS IS THE USER ID", studentid)
 import { useUserStore } from '../store/user.js'
 
 /* =========================================================
@@ -225,13 +226,13 @@ const filteredDegreeOptions = computed(() =>
 
 const userStore = useUserStore()
 
-const studentId = computed<number | null>(() => {
-  const routeId = Number(route.params.studentid)
-  if (!Number.isNaN(routeId)) return routeId
-  const storeId = userStore.userID ? Number(userStore.userID) : NaN
-  return Number.isNaN(storeId) ? null : storeId
-})
-const hasStudentId = computed(() => !!studentId.value)
+// const studentId = computed<number | null>(() => {
+//   const routeId = Number(route.params.studentid)
+//   if (!Number.isNaN(routeId)) return routeId
+//   const storeId = userStore.userID ? Number(userStore.userID) : NaN
+//   return Number.isNaN(storeId) ? null : storeId
+// })
+//const hasStudentId = computed(() => !!studentId.value)
 
 function showPreferenceSnackbar(message: string, color: 'success' | 'error' | 'info' = 'success') {
   preferenceSnackbarMessage.value = message
@@ -266,11 +267,11 @@ function normalizePreferences(raw: any): SchedulePreferences {
 }
 
 async function loadStudentProfile() {
-  if (!studentId.value) return
+  if (!studentid.value) return
   loadingPreferences.value = true
   preferenceLoadError.value = ''
   try {
-    const data = await StudentAPI.getStudentById(studentId.value)
+    const data = await StudentAPI.getStudentById(studentid.value)
     const student = data?.student
 
     if (student) {
@@ -292,7 +293,7 @@ async function loadStudentProfile() {
 }
 
 function openPreferencesDialog() {
-  if (!studentId.value) {
+  if (!studentid.value) {
     showPreferenceSnackbar('No student selected to save preferences.', 'error')
     return
   }
@@ -303,7 +304,7 @@ function openPreferencesDialog() {
 }
 
 async function savePreferences() {
-  if (!studentId.value) {
+  if (!studentid.value) {
     showPreferenceSnackbar('No student selected to save preferences.', 'error')
     return
   }
@@ -324,7 +325,7 @@ async function savePreferences() {
       earliestStart: startValue,
       latestEnd: endValue
     }
-    await StudentAPI.savePreferences(studentId.value, payload)
+    await StudentAPI.savePreferences(studentid.value, payload)
     showPreferenceSnackbar('Preferences saved to your student record.', 'success')
     preferencesDialog.value = false
     preferencesLoaded.value = true
@@ -502,7 +503,7 @@ onMounted(async () => {
   
   syncNextCardFromPopup() 
   
-  if (studentId.value) loadStudentProfile() 
+  if (studentid.value) loadStudentProfile() 
 
   try {
     const response = await StudentAPI.getStudentById(studentid)
@@ -672,7 +673,7 @@ watch([nextSchedule, nextPopupRows, nextTerm], () => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
 }, { deep: true })
 
-watch(studentId, (newId, oldId) => {
+watch(studentid, (newId, oldId) => {
   if (newId && newId !== oldId) {
     preferencesLoaded.value = false
     preferenceLoadError.value = ''
@@ -726,12 +727,12 @@ function removeNextRow(index: number) {
 }
 
 async function generateSchedule() {
-  if (!studentId.value) {
+  if (!studentid.value) {
     showPreferenceSnackbar('No student selected to generate a schedule.', 'error')
     return
   }
   try {
-    await StudentAPI.addSchedule(studentId.value)
+    await StudentAPI.addSchedule(studentid.value)
     showPreferenceSnackbar('Schedule generation submitted.', 'info')
   } catch (err) {
     console.error('Generate Schedule error: ', err)
@@ -740,12 +741,12 @@ async function generateSchedule() {
 }
 
 async function runHoldCheck() {
-  if (!studentId.value) {
+  if (!studentid.value) {
     showPreferenceSnackbar('No student selected to check advising holds.', 'error')
     return
   }
   try {
-    await StudentAPI.checkAdvisingHold(studentId.value);
+    await StudentAPI.checkAdvisingHold(studentid.value);
     showPreferenceSnackbar('Advising hold check submitted.', 'info')
   } catch (err) {
     console.error(err);
@@ -800,15 +801,15 @@ async function runHoldCheck() {
           </v-btn>
 
           <div class="d-flex flex-wrap justify-end" style="gap:8px;">
-            <v-btn :disabled="!hasStudentId" color="primary" @click="generateSchedule">
+            <v-btn :disabled="!hasStudentid" color="primary" @click="generateSchedule">
               <v-icon start>mdi-calendar-refresh</v-icon>
               Generate Schedule
             </v-btn>
-            <v-btn :disabled="!hasStudentId" color="primary" variant="tonal" @click="runHoldCheck">
+            <v-btn :disabled="!hasStudentid" color="primary" variant="tonal" @click="runHoldCheck">
               <v-icon start>mdi-shield-check-outline</v-icon>
               Check Advising Hold
             </v-btn>
-            <v-btn :disabled="!hasStudentId" variant="outlined" color="#002856" @click="openPreferencesDialog">
+            <v-btn :disabled="!hasStudentid" variant="outlined" color="#002856" @click="openPreferencesDialog">
               <v-icon start>mdi-clipboard-text</v-icon>
               Schedule Preferences
             </v-btn>
@@ -1197,7 +1198,7 @@ async function runHoldCheck() {
           <v-btn
             color="primary"
             :loading="savingPreferences"
-            :disabled="savingPreferences || loadingPreferences || !hasStudentId"
+            :disabled="savingPreferences || loadingPreferences || !hasStudentid"
             @click="savePreferences"
           >
             Save preferences

@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import DegreePlanAPI from '../apis/DegreePlanAPI.js'
 
-const route = userRoute()
+const route = useRoute()
 const studentid = route.params.id
 
 type Semester = 'Fall' | 'Spring'
