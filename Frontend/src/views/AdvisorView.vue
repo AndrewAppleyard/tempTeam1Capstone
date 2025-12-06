@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import AdvisorAPI from '../apis/AdvisorAPI'
+import StudentFormCard from '../components/StudentFormCard.vue' 
 
 /* =========================
    STATE
@@ -11,17 +12,18 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref(null)
 const students = ref([])
-const advisorid = route.params.advisorid
-const userid = route.params.userid
+const advisorid = route.params.id
 
-console.log("advisorid:\t" + advisorid)
-console.log("userid:\t" + userid)
+const showStudentForm = ref(false)
+const studentToEdit = ref(null) 
+
+const editMode = ref(false)
 
 const searchQuery = ref('')
 
-/* =========================
-   DATA FETCH
-========================= */
+/* ==============
+   DATA FETCH 
+================= */
 async function fetchStudents() {
   loading.value = true
   error.value = null
@@ -56,7 +58,7 @@ async function fetchStudents() {
 }
 
 /* =========================
-   DERIVED / FILTERED DATA
+   DERIVED / FILTERED DATA 
 ========================= */
 const filteredStudents = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
@@ -66,7 +68,7 @@ const filteredStudents = computed(() => {
     const first = (s.firstname || '').toLowerCase()
     const last = (s.lastname || '').toLowerCase()
     const fullName = `${first} ${last}`.trim()
-    const idStr = String(s.studentid || '').toLowerCase()
+    const idStr = String(s.userid || '').toLowerCase()
 
     return (
       fullName.includes(q) ||
@@ -78,10 +80,20 @@ const filteredStudents = computed(() => {
 })
 
 /* =========================
-   UI HELPERS
+   ACTIONS & UI HELPERS
 ========================= */
-function goToStudent(studentid) {
-  router.push(`/student/${studentid}`)
+function handleStudentClick(student) {
+    if (editMode.value) {
+        studentToEdit.value = student
+        showStudentForm.value = true
+    } else {
+        router.push(`/student/${student.userid}`)
+    }
+}
+
+function toggleEditMode() {
+  editMode.value = !editMode.value
+  studentToEdit.value = null 
 }
 
 function hasInfo(s) {
@@ -95,20 +107,25 @@ function hasInfo(s) {
 }
 
 function getCardStyle(s) {
+  const isSelected = editMode.value && studentToEdit.value && studentToEdit.value.userid === s.userid
+
   const hasHold = s.advisinghold || s.academichold || s.financialhold
   const advising = s.advisingstatus
   let bg = 'transparent'
+  
   if (hasHold) bg = '#FF746C'
   else if (advising) bg = '#ADEBB3'
+  
   return {
-    backgroundColor: bg,
+    backgroundColor: isSelected ? '#D1E5F4' : bg,
     border: '1px solid #002856',
+    borderColor: isSelected ? '#0050a0' : '#002856',
     borderRadius: '10px'
   }
 }
 
 onMounted(async () => {
-  const userData = await AdvisorAPI.getAdvisorById(userid)
+  const userData = await AdvisorAPI.getAdvisorById(advisorid)
   console.log(userData)
 })
 onMounted(fetchStudents)
@@ -117,13 +134,11 @@ onMounted(fetchStudents)
 <template>
   <v-container fluid class="pa-2" style="background-color: transparent;">
     <v-row>
-      <!-- 95% width shell -->
       <v-col cols="12" class="mx-auto advisor-shell">
         <v-card
           class="pa-5 heavy-page"
           style="background-color:#BDD5E7;border:1px solid #002856;border-radius:16px;"
         >
-          <!-- Header -->
           <v-row class="mb-4" align="center" no-gutters>
             <v-col cols="12" md="6" class="d-flex align-center">
               <v-card flat class="elevation-0" style="background:transparent;">
@@ -156,10 +171,30 @@ onMounted(fetchStudents)
               </v-btn>
             </v-col>
           </v-row>
+          
+          <v-card class="pa-4 mb-5 glass-card">
+            <v-row justify="center">
+              <v-col
+                cols="12"
+                class="d-flex flex-column align-center justify-center text-center"
+              >
+                <v-btn
+                  color="#0032A0"
+                  class="text-on-dark mb-3 main-edit-btn"
+                  @click="toggleEditMode"
+                >
+                  {{ editMode ? 'Exit Edit Mode' : 'Edit' }}
+                </v-btn>
 
-          <!-- Content Card -->
+                <template v-if="editMode">
+                    <div class="mt-3 text-caption" style="color:#002856;">
+                        In Edit Mode, click a student card to update their details (holds, status, etc.).
+                    </div>
+                </template>
+              </v-col>
+            </v-row>
+          </v-card>
           <v-card class="pa-4 glass-card">
-            <!-- Error -->
             <v-alert
               v-if="error"
               type="error"
@@ -171,7 +206,6 @@ onMounted(fetchStudents)
               {{ error }}
             </v-alert>
 
-            <!-- Loading Skeletons -->
             <v-row v-if="loading" dense>
               <v-col v-for="i in 8" :key="i" cols="12" sm="6" md="4" lg="3">
                 <v-skeleton-loader
@@ -180,8 +214,7 @@ onMounted(fetchStudents)
                 />
               </v-col>
             </v-row>
-
-            <!-- Empty State: no students at all -->
+            
             <div
               v-else-if="!students.length"
               class="text-center brand-primary py-10"
@@ -191,7 +224,6 @@ onMounted(fetchStudents)
               <div>Try refreshing or check your advisor assignment.</div>
             </div>
 
-            <!-- No matches for search -->
             <div
               v-else-if="students.length && !filteredStudents.length"
               class="text-center brand-primary py-10"
@@ -204,11 +236,10 @@ onMounted(fetchStudents)
               </div>
             </div>
 
-            <!-- Grid -->
             <v-row v-else dense>
               <v-col
                 v-for="s in filteredStudents"
-                :key="s.studentid"
+                :key="s.userid"
                 cols="12"
                 sm="6"
                 md="4"
@@ -218,7 +249,7 @@ onMounted(fetchStudents)
                   class="pa-4 text-center student-card"
                   flat
                   :style="getCardStyle(s)"
-                  @click="goToStudent(s.studentid)"
+                  @click="handleStudentClick(s)"
                 >
                   <div
                     class="d-flex justify-center align-center mb-2"
@@ -275,31 +306,34 @@ onMounted(fetchStudents)
             </v-row>
           </v-card>
 
-          <!-- Footer -->
           <div class="text-center mt-6 brand-primary" style="color:#002856;">
             © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
           </div>
         </v-card>
       </v-col>
     </v-row>
+
+    <StudentFormCard
+      v-model:visible="showStudentForm"
+      :student="studentToEdit"
+      @saved="fetchStudents"
+    />
+    
   </v-container>
 </template>
 
 <style scoped>
-/* 95% width shell to match other pages */
 .advisor-shell {
   width: 95%;
   margin-left: auto;
   margin-right: auto;
 }
 
-/* Heavier but not flashy */
 .heavy-page {
   font-size: 1.06rem;
   line-height: 1.55;
 }
 
-/* Title chip */
 .title-chip {
   color: #002856;
   border: 1px solid #002856;
@@ -309,19 +343,16 @@ onMounted(fetchStudents)
   font-size: 1.15rem;
 }
 
-/* Subtle glass card look */
 .glass-card {
   background-color: rgba(255, 255, 255, 0.6);
   border: 1px solid #002856;
   border-radius: 12px;
 }
 
-/* Brand helpers */
 .brand-primary {
   color: #002856;
 }
 
-/* Header spacing */
 .header-actions > .v-btn {
   margin-left: 10px;
   margin-top: 8px;
@@ -346,7 +377,11 @@ onMounted(fetchStudents)
   font-size: 1.05rem;
 }
 
-/* Print */
+.main-edit-btn {
+  text-transform: none;
+  font-weight: 600;
+}
+
 @media print {
   .v-btn,
   .v-select,

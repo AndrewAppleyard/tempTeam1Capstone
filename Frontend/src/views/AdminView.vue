@@ -157,7 +157,7 @@ const filteredStudents = computed(() => {
   return students.value.filter(s => {
     const fullName = `${s.firstname || ''} ${s.lastname || ''}`.toLowerCase()
     const email = (s.email || '').toLowerCase()
-    const id = (s.studentid || '').toString().toLowerCase()
+    const id = (s.userid || '').toString().toLowerCase()
     return fullName.includes(q) || email.includes(q) || id.includes(q)
   })
 })
@@ -171,6 +171,8 @@ function goToUser(id) {
 }
 
 function selectUser(item) {
+  console.log("SELECTED:\t" + viewMode.value)
+  console.log("SELECTED 3:\t" + item.userid)
   if (editMode.value) {
     selectedItem.value = item
   } else {
@@ -218,8 +220,10 @@ function updateUser() {
 async function deleteUser() {
   if (!selectedItem.value) return
 
-  const key = viewMode.value === 'students' ? 'studentid' : 'userid'
-  const id = selectedItem.value[key]
+  const idKey = viewMode.value === 'students' ? 'studentid' : 'userid'
+  const id = selectedItem.value[idKey]
+
+  console.log(`Deleting:\t${idKey.toUpperCase()}: ${id}`)
 
   try {
     if (viewMode.value === 'students') {
@@ -234,7 +238,7 @@ async function deleteUser() {
     selectedItem.value = null
   } catch (err) {
     console.error('Error deleting:', err)
-    showNotification("Error deleting advisor.", 'error')
+    showNotification("Error deleting user.", 'error')
   }
 }
 
@@ -322,7 +326,7 @@ function getCardStyle(item) {
   }
 }
 
-function showNotification(message, color = 'success') {
+function showNotification(message, color) {
     snackbarText.value = message
     snackbarColor.value = color
     showSnackbar.value = true
@@ -490,7 +494,7 @@ watch(
             <v-row>
               <v-col
                 v-for="item in filteredStudents"
-                :key="item.studentid"
+                :key="item.userid"
                 cols="12"
                 sm="6"
                 md="4"
@@ -710,9 +714,10 @@ watch(
       @saved="refreshList"
     />
   </v-container>
-  
+
+
   <v-container fluid class="pa-2" style="background-color: transparent;">
-    <StudentFormCard
+    <!-- <StudentFormCard
       v-model:visible="showStudentForm"
       :student="studentToEdit"
       @saved="refreshList"
@@ -722,7 +727,7 @@ watch(
       :advisor="advisorToEdit"
       :default-type="newAdvisorType"
       @saved="refreshList"
-    />
+    /> -->
 
     <v-dialog v-model="showConfirm" max-width="500">
       <v-card>

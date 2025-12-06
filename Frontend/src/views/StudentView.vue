@@ -5,7 +5,7 @@ import StudentAPI from '../apis/StudentAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
 
 const route = useRoute()
-const studentid = route.params.studentid
+const studentid = route.params.id
 import { useUserStore } from '../store/user.js'
 
 /* =========================================================
@@ -77,14 +77,18 @@ const DEGREE_PLAN: DegreePlanCourse[] = [
 /* =========================================================
    2) STUDENT / ADVISOR INFO
 ========================================================= */
-const studentName = ref('')
-const greetingName = computed(() =>
-  studentName.value.trim() ? studentName.value : '[Student Name]'
-)
-
 const advisorName = ref('TBA')
 const advisorEmail = ref('TBA')
 const advisorPhone = ref('TBA')
+const studentName = ref('')
+
+const welcomeGreeting = computed(() => {
+  if (studentName.value) {
+    return `Welcome, ${studentName.value}!`
+  } else {
+    return 'Welcome, Student!'
+  }
+});
 
 interface SemesterData { coursemap: any; courses: TranscriptCourse[] }
 
@@ -773,7 +777,7 @@ async function runHoldCheck() {
 
         <v-col cols="12" md="4" class="text-center">
           <h1 class="welcome-center" :style="{ color: COLOR_PRIMARY }">
-            Welcome, {{ greetingName }}!
+           {{ welcomeGreeting }}
           </h1>
         </v-col>
 

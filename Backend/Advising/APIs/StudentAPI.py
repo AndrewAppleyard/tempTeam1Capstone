@@ -19,7 +19,7 @@ current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, '..')
 sys.path.append(parent_dir)
 
-from UserClasses import Advisor, User, Student, Admin
+from UserClasses import Advisor, User, Student, Admin, Transcript
 
 path = os.path.abspath(__file__)
 directory = os.path.dirname(path)
@@ -115,10 +115,9 @@ def getStudents():
     finally:
         session.close()
 
-from UserClasses import Transcript
 
 @bp.route("/<int:studentid>",methods = ['GET', 'POST'])
-@role_required("UAFS_STUDENTS", "UAFS_ADVISORS")
+@role_required("UAFS_STUDENTS", "UAFS_ADVISORS", "UAFS_ADMINS")
 def getStudentInfo(studentid: int):
 
     try:

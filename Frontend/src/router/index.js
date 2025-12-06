@@ -9,16 +9,18 @@ import TranscriptView from '../views/TranscriptView.vue'
 import CourseCatalogView from '../views/CourseCatalogView.vue'
 import UserProfilePage from '../views/UserProfilePage.vue'
 import DegreePlanView from '../views/DegreePlanView.vue'
+import DegreePlanProgressView from '../views/DegreePlanProgressView.vue'
 
 const routes = [
   { path: '/', component: LoginView },
   { path: '/admin', component: AdminView },
-  { path: '/advisor/:advisorid', component: AdvisorView },
-  { path: '/student/:studentid', component: StudentView },
-  { path: '/transcript/:studentid', component: TranscriptView },
+  { path: '/advisor/:id', component: AdvisorView },
+  { path: '/student/:id', component: StudentView },
+  { path: '/transcript/:id', component: TranscriptView },
   { path: '/courseCatalog', component: CourseCatalogView },
   { path: '/DegreePlanView', component: DegreePlanView },
-  { path: '/UserProfilePage', component: UserProfilePage },
+  { path: '/degreePlanProgressView/:id', component: DegreePlanProgressView },
+  { path: '/UserProfilePage/:id', component: UserProfilePage },
 ]
 
 export const router = createRouter({
@@ -32,6 +34,7 @@ const roleRoutes = {
     '/transcript',
     '/courseCatalog',
     '/DegreePlanView',
+    '/degreePlanProgressView',
     '/UserProfilePage',
   ],
   UAFS_ADVISORS: [
@@ -41,6 +44,7 @@ const roleRoutes = {
     '/transcript',
     '/courseCatalog',
     '/DegreePlanView',
+    '/degreePlanProgressView'
   ],
   UAFS_ADMINS: [
     '/admin',
@@ -48,6 +52,7 @@ const roleRoutes = {
     '/advisor',
     '/student',
     '/courseCatalog',
+    '/DegreePlanView',
   ],
 }
 
@@ -63,15 +68,15 @@ router.beforeEach((to, from, next) => {
 
   if (userStore.isLoggedIn && to.path === '/') {
     switch (userStore.userRole) {
-      case 'UAFS_STUDENTS': return next(userStore.userRole ? `/student/${userStore.userRole}` : '/student')
-      case 'UAFS_ADVISORS': return next(userStore.userRole ? `/advisor/${userStore.userRole}` : '/advisor')
+      case 'UAFS_STUDENTS': return next(userStore.roleID ? `/student/${userStore.roleID}` : '/student')
+      case 'UAFS_ADVISORS': return next(userStore.roleID ? `/advisor/${userStore.roleID}` : '/advisor')
       case 'UAFS_ADMINS': return next('/admin')
       default: return next('/')
     }
   }
 
-  if (userStore.isLoggedIn && userStore.userRole === 'UAFS_STUDENTS' && to.path === '/student' && userStore.userRole) {
-    return next(`/student/${userStore.userRole}`)
+  if (userStore.isLoggedIn && userStore.userRole === 'UAFS_STUDENTS' && to.path === '/student' && userStore.roleID) {
+    return next(`/student/${userStore.roleID}`)
   }
 
   if (userStore.isLoggedIn) {

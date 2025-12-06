@@ -122,13 +122,17 @@ def getAdvisorStudents(advisorid: int):
             s.firstname = student.firstname
             s.lastname = student.lastname
             s.email = student.email
+            s.phonenumber = student.phonenumber
             s.role = student.role
             s.school = student.school
             s.gpa = student.gpa
             s.major = student.major
+            s.majorconcentration = student.majorconcentration
             s.minor = student.minor
+            s.classstanding = student.classstanding
             s.registrationstatus = student.registrationstatus
             s.advisingstatus = student.advisingstatus
+            s.activestatus = student.activestatus
             s.dateadvised = student.dateadvised
             s.financialhold = student.financialhold
             s.advisinghold = student.advisinghold
@@ -149,11 +153,16 @@ def getAdvisorStudents(advisorid: int):
 @role_required("UAFS_ADVISORS", "UAFS_ADMINS", "UAFS_STUDENTS")
 def getAdvisorByStudent(studentid: int):
     try:
+        try:
+            studentid_int = int(studentid)
+        except ValueError:
+            return jsonify({"error": f"Invalid student ID format: {studentid}"}), 400
+                
         with Session(engine) as session:
             statement = (
                 select(Advisor.AdvisorMap)
                 .join(Advisor.Advisor_And_StudentsMap, Advisor.AdvisorMap.advisorid == Advisor.Advisor_And_StudentsMap.advisorid)
-                .filter(Advisor.Advisor_And_StudentsMap.studentid == studentid)
+                .filter(Advisor.Advisor_And_StudentsMap.studentid == studentid_int)
             )
 
             result = session.scalars(statement).first()
