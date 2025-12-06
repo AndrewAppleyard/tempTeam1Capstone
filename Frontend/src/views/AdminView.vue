@@ -38,6 +38,15 @@ const newAdvisorType = ref('ROAR') // 'ROAR' | 'COLLEGE'
 const advisorSearch = ref('')
 const studentSearch = ref('')
 
+const showConfirm = ref(false)
+const confirmTitle = ref('')
+const confirmMessage = ref('')
+const confirmAction = ref(null) 
+
+const showSnackbar = ref(false)
+const snackbarText = ref('')
+const snackbarColor = ref('success')
+
 /* =========================================================
    FETCH FUNCTIONS
 ========================================================= */
@@ -215,17 +224,17 @@ async function deleteUser() {
   try {
     if (viewMode.value === 'students') {
       await AdminAPI.deleteStudent(id)
-      alert("Successfully deleted student.", 'success')
+      showNotification("Successfully deleted student.", 'success')
       fetchStudents()
     } else {
       await AdminAPI.deleteAdvisor(id)
-      alert("Successfully deleted advisor.", 'success')
+      showNotification("Successfully deleted advisor.", 'success')
       fetchAdvisors()
     }
     selectedItem.value = null
   } catch (err) {
     console.error('Error deleting:', err)
-    alert("Error deleting advisor.", 'error')
+    showNotification("Error deleting advisor.", 'error')
   }
 }
 
@@ -235,27 +244,43 @@ function refreshList() {
 }
 
 async function updateDegreePlans() {
+  showConfirmDialog(
+    'Confirm Degree Plan Update',
+    'Are you sure you want to update all degree plans',
+    executeUpdateDegreePlans
+  )
+}
+
+async function updateCurrentCourses() {
+  showConfirmDialog(
+    'Confirm Current Courses Update',
+    'Are you sure you want to update all current courses? This process can be resource-intensive and take several minutes.',
+    executeUpdateCurrentCourses
+  )
+}
+
+async function executeUpdateDegreePlans() {
   try {
     const count = 2
     const response = await AdminAPI.updateDegreePlans(count)
     console.log("Degree Plan Updated:", response);
-    alert("Successfully updated degree plans.", 'success');
+    showNotification("Successfully updated degree plans.", 'success');
     refreshList();
   } catch (err) {
     console.error("Degree Plan Update Error:", err);
-    alert("Error updating degree plans.", error);
+    showNotification("Error updating degree plans.", error);
   }
 }
 
-async function updateCurrentCourses() {
+async function executeUpdateCurrentCourses() {
   try {
     const response = await AdminAPI.updateCurrentCourses()
     console.log("Current Courses Updated:", response);
-    alert("Successfully updated current courses.", 'success');
+    showNotification("Successfully updated current courses.", 'success');
     refreshList();
   } catch (err) {
     console.error("Current Courses Update Error:", err);
-    alert("Error updating current courses. Check console for details.", 'error');
+    showNotification("Error updating current courses. Check console for details.", 'error');
   }
 }
 
@@ -301,6 +326,26 @@ function showNotification(message, color = 'success') {
     snackbarText.value = message
     snackbarColor.value = color
     showSnackbar.value = true
+}
+
+function showConfirmDialog(title, message, action) {
+  confirmTitle.value = title
+  confirmMessage.value = message
+  confirmAction.value = action
+  showConfirm.value = true
+}
+
+function handleConfirm() {
+  if (confirmAction.value) {
+    confirmAction.value()
+  }
+  showConfirm.value = false
+  confirmAction.value = null
+}
+
+function handleCancel() {
+  showConfirm.value = false
+  confirmAction.value = null
 }
 
 /* =========================================================
@@ -664,12 +709,49 @@ watch(
       @saved="refreshList"
     />
   </v-container>
+  
+  <v-container fluid class="pa-2" style="background-color: transparent;">
+    <StudentFormCard
+      v-model:visible="showStudentForm"
+      :student="studentToEdit"
+      @saved="refreshList"
+    />
+    <AdvisorFormCard
+      v-model:visible="showAdvisorForm"
+      :advisor="advisorToEdit"
+      :default-type="newAdvisorType"
+      @saved="refreshList"
+    />
 
-  <template>
-    <v-container fluid class="pa-2" style="background-color: transparent;">
-      <div class="text-center mt-6 brand-primary">
-        © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
-      </div>
+    <v-dialog v-model="showConfirm" max-width="500">
+      <v-card>
+        <v-card-title class="bg-error text-white">{{ confirmTitle }}</v-card-title>
+        <v-card-text>{{ confirmMessage }}</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="grey"
+            variant="text"
+            @click="handleCancel"
+            class="cancel-btn"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="error" variant="flat"
+            @click="handleConfirm"
+          >
+            Confirm
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-container>
+
+  <v-container fluid class="pa-2" style="background-color: transparent;">
+    <div class="text-center mt-6 brand-primary">
+      © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
+    </div>
 
     <v-snackbar
       v-model="showSnackbar"
@@ -690,9 +772,7 @@ watch(
         </v-btn>
       </template>
     </v-snackbar>
-    </v-container>
-  </template>
-
+  </v-container>
 </template>
 
 <style scoped>
