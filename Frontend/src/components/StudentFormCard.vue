@@ -204,7 +204,14 @@ function convertToYDM(date) {
 
     return null
   }
-  const [y, m, d] = date.split('-')
+  
+  const parsedDate = new Date(date)
+  if (isNaN(parsedDate)) return null
+
+  const y = parsedDate.getFullYear()
+  const d = String(parsedDate.getDate()).padStart(2, '0')
+  const m = String(parsedDate.getMonth() + 1).padStart(2, '0')
+
   return `${y}-${d}-${m}`
 }
 

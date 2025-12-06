@@ -96,7 +96,7 @@ def getStudents():
                     "classstanding": s.classstanding,
                     "registrationstatus": s.registrationstatus,
                     "advisingstatus": s.advisingstatus,
-                    "activestatus": s.activestatus
+                    "activestatus": s.activestatus,
                     "dateadvised": s.dateadvised,
                     "financialhold": s.financialhold,
                     "advisinghold": s.advisinghold,
@@ -142,6 +142,7 @@ def getStudentInfo(studentid: int):
             student_result["classstanding"] = student.classstanding
             student_result["registrationstatus"] = student.registrationstatus
             student_result["advisingstatus"] = student.advisingstatus
+            student_result["activestatus"] = student.activestatus #actvestatus added
             student_result["dateadvised"] = student.dateadvised
             student_result["financialhold"] = student.financialhold
             student_result["advisinghold"] = student.advisinghold
@@ -239,6 +240,8 @@ def updateStudent(id: int) -> None:
                     student.phonenumber = request.form.get('phonenumber')
                 if(request.form.get('school') != None):
                     student.school = request.form.get('school')
+                if(request.form.get('gpa') != None):
+                    student.school = request.form.get('gpa')
                 if(request.form.get('major') != None):
                     student.major = request.form.get('major')
                 if(request.form.get('majorconcentration') != None):
@@ -247,10 +250,23 @@ def updateStudent(id: int) -> None:
                     student.minor = request.form.get('minor')
                 if(request.form.get('classstanding') != None):
                     student.classstanding = request.form.get('classstanding')
+                if(request.form.get('dateadvised') != None):
+                    date = datetime.strptime(request.form.get('dateadvised'), dateFormatString)
+                    student.dateadvised = date
                 if(request.form.get('registrationstatus') != None):
                     if(request.form.get('registrationstatus').casefold() == true.casefold()):
                         student.registrationstatus = True
                     elif(request.form.get('registrationstatus').casefold() == false.casefold()):
+                        student.registrationstatus = False
+                if(request.form.get('advisingstatus') != None):
+                    if(request.form.get('advisingstatus').casefold() == true.casefold()):
+                        student.registrationstatus = True
+                    elif(request.form.get('advisingstatus').casefold() == false.casefold()):
+                        student.registrationstatus = False
+                if(request.form.get('activestatus') != None):
+                    if(request.form.get('activestatus').casefold() == true.casefold()):
+                        student.registrationstatus = True
+                    elif(request.form.get('activestatus').casefold() == false.casefold()):
                         student.registrationstatus = False
                 if(request.form.get('financialhold') != None):
                     if(request.form.get('financialhold').casefold() == true.casefold()):
