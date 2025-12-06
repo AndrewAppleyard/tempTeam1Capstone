@@ -174,7 +174,6 @@ function toggleEditMode() {
   editMode.value = !editMode.value
   selectedItem.value = null
 }
-
 /**
  * Add new Student / Advisor.
  * For advisors, we pass null so AdvisorFormCard knows this is "create".
@@ -216,16 +215,17 @@ async function deleteUser() {
   try {
     if (viewMode.value === 'students') {
       await AdminAPI.deleteStudent(id)
-      alert('Successfully deleted student.')
+      alert("Successfully deleted student.", 'success')
       fetchStudents()
     } else {
       await AdminAPI.deleteAdvisor(id)
-      alert('Successfully deleted advisor.')
+      alert("Successfully deleted advisor.", 'success')
       fetchAdvisors()
     }
     selectedItem.value = null
   } catch (err) {
     console.error('Error deleting:', err)
+    alert("Error deleting advisor.", 'error')
   }
 }
 
@@ -238,24 +238,24 @@ async function updateDegreePlans() {
   try {
     const count = 2
     const response = await AdminAPI.updateDegreePlans(count)
-    console.log('Degree Plan Updated:', response)
-    alert('Successfully updated degree plans.\n' + response)
-    refreshList()
+    console.log("Degree Plan Updated:", response);
+    alert("Successfully updated degree plans.", 'success');
+    refreshList();
   } catch (err) {
-    console.error('Degree Plan Update Error:', err)
-    alert('Error updating degree plans. Check console for details.')
+    console.error("Degree Plan Update Error:", err);
+    alert("Error updating degree plans.", error);
   }
 }
 
 async function updateCurrentCourses() {
   try {
     const response = await AdminAPI.updateCurrentCourses()
-    console.log('Current Courses Updated:', response)
-    alert('Successfully updated current courses.\n' + response.count)
-    refreshList()
+    console.log("Current Courses Updated:", response);
+    alert("Successfully updated current courses.", 'success');
+    refreshList();
   } catch (err) {
-    console.error('Current Courses Update Error:', err)
-    alert('Error updating current courses. Check console for details.')
+    console.error("Current Courses Update Error:", err);
+    alert("Error updating current courses. Check console for details.", 'error');
   }
 }
 
@@ -295,6 +295,12 @@ function getCardStyle(item) {
       borderRadius: '10px'
     }
   }
+}
+
+function showNotification(message, color = 'success') {
+    snackbarText.value = message
+    snackbarColor.value = color
+    showSnackbar.value = true
 }
 
 /* =========================================================
@@ -659,6 +665,35 @@ watch(
       @saved="refreshList"
     />
   </v-container>
+
+  <template>
+    <v-container fluid class="pa-2" style="background-color: transparent;">
+      <div class="text-center mt-6 brand-primary">
+        © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
+      </div>
+
+    <v-snackbar
+      v-model="showSnackbar"
+      :color="snackbarColor"
+      :timeout="4000"
+      location="top right"
+      class="snackbar-custom"
+    >
+      {{ snackbarText }}
+      
+      <template #actions>
+        <v-btn
+          color="white"
+          variant="text"
+          @click="showSnackbar = false"
+        >
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
+    </v-container>
+  </template>
+
 </template>
 
 <style scoped>

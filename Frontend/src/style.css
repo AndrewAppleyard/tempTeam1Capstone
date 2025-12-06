@@ -78,6 +78,57 @@ button:focus-visible {
   }
 }
 
-/* ^^^ default vue */
-/* vvv yash css */
+.alert-button {
+  background-color: transparent;
+  border: 1px solid; 
+  
+  margin: 0.25em; 
+  
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
 
+.alert-button.primary {
+  color: #646cff; 
+  border-color: #646cff;
+}
+
+.alert-button.primary:hover {
+  background-color: #646cff; 
+  color: #ffffff; 
+  border-color: #646cff;
+}
+
+.alert-button.success {
+  color: #4CAF50; 
+  border-color: #4CAF50;
+}
+
+.alert-button.success:hover {
+  background-color: #4CAF50;
+  color: #ffffff;
+  border-color: #4CAF50;
+}
+
+.alert-button.danger {
+  color: #f44336; 
+  border-color: #f44336;
+}
+
+.alert-button.danger:hover {
+  background-color: #f44336;
+  color: #ffffff;
+  border-color: #f44336;
+}
+
+@media (prefers-color-scheme: light) {
+     
+  .alert-button.primary {
+    color: #535bf2; 
+    border-color: #535bf2;
+  }
+  
+  .alert-button.primary:hover {
+    background-color: #535bf2;
+    color: #ffffff;
+  }
+}

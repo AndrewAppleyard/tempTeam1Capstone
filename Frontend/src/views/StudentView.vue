@@ -273,6 +273,8 @@ async function loadStudentProfile() {
       const name = [student.firstname, student.lastname].filter(Boolean).join(' ').trim()
       if (name) studentName.value = name
       preferenceForm.value = normalizePreferences(student.preferences)
+
+      console.log("student name?:\t" + name)
     } else {
       preferenceForm.value = { ...preferenceDefaults }
     }
@@ -457,21 +459,6 @@ function syncNextCardFromPopup() {
   }))
 }
 
-onMounted(() => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed.nextSchedule)) nextSchedule.value = parsed.nextSchedule
-    if (Array.isArray(parsed.nextPopupRows)) nextPopupRows.value = parsed.nextPopupRows
-    if (typeof parsed.nextTerm === 'string') nextTerm.value = parsed.nextTerm
-  } catch {
-    // ignore invalid payloads
-  }
-  syncNextCardFromPopup()
-  if (studentId.value) loadStudentProfile()
-})
-
 watch(
   [nextSchedule, nextPopupRows, nextTerm],
   () => {
@@ -490,64 +477,92 @@ watch(
 ========================================================= */
 onMounted(async () => {
   // --- Student + next-schedule data
-  try {
-    const userData = await StudentAPI.getStudentById(studentid)
-    console.log('Fetched Student Data:', userData)
+  let localStorageHasSchedule = false
 
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      
+      if (Array.isArray(parsed.nextPopupRows) && parsed.nextPopupRows.some(r => r.number)) {
+          nextPopupRows.value = parsed.nextPopupRows
+          localStorageHasSchedule = true
+      }
+      
+      if (Array.isArray(parsed.nextSchedule)) nextSchedule.value = parsed.nextSchedule
+      if (typeof parsed.nextTerm === 'string') nextTerm.value = parsed.nextTerm
+    }
+  } catch (e) {
+    console.error('Error loading local storage for next schedule:', e)
+  }
+  
+  syncNextCardFromPopup() 
+  
+  if (studentId.value) loadStudentProfile() 
+
+  try {
+    const response = await StudentAPI.getStudentById(studentid)
+    const userData = response.student
+    console.log(response)
+    console.log(userData)
+    
     if (userData && userData.firstname && userData.lastname) {
       studentName.value = `${userData.firstname} ${userData.lastname}`
     } else if (userData && userData.firstname) {
       studentName.value = userData.firstname
     }
 
-    let fetchedClasses: { number: string; name: string }[] = []
+    if (!localStorageHasSchedule) { 
+      let fetchedClasses: { number: string; name: string }[] = []
 
-    if (userData && Array.isArray(userData.classes)) {
-      fetchedClasses = userData.classes.map((cls: any) => ({
-        number: cls.number || '—',
-        name: cls.name || '—'
-      }))
-    } else if (userData && typeof userData.classes === 'string') {
-      try {
-        const parsedClasses = JSON.parse(userData.classes)
-        if (Array.isArray(parsedClasses)) {
-          fetchedClasses = parsedClasses.map((cls: any) => ({
-            number: cls.number || '—',
-            name: cls.name || '—'
-          }))
+      console.log("CLASSES:\t" + userData.classes)
+      console.log("IS ARRAY?\t" + Array.isArray(userData.classes))
+
+      if (userData && Array.isArray(userData.classes)) {
+        fetchedClasses = userData.classes.map(cls => ({ 
+          number: cls.number || '—', 
+          name: cls.name || '—'
+        }))
+        console.log("ARRAY PARSE:\t" + fetchedClasses)
+      } else if (userData && typeof userData.classes === 'string') {
+        try {
+          const parsedClasses = JSON.parse(userData.classes)
+          if (Array.isArray(parsedClasses)) {
+              fetchedClasses = parsedClasses.map(cls => ({ 
+                  number: cls.number || '—', 
+                  name: cls.name || '—'
+              }))
+          }
+          console.log("STRING PARSE:\t" + fetchedClasses)
+        } catch (e) {
+          console.error("Failed to parse student classes JSON string:", e)
         }
-      } catch (e) {
-        console.error('Failed to parse student classes JSON string:', e)
       }
-    }
-
-    const classesForCard = fetchedClasses.slice(0, 6)
-    while (classesForCard.length < 6) {
-      classesForCard.push({ number: '—', name: '—' })
-    }
-    nextSchedule.value = classesForCard
-
-    nextPopupRows.value = fetchedClasses.map(cls => ({
-      number: cls.number,
-      course: cls.name,
-      time: 'TBA',
-      location: 'TBA',
-      professor: 'TBA',
-      availability: 'Open',
-      waitlist: '0'
-    }))
-
-    while (nextPopupRows.value.length < 5) {
-      nextPopupRows.value.push({
-        number: '',
-        course: '',
-        time: '',
-        location: '',
-        professor: '',
-        availability: '',
-        waitlist: ''
-      })
-    }
+      
+      const classesForCard = fetchedClasses.slice(0, 6) 
+      
+      if (classesForCard.length > 0 && classesForCard.some(c => c.number !== '—')) { 
+        while (classesForCard.length < 6) {
+          classesForCard.push({ number: '—', name: '—' })
+        }
+        nextSchedule.value = classesForCard
+        
+        nextPopupRows.value = fetchedClasses.map(cls => ({
+            number: cls.number,
+            course: cls.name,
+            time: 'TBA', 
+            location: 'TBA',
+            professor: 'TBA',
+            availability: 'Open',
+            waitlist: '0'
+        }))
+        
+        while (nextPopupRows.value.length < 5) {
+            nextPopupRows.value.push({ number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' })
+        }
+      }
+    } 
+    
   } catch (err) {
     console.error('Failed to fetch student data:', err)
   }
