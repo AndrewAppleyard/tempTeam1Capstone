@@ -347,7 +347,7 @@ function handleCancel() {
   showConfirm.value = false
   confirmAction.value = null
 }
-
+  
 /* =========================================================
    WATCHERS
 ========================================================= */
@@ -710,7 +710,7 @@ watch(
       @saved="refreshList"
     />
   </v-container>
-  
+
   <v-container fluid class="pa-2" style="background-color: transparent;">
     <StudentFormCard
       v-model:visible="showStudentForm"
