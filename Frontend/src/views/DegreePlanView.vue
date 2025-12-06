@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+//import { useRoute } from 'vue-router'
+import DegreePlanAPI from '../apis/DegreePlanAPI.js'
+
+//const studentid = router.params.studentid
 
 type Semester = 'Fall' | 'Spring'
-type RowType = 'CS Major' | 'Math/Science' | 'Gen Ed' | 'Concentration/Elective' | 'Other'
+type RowType = 'Major' | 'Minor' | 'Gen Ed' | 'Concentration/Elective' | 'Other'
 
 interface CatalogCourse {
   id: string
@@ -322,6 +326,18 @@ const catalog = ref<CatalogCourse[]>([
     description: 'Final Gen Ed to reach 120 hours total.'
   }
 ])
+
+/*======== DATA PULL =========*/
+onMounted(async () => {
+  try{
+    const tableData = DegreePlanAPI.view_degree_plans()
+    console.log('Retrieve degree plan data', tableData)
+  }
+  catch(err){
+      console.log('Failed to retrieve degree pland data', err)
+  }
+})
+
 
 /* ======== TABLE CONFIG ======== */
 const headers = [
