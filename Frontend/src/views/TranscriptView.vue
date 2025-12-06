@@ -20,7 +20,7 @@ const GPA_POINTS: Record<string, number> = {
 /* ===== Routing ===== */
 const route = useRoute()
 const router = useRouter()
-const studentIdParam = route.params.studentid
+const studentIdParam = route.params.id
 
 const student = ref({ 
   studentID: '', 
