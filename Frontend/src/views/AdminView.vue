@@ -174,7 +174,10 @@ function toggleEditMode() {
   editMode.value = !editMode.value
   selectedItem.value = null
 }
-
+/**
+ * Add new Student / Advisor.
+ * For advisors, we pass null so AdvisorFormCard knows this is "create".
+ */
 function addUser() {
   selectedItem.value = null
 
