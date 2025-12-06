@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-//import { useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import DegreePlanAPI from '../apis/DegreePlanAPI.js'
 
-//const studentid = router.params.studentid
+const route = userRoute()
+const studentid = route.params.id
 
 type Semester = 'Fall' | 'Spring'
 type RowType = 'Major' | 'Minor' | 'Gen Ed' | 'Concentration/Elective' | 'Other'
