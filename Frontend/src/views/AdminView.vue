@@ -715,7 +715,6 @@ watch(
     />
   </v-container>
 
-
   <v-container fluid class="pa-2" style="background-color: transparent;">
     <!-- <StudentFormCard
       v-model:visible="showStudentForm"
