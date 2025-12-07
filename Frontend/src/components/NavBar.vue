@@ -52,13 +52,13 @@ const initials = computed(() => `${userStore.firstName[0]}${userStore.lastName[0
 
       <v-divider></v-divider>
 
-      <v-list-item link :to="{ path: homePath }" @click="drawer = false">
-        <v-list-item-title>Home</v-list-item-title>
-      </v-list-item>
-
-      <v-divider></v-divider>
-
       <template v-if="!isAdminRoute">
+        <v-list-item link :to="{ path: homePath }" @click="drawer = false">
+          <v-list-item-title>Home</v-list-item-title>
+        </v-list-item>
+
+        <v-divider></v-divider>
+        
         <v-list-item link :to="{ path: `/UserProfilePage/${userStore.roleID}` }" @click="drawer = false">
           <v-list-item-title>Profile</v-list-item-title>
         </v-list-item>
