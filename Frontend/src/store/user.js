@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
+import UserAPI from '../apis/UserAPI'
 import TransferAPI from '../apis/TransferAPI'
 import Cookies from "js-cookie"
 import { router } from '../router'
@@ -12,6 +13,8 @@ export const useUserStore = defineStore('user', () => {
   const email = ref(null)
   const roleID = ref(null)
   const token = ref(null)
+  const firstName = ref(null)
+  const lastName = ref(null)
 
   async function restoreLogin() {
     const refreshToken = Cookies.get('csrf_refresh_token')
@@ -23,11 +26,19 @@ export const useUserStore = defineStore('user', () => {
       userRole.value = data.Role || null
       userID.value = data.UserID || null
       email.value = data.Email || null
+
+      if (email.value) {
+        await restoreUserDetails(email.value)
+      }
+
     } catch (err) {
       isLoggedIn.value = false
       userRole.value = null
       userID.value = null
       email.value = null
+      firstName.value = null
+      lastName.value = null
+      // roleID.value = null
     }
   }
 
@@ -50,31 +61,23 @@ export const useUserStore = defineStore('user', () => {
     return config
   })
 
-  // async function login(username, password) {
-  //   try {
-  //     const res = await axios.post('http://127.0.0.1:5000/Transfer/login', {
-  //       username,
-  //       password
-  //     })
+  async function restoreUserDetails(email) {
+    try {
+      const userInfo = await UserAPI.getUserByEmail(email)
 
-  //     token.value = res.data.Token
-  //     localStorage.setItem('token', token.value)
+      firstName.value = userInfo.firstname
+      lastName.value = userInfo.lastname
 
-  //     const payload = decodeToken(token.value)
-  //     if (payload) {
-  //       userRole.value = payload.Role
-  //       userID.value = payload.userID
-  //       email.value = payload.Email
-  //       isLoggedIn.value = true
-  //     } else {
-  //       logout()
-  //     }
-  //   } catch (err) {
-  //     console.error('Login failed', err)
-  //     logout()
-  //     throw err
-  //   }
-  // }
+      if (userRole.value === 'UAFS_STUDENTS') {
+          roleID.value = await UserAPI.getStudentByUID(userID.value);
+      } else if (userRole.value === 'UAFS_ADVISORS') {
+          roleID.value = await UserAPI.getAdvisorByUID(userID.value);
+      }
+    } catch (err) {
+      console.error('Failed to restore user details:', err)
+      // logout() 
+    }
+  }
 
   async function restoreSession() {
     const storedToken = localStorage.getItem('token')
@@ -95,6 +98,8 @@ export const useUserStore = defineStore('user', () => {
       email.value = payload.Email
       isLoggedIn.value = true
 
+      await restoreUserDetails(email.value)
+
       return true
     } catch (err) {
       console.error('JWT decode failed in restoreSession()', err)
@@ -108,6 +113,9 @@ export const useUserStore = defineStore('user', () => {
     userID.value = null
     email.value = null
     token.value = null
+    roleID.value = null
+    firstName.value = null
+    lastName.value = null
 
     try{
       const data = await TransferAPI.logout()
@@ -119,5 +127,5 @@ export const useUserStore = defineStore('user', () => {
     router.replace('/')
   }
 
-  return { isLoggedIn, userRole, userID, email, roleID, token, logout, restoreSession, restoreLogin, decodeToken }
+  return { isLoggedIn, userRole, userID, email, roleID, token, firstName, lastName, logout, restoreSession, restoreLogin, decodeToken }
 })

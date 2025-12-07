@@ -20,51 +20,17 @@ const GPA_POINTS: Record<string, number> = {
 /* ===== Routing ===== */
 const route = useRoute()
 const router = useRouter()
-const studentIdParam = route.params.studentid
+const studentIdParam = route.params.id
 
-const student = ref({ 
-  studentID: '', 
-  firstName: '', 
-  lastName: '', 
-  level: 'Undergraduate', 
-  major: 'N/A', 
-  minor: undefined,
-  fullName: 'Loading...'
-})
-
-/* ===== Mock Student (swap with API) ===== */
-// const students = [
-//   { studentID: 'S1001', firstName: 'Andrew', lastName: 'Mackey', level: 'Undergraduate', major: 'Computer Science', minor: 'Mathematics' },
-//   { studentID: 'S1002', firstName: 'Yash', lastName: 'Patel', level: 'Undergraduate', major: 'Mathematics' },
-//   { studentID: 'S1003', firstName: 'Jay', lastName: 'Patel', level: 'Undergraduate', major: 'Nursing' }
-// ]
-
-// const student = computed(() => {
-//   const s = students.find(s => s.studentID === (studentIdParam || 'S1001')) || students[0]
-//   return { ...s, fullName: `${s.firstName} ${s.lastName}` }
+// const student = ref({ 
+//   studentID: '', 
+//   firstName: '', 
+//   lastName: '', 
+//   level: 'Undergraduate', 
+//   major: 'N/A', 
+//   minor: undefined,
+//   fullName: 'Loading...'
 // })
-
-/* ===== Transcript rows (swap with API) ===== */
-// interface CourseRow {
-//   id: string
-//   term: string
-//   code: string
-//   title: string
-//   credits: number
-//   grade: string
-// }
-
-// const transcript = ref<CourseRow[]>([
-//   { id: '1', term: 'Fall 2024', code: 'CS 1013',   title: 'Intro to CS',            credits: 3, grade: 'A'  },
-//   { id: '2', term: 'Fall 2024', code: 'MATH 1404', title: 'Calculus I',             credits: 4, grade: 'A'  },
-//   { id: '3', term: 'Fall 2024', code: 'ENGL 1213', title: 'Composition I',          credits: 3, grade: 'B'  },
-//   { id: '4', term: 'Spring 2025', code: 'CS 2023', title: 'Data Structures',        credits: 3, grade: 'A'  },
-//   { id: '5', term: 'Spring 2025', code: 'MATH 1454', title: 'Calculus II',          credits: 4, grade: 'B'  },
-//   { id: '6', term: 'Spring 2025', code: 'PHYS 2054', title: 'Physics I',            credits: 4, grade: 'B'  },
-//   { id: '7', term: 'Fall 2025', code: 'CS 3013',   title: 'Algorithms',             credits: 3, grade: 'A'  },
-//   { id: '8', term: 'Fall 2025', code: 'STAT 2503', title: 'Statistics',             credits: 3, grade: 'B'  },
-//   { id: '9', term: 'Fall 2025', code: 'HIST 1113', title: 'US History',             credits: 3, grade: 'A'  },
-// ])
 
 interface TranscriptCourseAPI {
   code: string;

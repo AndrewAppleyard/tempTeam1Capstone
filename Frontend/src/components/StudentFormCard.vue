@@ -3,7 +3,9 @@ import { ref, watch, defineProps, computed, onMounted } from 'vue'
 import AdminAPI from '../apis/AdminAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
-import Popups from '../components/Popups.vue'
+import { useUserStore } from '../store/user.js'
+
+const userStore = useUserStore()
 
 const props = defineProps({
   student: { type: Object, default: null }, 
@@ -14,7 +16,6 @@ const props = defineProps({
 const emits = defineEmits(['update:visible', 'close', 'saved'])
 
 const localVisible = ref(props.visible)
-//const advisors = ref([])
 const selectedAdvisor = ref(null)
 const currentAdvisor = ref(null)
 
@@ -25,7 +26,7 @@ const displayDate = ref('')
 const advisorsList = computed(() =>
   (props.advisors || []).map(a => ({
     fullname: `${a.firstname || ''} ${a.lastname || ''}`.trim(),
-    userid: a.userid
+    userid: String(a.userid)
   }))
 )
 
@@ -113,6 +114,22 @@ const requiredFields = [
   'activestatus',
 ]
 
+const isFieldEditable = computed(() => (field) => {
+  if (!props.student) return true
+
+  if (userStore.userRole === 'UAFS_ADMINS') {
+    return true
+  } else if (userStore.userRole === 'UAFS_ADVISORS') {
+    return [
+      'major', 'majorconcentration', 'minor', 'classstanding',
+      'advisingstatus', 'dateadvised', 'advisinghold', 'preferences'
+    ].includes(field)
+  } else if (userStore.userRole === 'UAFS_STUDENTS') {
+    return ['phonenumber', 'preferences'].includes(field)
+  }
+  return false
+})
+
 const isFormValid = computed(() => {
   if (!selectedAdvisor.value) return false //Checks if Advisor is selected
   return requiredFields.every(field => {
@@ -147,7 +164,11 @@ async function save() {
     }
 
     if (props.student) {
-      studentid = props.student.studentid
+      if (userStore.userRole === "UAFS_ADMINS") {
+        studentid = props.student.studentid
+      } else if (userStore.userRole === "UAFS_ADVISORS") {
+        studentid = props.student.userid
+      }
 
       await StudentAPI.updateStudent(studentid, payload)
       alert('Successfully updated student!')
@@ -156,11 +177,11 @@ async function save() {
       const response = await AdminAPI.addStudent(payload)
 
       console.log('AddStudent response:', response);
-      studentid = response.data
+      studentid = response.data.studentid
       alert('Successfully added student!')
     }
     
-    if (selectedAdvisor.value) {
+    if (selectedAdvisor.value && userStore.userRole === "UAFS_ADMINS") {
       await AdminAPI.addStudentToAdvisor(selectedAdvisor.value, studentid)
     }
 
@@ -191,7 +212,7 @@ function resetForm() { // need to reset id
     registrationstatus: null,
     advisingstatus: null,
     activestatus: null,
-    dateadvised: null // needs to be null until set
+    dateadvised: null 
   }
   selectedAdvisor.value = null
   currentAdvisor.value = null
@@ -199,26 +220,15 @@ function resetForm() { // need to reset id
   tempDate.value = null
 }
 
-function convertToYDM(date) {
-  if (!date) {
-
-    return null
-  }
-  
-  const parsedDate = new Date(date)
-  if (isNaN(parsedDate)) return null
-
-  const y = parsedDate.getFullYear()
-  const d = String(parsedDate.getDate()).padStart(2, '0')
-  const m = String(parsedDate.getMonth() + 1).padStart(2, '0')
-
-  return `${y}-${d}-${m}`
+function normalizeDate(dateString) {
+  if (!dateString) return null;
+  return dateString.split("T")[0];
 }
 
 function onDateSelect(value) {
   if (value) {
     displayDate.value = value
-    form.value.dateadvised = convertToYDM(value)
+    form.value.dateadvised = value
   } else {
     displayDate.value = ''
     form.value.dateadvised = null
@@ -263,12 +273,29 @@ watch(() => props.student, async (newStudent) => {
   Object.assign(form.value, newStudent)
   
   try {
-    const response = await AdvisorAPI.getAdvisorByStudent(newStudent.studentid)
-    const advisor = response || null
+    let advisor = null;
+    
+    if (userStore.userRole === "UAFS_ADMINS") {
+      advisor = await AdvisorAPI.getAdvisorByStudent(newStudent.studentid)
+    } else if (userStore.userRole === "UAFS_ADVISORS") {
+      advisor = await AdvisorAPI.getAdvisorByStudent(newStudent.userid)
+    }
+
+    if(newStudent.dateadvised) {
+
+      displayDate.value = normalizeDate(newStudent.dateadvised)
+      tempDate.value = normalizeDate(newStudent.dateadvised)
+    }
+
+    if(newStudent.dateadvised) {
+
+      displayDate.value = normalizeDate(newStudent.dateadvised)
+      tempDate.value = normalizeDate(newStudent.dateadvised)
+    }
 
     if (advisor) {
       currentAdvisor.value = advisor
-      selectedAdvisor.value = advisor.userid
+      selectedAdvisor.value = String(advisor.userid)
       console.log("current advisor : " + currentAdvisor.value.firstname + " " + currentAdvisor.value.lastname)
     } else {
       currentAdvisor.value = null
@@ -305,42 +332,62 @@ watch(() => props.student, async (newStudent) => {
 
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model="form.firstname" label="First Name" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
+              <v-text-field v-model="form.firstname" label="First Name" 
+              :disabled="!isFieldEditable('firstname')"
+              :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model="form.lastname" label="Last Name" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field v-model="form.email" label="Email" :rules="[requiredRule, emailRule, value => charRule(value, 50, 'string')]" />
-            </v-col>
-            <v-col cols="6">
-              <v-text-field v-model="form.phonenumber" label="Phone Number" :rules="[requiredRule, value => charRule(value, 10, 'int')]" />
+              <v-text-field v-model="form.lastname" label="Last Name" 
+              :disabled="!isFieldEditable('lastname')"
+              :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
             </v-col>
           </v-row>
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model="form.school" label="School" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
+              <v-text-field v-model="form.email" label="Email" 
+              :disabled="!isFieldEditable('email')"
+              :rules="[requiredRule, emailRule, value => charRule(value, 50, 'string')]" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model="form.gpa" label="GPA" type="number" :rules="[requiredRule, value => charRule(value, 10, 'decimal')]" />
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="6">
-              <v-text-field v-model="form.major" label="Major" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
-            </v-col>
-            <v-col cols="6">
-              <v-text-field v-model="form.majorconcentration" label="Major Concentration" :rules="[requiredRule, value => charRule(value, 50, 'string')]"/>
+              <v-text-field v-model="form.phonenumber" label="Phone Number" 
+              :disabled="!isFieldEditable('phonenumber')"
+              :rules="[requiredRule, value => charRule(value, 10, 'int')]" />
             </v-col>
           </v-row>
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model="form.minor" label="Minor" :rules="[value => charRule(value, 50, 'string')]"/>
+              <v-text-field v-model="form.school" label="School" 
+              :disabled="!isFieldEditable('school')"
+              :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model="form.classstanding" label="Class Standing" :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
+              <v-text-field v-model="form.gpa" label="GPA" type="number" 
+              :disabled="!isFieldEditable('gpa')"
+              :rules="[requiredRule, value => charRule(value, 10, 'decimal')]" />
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field v-model="form.major" label="Major" 
+              :disabled="!isFieldEditable('major')"
+              :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
+            </v-col>
+            <v-col cols="6">
+              <v-text-field v-model="form.majorconcentration" label="Major Concentration" 
+              :disabled="!isFieldEditable('majorconcentration')"
+              :rules="[requiredRule, value => charRule(value, 50, 'string')]"/>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field v-model="form.minor" label="Minor" 
+              :disabled="!isFieldEditable('minor')"
+              :rules="[value => charRule(value, 50, 'string')]"/>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field v-model="form.classstanding" label="Class Standing" 
+              :disabled="!isFieldEditable('classstanding')"
+              :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
             </v-col>
 
             <v-spacer></v-spacer>
@@ -349,6 +396,7 @@ watch(() => props.student, async (newStudent) => {
           <v-row>
             <v-col>
               <v-select
+                :key="advisorsList.map(a => a.userid).join('-')"
                 v-model="selectedAdvisor"
                 :items="advisorsList"
                 item-title="fullname"
@@ -356,12 +404,13 @@ watch(() => props.student, async (newStudent) => {
                 label="Advisor"
                 placeholder="Select Advisor"
                 persistent-placeholder
+                :disabled="!isFieldEditable('advisor')"
                 :rules="[requiredRule]"
               />
             </v-col>
           </v-row>
 
-          <v-row v-if="currentAdvisor" class="text-right" no-gutters>
+          <v-row v-if="currentAdvisor && isFieldEditable('advisor')" class="text-right" no-gutters>
             <v-col cols="12">
               <v-btn color="error" text small @click="removeAdvisor">Remove</v-btn>
             </v-col>
@@ -377,6 +426,7 @@ watch(() => props.student, async (newStudent) => {
                 label="Financial Hold"
                 placeholder="Hold"
                 persistent-placeholder
+                :disabled="!isFieldEditable('financialhold')"
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -392,6 +442,7 @@ watch(() => props.student, async (newStudent) => {
                 label="Advising Hold"
                 placeholder="Hold"
                 persistent-placeholder
+                :disabled="!isFieldEditable('advisinghold')"
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -407,6 +458,7 @@ watch(() => props.student, async (newStudent) => {
                 label="Academic Hold"
                 placeholder="Hold"
                 persistent-placeholder
+                :disabled="!isFieldEditable('academichold')"
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -422,6 +474,7 @@ watch(() => props.student, async (newStudent) => {
                 label="Registration Status"
                 placeholder="Status"
                 persistent-placeholder
+                :disabled="!isFieldEditable('registrationstatus')"
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -437,6 +490,7 @@ watch(() => props.student, async (newStudent) => {
                 label="Advising Status"
                 placeholder="Status"
                 persistent-placeholder
+                :disabled="!isFieldEditable('advisingstatus')"
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -452,6 +506,7 @@ watch(() => props.student, async (newStudent) => {
                 label="Active Status"
                 placeholder="Status"
                 persistent-placeholder
+                :disabled="!isFieldEditable('activestatus')"
                 :rules="[requiredRule]"
                 />
             </v-col>
@@ -462,9 +517,9 @@ watch(() => props.student, async (newStudent) => {
               <v-text-field
                 v-model="displayDate"
                 label="Date Advised"
-                readonly
                 prepend-icon="mdi-calendar"
-                @click="datePickerVisible = true"
+                :disabled="!isFieldEditable('dateadvised')"
+                @click="isFieldEditable('dateadvised') ? datePickerVisible = true : null"
               />
             </v-col>
           </v-row>

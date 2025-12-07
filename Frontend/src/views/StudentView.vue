@@ -3,10 +3,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import StudentAPI from '../apis/StudentAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
+import { useUserStore } from '../store/user.js'
 
 const route = useRoute()
-const studentid = route.params.studentid
-import { useUserStore } from '../store/user.js'
+const userStore = useUserStore()
 
 /* =========================================================
    THEME — same palette, more respectful visuals (centralized)
@@ -77,14 +77,33 @@ const DEGREE_PLAN: DegreePlanCourse[] = [
 /* =========================================================
    2) STUDENT / ADVISOR INFO
 ========================================================= */
-const studentName = ref('')
-const greetingName = computed(() =>
-  studentName.value.trim() ? studentName.value : '[Student Name]'
-)
-
 const advisorName = ref('TBA')
 const advisorEmail = ref('TBA')
 const advisorPhone = ref('TBA')
+const studentName = ref('')
+
+const welcomeGreeting = computed(() => {
+  if (studentName.value) {
+    return `Welcome, ${studentName.value}!`
+  } else {
+    return 'Welcome, Student!'
+  }
+})
+
+/** Canonical student ID (number or null) from route OR store */
+const studentId = computed<number | null>(() => {
+  // Try route params: support both :id and :studentid
+  const routeParam = (route.params.id ?? route.params.studentid) as string | string[] | undefined
+  const firstParam = Array.isArray(routeParam) ? routeParam[0] : routeParam
+  const routeId = firstParam != null ? Number(firstParam) : NaN
+  if (!Number.isNaN(routeId)) return routeId
+
+  // Fallback to user store
+  const storeId = userStore.userID ? Number(userStore.userID) : NaN
+  return Number.isNaN(storeId) ? null : storeId
+})
+
+const hasStudentId = computed(() => studentId.value !== null)
 
 interface SemesterData { coursemap: any; courses: TranscriptCourse[] }
 
@@ -150,7 +169,7 @@ const timeOptions = [
   { label: '7:30 PM', value: '19:30' },
   { label: '8:00 PM', value: '20:00' },
   { label: '8:30 PM', value: '20:30' },
-  { label: '9:00 PM', value: '21:00' },
+  { label: '9:00 PM', value: '21:00' }
 ]
 const timeOptionValues = timeOptions.map(t => t.value)
 
@@ -275,8 +294,6 @@ async function loadStudentProfile() {
       const name = [student.firstname, student.lastname].filter(Boolean).join(' ').trim()
       if (name) studentName.value = name
       preferenceForm.value = normalizePreferences(student.preferences)
-
-      console.log("student name?:\t" + name)
     } else {
       preferenceForm.value = { ...preferenceDefaults }
     }
@@ -416,11 +433,8 @@ async function submitChangeRequest() {
 
   changeRequestSubmitting.value = true
   try {
-    // 🔁 Replace this with your real backend call when ready
-    // Example:
-    // await StudentAPI.requestProgramChange(studentid, changeRequestForm.value)
     console.log('Program change request payload:', {
-      studentid,
+      studentId: studentId.value,
       ...changeRequestForm.value
     })
 
@@ -485,154 +499,165 @@ onMounted(async () => {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      
-      if (Array.isArray(parsed.nextPopupRows) && parsed.nextPopupRows.some(r => r.number)) {
-          nextPopupRows.value = parsed.nextPopupRows
-          localStorageHasSchedule = true
+
+      if (Array.isArray(parsed.nextPopupRows) && parsed.nextPopupRows.some((r: any) => r.number)) {
+        nextPopupRows.value = parsed.nextPopupRows
+        localStorageHasSchedule = true
       }
-      
+
       if (Array.isArray(parsed.nextSchedule)) nextSchedule.value = parsed.nextSchedule
       if (typeof parsed.nextTerm === 'string') nextTerm.value = parsed.nextTerm
     }
   } catch (e) {
     console.error('Error loading local storage for next schedule:', e)
   }
-  
-  syncNextCardFromPopup() 
-  
-  if (studentId.value) loadStudentProfile() 
 
+  syncNextCardFromPopup()
+
+  if (studentId.value) loadStudentProfile()
+
+  // --- Student data (for name + next schedule seed)
   try {
-    const response = await StudentAPI.getStudentById(studentid)
-    const userData = response.student
-    console.log(response)
-    console.log(userData)
-    
-    if (userData && userData.firstname && userData.lastname) {
-      studentName.value = `${userData.firstname} ${userData.lastname}`
-    } else if (userData && userData.firstname) {
-      studentName.value = userData.firstname
-    }
+    if (studentId.value) {
+      const response = await StudentAPI.getStudentById(studentId.value)
+      const userData = response.student
 
-    if (!localStorageHasSchedule) { 
-      let fetchedClasses: { number: string; name: string }[] = []
-
-      console.log("CLASSES:\t" + userData.classes)
-      console.log("IS ARRAY?\t" + Array.isArray(userData.classes))
-
-      if (userData && Array.isArray(userData.classes)) {
-        fetchedClasses = userData.classes.map(cls => ({ 
-          number: cls.number || '—', 
-          name: cls.name || '—'
-        }))
-        console.log("ARRAY PARSE:\t" + fetchedClasses)
-      } else if (userData && typeof userData.classes === 'string') {
-        try {
-          const parsedClasses = JSON.parse(userData.classes)
-          if (Array.isArray(parsedClasses)) {
-              fetchedClasses = parsedClasses.map(cls => ({ 
-                  number: cls.number || '—', 
-                  name: cls.name || '—'
-              }))
-          }
-          console.log("STRING PARSE:\t" + fetchedClasses)
-        } catch (e) {
-          console.error("Failed to parse student classes JSON string:", e)
-        }
+      if (userData && userData.firstname && userData.lastname) {
+        studentName.value = `${userData.firstname} ${userData.lastname}`
+      } else if (userData && userData.firstname) {
+        studentName.value = userData.firstname
       }
-      
-      const classesForCard = fetchedClasses.slice(0, 6) 
-      
-      if (classesForCard.length > 0 && classesForCard.some(c => c.number !== '—')) { 
-        while (classesForCard.length < 6) {
-          classesForCard.push({ number: '—', name: '—' })
+
+      if (!localStorageHasSchedule) {
+        let fetchedClasses: { number: string; name: string }[] = []
+
+        if (userData && Array.isArray(userData.classes)) {
+          fetchedClasses = userData.classes.map((cls: any) => ({
+            number: cls.number || '—',
+            name: cls.name || '—'
+          }))
+        } else if (userData && typeof userData.classes === 'string') {
+          try {
+            const parsedClasses = JSON.parse(userData.classes)
+            if (Array.isArray(parsedClasses)) {
+              fetchedClasses = parsedClasses.map((cls: any) => ({
+                number: cls.number || '—',
+                name: cls.name || '—'
+              }))
+            }
+          } catch (e) {
+            console.error('Failed to parse student classes JSON string:', e)
+          }
         }
-        nextSchedule.value = classesForCard
-        
-        nextPopupRows.value = fetchedClasses.map(cls => ({
+
+        const classesForCard = fetchedClasses.slice(0, 6)
+
+        if (classesForCard.length > 0 && classesForCard.some(c => c.number !== '—')) {
+          while (classesForCard.length < 6) {
+            classesForCard.push({ number: '—', name: '—' })
+          }
+          nextSchedule.value = classesForCard
+
+          nextPopupRows.value = fetchedClasses.map(cls => ({
             number: cls.number,
             course: cls.name,
-            time: 'TBA', 
-            location: 'TBA',
+            time: 'TBA',
+            location: 'Baldor TBA',
             professor: 'TBA',
             availability: 'Open',
             waitlist: '0'
-        }))
-        
-        while (nextPopupRows.value.length < 5) {
-            nextPopupRows.value.push({ number: '', course: '', time: '', location: '', professor: '', availability: '', waitlist: '' })
+          }))
+
+          while (nextPopupRows.value.length < 5) {
+            nextPopupRows.value.push({
+              number: '',
+              course: '',
+              time: '',
+              location: '',
+              professor: '',
+              availability: '',
+              waitlist: ''
+            })
+          }
         }
       }
-    } 
-    
+    }
   } catch (err) {
     console.error('Failed to fetch student data:', err)
   }
 
   // --- Transcripts -> current schedule
   try {
-    const transcripts = await StudentAPI.getTranscripts(studentid)
-    console.log('Transcripts Loaded for Current Schedule:', transcripts)
+    if (studentId.value) {
+      const transcripts = await StudentAPI.getTranscripts(studentId.value)
 
-    let semesterCourses: SemesterData[] = []
+      let semesterCourses: SemesterData[] = []
 
-    if (transcripts.length > 0) {
-      transcripts.sort((a: any, b: any) => b.year - a.year)
-      const mostRecentTranscript = transcripts[0]
+      if (transcripts.length > 0) {
+        transcripts.sort((a: any, b: any) => b.year - a.year)
+        const mostRecentTranscript = transcripts[0]
 
-      if (mostRecentTranscript.coursemap) {
-        let coursemapData = mostRecentTranscript.coursemap
+        if (mostRecentTranscript.coursemap) {
+          let coursemapData = mostRecentTranscript.coursemap
 
-        if (Array.isArray(coursemapData)) {
-          semesterCourses = coursemapData
-        } else if (typeof coursemapData === 'string') {
-          try {
-            semesterCourses = JSON.parse(coursemapData)
-          } catch (e) {
-            console.error('Error parsing coursemap string:', e)
+          if (Array.isArray(coursemapData)) {
+            semesterCourses = coursemapData
+          } else if (typeof coursemapData === 'string') {
+            try {
+              semesterCourses = JSON.parse(coursemapData)
+            } catch (e) {
+              console.error('Error parsing coursemap string:', e)
+            }
+          }
+
+          if (!Array.isArray(semesterCourses)) {
+            semesterCourses = []
           }
         }
 
-        if (!Array.isArray(semesterCourses)) {
-          semesterCourses = []
+        const allCourses: TranscriptCourse[] = semesterCourses.flatMap(
+          (semester: any) => semester.courses || []
+        )
+
+        const coursesForCard = allCourses.slice(-6)
+        const cardCourses: CurrentRow[] = coursesForCard.map(c => ({
+          number: c.code || '—',
+          name: c.title || '—'
+       }))
+
+        while (cardCourses.length < 6) {
+          cardCourses.push({ number: '—', name: '—' })
         }
-      }
+        currentSchedule.value = cardCourses
 
-      const allCourses: TranscriptCourse[] = semesterCourses.flatMap(
-        (semester: any) => semester.courses || []
-      )
+        currentPopupRows.value = allCourses.map(c => ({
+          number: c.code || '—',
+          course: c.title || '—',
+          time: 'N/A (Completed)',
+          location: mostRecentTranscript.institution || 'N/A',
+          professor: 'N/A',
+          availability: 'Complete',
+          waitlist: '—'
+        }))
 
-      const coursesForCard = allCourses.slice(-6)
-      const cardCourses: CurrentRow[] = coursesForCard.map(c => ({
-        number: c.code || '—',
-        name: c.title || '—'
-      }))
-
-      while (cardCourses.length < 6) {
-        cardCourses.push({ number: '—', name: '—' })
-      }
-      currentSchedule.value = cardCourses
-
-      currentPopupRows.value = allCourses.map(c => ({
-        number: c.code || '—',
-        course: c.title || '—',
-        time: 'N/A (Completed)',
-        location: mostRecentTranscript.institution || 'N/A',
-        professor: 'N/A',
-        availability: 'Complete',
-        waitlist: '—'
-      }))
-
-      while (currentPopupRows.value.length < 5) {
-        currentPopupRows.value.push({
-          number: '',
-          course: '',
-          time: '',
-          location: '',
-          professor: '',
-          availability: '',
-          waitlist: ''
-        })
+        while (currentPopupRows.value.length < 5) {
+          currentPopupRows.value.push({
+            number: '',
+            course: '',
+            time: '',
+            location: '',
+            professor: '',
+            availability: '',
+            waitlist: ''
+          })
+        }
+      } else {
+        const emptyCardCourses: CurrentRow[] = []
+        while (emptyCardCourses.length < 6) {
+          emptyCardCourses.push({ number: '—', name: '—' })
+        }
+        currentSchedule.value = emptyCardCourses
+        currentPopupRows.value = []
       }
     } else {
       const emptyCardCourses: CurrentRow[] = []
@@ -653,22 +678,18 @@ onMounted(async () => {
 
   // --- Advisor data
   try {
-    const advisorData = await AdvisorAPI.getAdvisorByStudent(studentid)
-    console.log('Fetched Advisor Data:', advisorData)
-    if (advisorData) {
-      advisorName.value = `${advisorData.firstname} ${advisorData.lastname}`
-      advisorEmail.value = advisorData.email || 'N/A'
-      advisorPhone.value = advisorData.phonenumber || 'N/A'
+    if (studentId.value) {
+      const advisorData = await AdvisorAPI.getAdvisorByStudent(studentId.value)
+      if (advisorData) {
+        advisorName.value = `${advisorData.firstname} ${advisorData.lastname}`
+        advisorEmail.value = advisorData.email || 'N/A'
+        advisorPhone.value = advisorData.phonenumber || 'N/A'
+      }
     }
   } catch (err) {
     console.error('Failed to fetch advisor data:', err)
   }
 })
-
-watch([nextSchedule, nextPopupRows, nextTerm], () => {
-  const payload = { nextSchedule: nextSchedule.value, nextPopupRows: nextPopupRows.value, nextTerm: nextTerm.value }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
-}, { deep: true })
 
 watch(studentId, (newId, oldId) => {
   if (newId && newId !== oldId) {
@@ -757,7 +778,6 @@ async function runHoldCheck() {
     showPreferenceSnackbar('Error checking advising hold.', 'error', 10000)
   }
 }
-
 </script>
 
 <template>
@@ -782,7 +802,7 @@ async function runHoldCheck() {
 
         <v-col cols="12" md="4" class="text-center">
           <h1 class="welcome-center" :style="{ color: COLOR_PRIMARY }">
-            Welcome, {{ greetingName }}!
+           {{ welcomeGreeting }}
           </h1>
         </v-col>
 
@@ -1224,6 +1244,7 @@ async function runHoldCheck() {
         </v-btn>
       </template>
     </v-snackbar>
+
     <!-- PROGRAM CHANGE REQUEST: Dialog -->
     <v-dialog
       v-model="changeRequestDialog"
@@ -1368,13 +1389,13 @@ async function runHoldCheck() {
 
 /* Header layout */
 .planner-left {
-  font-size: 1.35rem;
+  font-size: 2.0rem;
   font-weight: 800;
   letter-spacing: .02em;
 }
 .welcome-center {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 2.5rem;
   font-weight: 800;
 }
 .header-actions {
