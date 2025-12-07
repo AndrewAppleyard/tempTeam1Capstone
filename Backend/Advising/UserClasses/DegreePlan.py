@@ -3,15 +3,20 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 
+from dataclasses import dataclass, field
+
 @dataclass
 class DegreePlan:
-    degree: str
-    institution: str
-    majorcode: str
-    credithourstotal: int
-    notes: list[str]
-    corecourses: list[dict]
-    concentrations: list[dict]
+    degree: str = ""
+    institution: str = ""
+    majorcode: str = ""
+    credithourstotal: int = 0
+
+    # These MUST have defaults because fields with defaults cannot come first
+    notes: list[str] = field(default_factory=list)
+    corecourses: list[dict] = field(default_factory=list)
+    concentrations: list[dict] = field(default_factory=list)
+
 
 class Base(DeclarativeBase):
     pass
