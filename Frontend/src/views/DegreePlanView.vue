@@ -120,8 +120,8 @@ onMounted(async () => {
           code: c.code || "TBD",
           title: c.title || "Untitled Course",
           credits: c.hours ?? 0,
-          type: "Other",          // You can infer type if needed
-          prereqs: [],            // Backend doesn't provide yet
+          type: "Other",         
+          prereqs: [],           
           coreqs: [],
           offered: "",
           description: ""
@@ -154,7 +154,7 @@ const termOptions = computed(() => {
   const terms = Array.from(new Set(catalog.value.map(c => c.term)))
   return ['All Terms', ...terms]
 })
-// keep your RowType as-is elsewhere:
+
 // type RowType = 'CS Major' | 'Math/Science' | 'Gen Ed' | 'Concentration/Elective' | 'Other';
 
 const typeOptions = [
@@ -166,11 +166,11 @@ const typeOptions = [
   'Other',
 ] as const
 
-type TypeOption = typeof typeOptions[number] // 'All' | RowType
+type TypeOption = typeof typeOptions[number] 
 
-const selectedType = ref<TypeOption>('All')   // ✅ single source of truth
-const selectedTerm = ref<string>('All Terms') // ok to keep string here
-const search = ref('')                        // ok
+const selectedType = ref<TypeOption>('All')  
+const selectedTerm = ref<string>('All Terms')
+const search = ref('')                        
 
 function chipColor(type: RowType) {
   switch (type) {
@@ -260,7 +260,6 @@ function downloadCSV() {
 <template>
   <v-container fluid class="pa-2" style="background-color: transparent;">
     <v-row>
-      <!-- 95% width shell to match your other pages -->
       <v-col cols="12" class="mx-auto" style="width:95%;">
         <v-card class="pa-5" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:16px;">
           <!-- Header / Title -->

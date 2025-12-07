@@ -22,6 +22,7 @@ const route = useRoute()
 const router = useRouter()
 const studentIdParam = route.params.id
 
+
 const student = ref({ 
   studentID: '', 
   firstName: '', 
