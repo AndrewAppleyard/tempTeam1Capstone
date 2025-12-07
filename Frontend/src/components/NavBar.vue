@@ -96,13 +96,18 @@ const initials = computed(() => {
       </template>
 
       <!-- admin, advisor, student -->
-      <v-list-item link :to="{ path: '/DegreePlanView' }" @click="drawer = false">
-          <v-list-item-title>Degree Plan</v-list-item-title>
-      </v-list-item>
-      
-      <v-list-item link :to="{ path: '/courseCatalog' }" @click="drawer = false">
+      <v-list-item
+        link
+        :to="{ path: (userStore.userRole === 'UAFS_STUDENTS' && (userStore.roleID || userStore.userID)) ? `/courseCatalog/${userStore.roleID || userStore.userID}` : '/courseCatalog' }"
+        @click="drawer = false"
+      >
         <v-list-item-title>Current Courses</v-list-item-title>
       </v-list-item>
+      <template v-if="!isAdminRoute">
+        <v-list-item link :to="{ path: `/DegreePlanView/${userStore.roleID}` }" @click="drawer = false">
+          <v-list-item-title>Degree Plan</v-list-item-title>
+        </v-list-item>
+      </template>
 
       <v-list-item @click="userStore.logout()">
         <v-list-item-title>Logout</v-list-item-title>
