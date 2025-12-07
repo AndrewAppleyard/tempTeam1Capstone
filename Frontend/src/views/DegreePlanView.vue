@@ -4,12 +4,10 @@ import { useRoute } from 'vue-router'
 import DegreePlanAPI from '../apis/DegreePlanAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import { useUserStore } from '../store/user.js'
+
 const route = useRoute()
-
-
 const userStore = useUserStore()
-//const studentid = route.params.id
-//console.log("This is a test of the student id: ", studentid)
+
 const studentId = computed<number | null>(() => {
   const routeId = Number(route.params.id)
   if (!Number.isNaN(routeId)) return routeId
@@ -19,8 +17,10 @@ const studentId = computed<number | null>(() => {
 
 const hasStudentId = computed(() => !!studentId.value)
 
+const major = ref<string | null>(null)
+const schoolName = ref('UAFS')
 
-let major = null
+// let major = null
 
 type Semester = 'Fall' | 'Spring'
 type RowType = 'Major' | 'Minor' | 'Gen Ed' | 'Concentration/Elective' | 'Other'
@@ -65,15 +65,22 @@ onMounted(async () => {
     return
     }
       const studentData = await StudentAPI.getStudentById(studentId.value)
-      major = studentData.student.major
-      console.log('Student major:', major)
+      // major = studentData.student.major
+      // console.log('Student major:', major)
+      major.value = studentData.student.major
+      console.log('Student major:', major.value)
 
-    if (!major) {
+    // if (!major) {
+    //   console.warn('No major found, cannot load degree plan.')
+    //   return
+    // }
+    if (!major.value) {
       console.warn('No major found, cannot load degree plan.')
       return
     }
 
-    const res = await DegreePlanAPI.view_degree_plans_by_degree(major)
+    // const res = await DegreePlanAPI.view_degree_plans_by_degree(major)
+    const res = await DegreePlanAPI.view_degree_plans_by_degree(major.value)
     console.log('Degree Plan data:', res)
     const degree = res.data
 
@@ -264,7 +271,7 @@ function downloadCSV() {
                   class="py-2 px-3"
                   style="color:#002856;border:1px solid #002856;border-radius:8px;font-weight:700;letter-spacing:.25px;"
                 >
-                  UAFS • B.S. COMPUTER SCIENCE • 4-YEAR PLAN
+                  {{ schoolName }} • {{ major || 'Loading Major...' }} • 4-YEAR PLAN
                 </v-card-title>
               </v-card>
             </v-col>
@@ -287,12 +294,12 @@ function downloadCSV() {
           >
             <v-row>
               <v-col cols="12" md="8">
-                <div class="text-h6 mb-1" style="color:#002856;">Computer Science, B.S. (UAFS)</div>
+                <div class="text-h6 mb-1" style="color:#002856;">{{ major }} ({{ schoolName }})</div>
                 <div class="d-flex flex-wrap" style="gap:16px;">
                   <div><strong>Total Program Hours:</strong> {{ catalogTotals.credits }}</div>
-                  <div><strong>CS Major:</strong> {{ catalogTotals.csMajor }} cr</div>
-                  <div><strong>Math / Science:</strong> {{ catalogTotals.mathSci }} cr</div>
-                  <div><strong>Gen Ed / Core:</strong> {{ catalogTotals.genEd }} cr</div>
+                  <div><strong>Major:</strong> {{ catalogTotals.csMajor }} cr</div>
+                  <div><strong>Minor:</strong> {{ catalogTotals.mathSci }} 0 cr</div>
+                  <div><strong>Gen Ed / Core:</strong> {{ catalogTotals.genEd + catalogTotals.mathSci }} cr</div>
                   <div><strong>Concentration / Electives:</strong> {{ catalogTotals.concentration }} cr</div>
                   <div><strong>Other:</strong> {{ catalogTotals.other }} cr</div>
                 </div>
