@@ -31,9 +31,9 @@ export default{
         const majors = new Set();
 
         degrees.forEach(degreePlan => {
-        const major = degreePlan.degree;  // Or use `degreePlan.major` if that's the correct field
+        const major = degreePlan.degree;
         if (major) {
-          majors.add(major);  // Add the major to the Set
+          majors.add(major);
         }
 
       });

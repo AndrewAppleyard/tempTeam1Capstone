@@ -78,6 +78,7 @@ onMounted(async () => {
       console.warn('No major found, cannot load degree plan.')
       return
     }
+
     // const res = await DegreePlanAPI.view_degree_plans_by_degree(major)
     const res = await DegreePlanAPI.view_degree_plans_by_degree(major.value)
     console.log('Degree Plan data:', res)

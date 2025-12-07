@@ -225,8 +225,8 @@ async function save() {
       const response = await AdminAPI.addStudent(payload)
 
       console.log('AddStudent response:', response);
-//       studentid = response.studentid
-      studentid = response.data.studentid
+//    studentid = response.data.studentid
+      studentid = response.studentid
       alert('Successfully added student!')
     }
     
