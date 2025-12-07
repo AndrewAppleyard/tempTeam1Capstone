@@ -10,10 +10,10 @@ const userStore = useUserStore()
 
 /* ===== GPA scale (4.0) ===== */
 const GPA_POINTS: Record<string, number> = {
-  'A': 4.0, 'A-': 3.7,
-  'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-  'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-  'D+': 1.3, 'D': 1.0,
+  'A': 4.0,
+  'B': 3.0,
+  'C': 2.0,
+  'D': 1.0,
   'F': 0.0, 'P': 0.0, 'W': 0.0, 'I': 0.0,
 }
 
@@ -22,15 +22,16 @@ const route = useRoute()
 const router = useRouter()
 const studentIdParam = route.params.id
 
-// const student = ref({ 
-//   studentID: '', 
-//   firstName: '', 
-//   lastName: '', 
-//   level: 'Undergraduate', 
-//   major: 'N/A', 
-//   minor: undefined,
-//   fullName: 'Loading...'
-// })
+
+const student = ref({ 
+  studentID: '', 
+  firstName: '', 
+  lastName: '', 
+  level: '', 
+  major: 'N/A', 
+  minor: 'N/A',
+  fullName: 'Loading...'
+})
 
 interface TranscriptCourseAPI {
   code: string;
@@ -78,11 +79,11 @@ const search = ref('')
 /* ===== Helpers ===== */
 const gradePoint = (g: string) => GPA_POINTS[g] ?? 0
 function gradeColor(g: string) {
-  if (['A','A-'].includes(g)) return '#2e7d32'    // green-ish
-  if (['B+','B','B-'].includes(g)) return '#1565c0' // blue-ish
-  if (['C+','C','C-'].includes(g)) return '#6a1b9a' // purple-ish
-  if (['D+','D'].includes(g)) return '#ef6c00'      // orange-ish
-  return '#b00020'                                  // red for F/others
+  if (['A'].includes(g)) return '#2e7d32' // green-ish
+  if (['B'].includes(g)) return '#1565c0' // blue-ish
+  if (['C'].includes(g)) return '#6a1b9a' // purple-ish
+  if (['D'].includes(g)) return '#ef6c00' // orange-ish
+  return '#b00020'                        // red for F/others
 }
 
 const filteredCourses = computed(() => {
@@ -121,7 +122,6 @@ async function fetchAndProcessData() {
   // --- Student Data Fetching ---
   try {
     const userData = await StudentAPI.getStudentById(studentIdParam)
-    console.log('Transcript View: Fetched Student Data:', userData)
     
     if (userData) {
       student.value = {

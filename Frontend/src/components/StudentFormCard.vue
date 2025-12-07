@@ -128,6 +128,7 @@ const form = ref({
   lastname: '',
   email: '',
   phonenumber: '',
+  role: 'student',
   school: '',
   gpa: '',
   major: '',
@@ -224,6 +225,7 @@ async function save() {
       const response = await AdminAPI.addStudent(payload)
 
       console.log('AddStudent response:', response);
+//       studentid = response.studentid
       studentid = response.data.studentid
       alert('Successfully added student!')
     }
@@ -247,6 +249,7 @@ function resetForm() { // need to reset id
     lastname: '',
     email: '',
     phonenumber: '',
+    role: 'student',
     school: '',
     gpa: '',
     major: '',
@@ -267,21 +270,37 @@ function resetForm() { // need to reset id
   tempDate.value = null
 }
 
+function formatDateToYYYYMMDD(value) {
+  if (!value) return null
+
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value
+  }
+
+  const date = new Date(value)
+  if (isNaN(date)) return null
+
+  return date.toISOString().split('T')[0]
+}
+
 function normalizeDate(dateString) {
   if (!dateString) return null;
   return dateString.split("T")[0];
 }
 
 function onDateSelect(value) {
-  if (value) {
-    displayDate.value = value
-    form.value.dateadvised = value
+  const formatted = formatDateToYYYYMMDD(value)
+
+  if (formatted) {
+    displayDate.value = formatted
+    form.value.dateadvised = formatted
+    tempDate.value = value
   } else {
     displayDate.value = ''
     form.value.dateadvised = null
+    tempDate.value = null
   }
 
-  tempDate.value = value || null
   datePickerVisible.value = false
 }
 
@@ -328,16 +347,15 @@ watch(() => props.student, async (newStudent) => {
       advisor = await AdvisorAPI.getAdvisorByStudent(newStudent.userid)
     }
 
-    if(newStudent.dateadvised) {
-
-      displayDate.value = normalizeDate(newStudent.dateadvised)
-      tempDate.value = normalizeDate(newStudent.dateadvised)
-    }
-
-    if(newStudent.dateadvised) {
-
-      displayDate.value = normalizeDate(newStudent.dateadvised)
-      tempDate.value = normalizeDate(newStudent.dateadvised)
+    if (newStudent.dateadvised) {
+      const formatted = formatDateToYYYYMMDD(newStudent.dateadvised)
+      displayDate.value = formatted
+      form.value.dateadvised = formatted
+      tempDate.value = formatted
+    } else {
+      displayDate.value = ''
+      form.value.dateadvised = null
+      tempDate.value = null
     }
 
     if (advisor) {
