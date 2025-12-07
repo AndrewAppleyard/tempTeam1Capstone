@@ -25,7 +25,7 @@ engine = create_engine(databaseURL)
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-dateFormatString = "%Y-%d-%m"
+dateFormatString = "%Y-%m-%d"
 
 def role_required(*required_roles):
 

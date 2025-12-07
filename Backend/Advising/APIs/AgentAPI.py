@@ -184,10 +184,10 @@ def generate_schedule(student_id):
 
             schedule = generate_schedule_with_agent(student, transcript, degreeplan, current_course_list, target_semester)
 
-#             if "courses" in schedule:
-#                 student.classes = schedule["courses"]
-
-            student.classes = json.dumps(data["courses"])
+            if isinstance(schedule, dict) and "courses" in schedule:
+                student.classes = schedule["courses"]
+            else:
+                student.classes = schedule
 
             session.commit()
 

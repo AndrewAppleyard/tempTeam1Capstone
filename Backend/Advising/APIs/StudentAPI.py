@@ -188,18 +188,28 @@ def updateStudent(id: int) -> None:
             student = session.query(Student.StudentMap).filter(Student.StudentMap.studentid == id).first()
 
             preferences_payload = None
+            classes_payload = None
             if request.form.get('preferences') is not None:
                 try:
                     raw_preferences = request.form.get('preferences')
                     preferences_payload = json.loads(raw_preferences) if raw_preferences else {}
                 except json.JSONDecodeError:
                     return jsonify({"message": "Invalid preferences payload"}), 400
+            
+            if request.form.get('classes') is not None:
+                try:
+                    raw_classes = request.form.get('classes')
+                    classes_payload = json.loads(raw_classes) if raw_classes else []
+                except json.JSONDecodeError:
+                    return jsonify({"message": "Invalid classes payload"}), 400
 
             if (token["Role"] == 'UAFS_STUDENTS'):
                 if(request.form.get('phonenumber') != None):
                     student.phonenumber = request.form.get('phonenumber')
                 if preferences_payload is not None:
                     student.preferences = preferences_payload
+                if classes_payload is not None:
+                    student.classes = classes_payload
                     
             elif (token["Role"] == 'UAFS_ADVISORS'):
                 if(request.form.get('major') != None):
@@ -225,6 +235,8 @@ def updateStudent(id: int) -> None:
                         student.advisinghold = False
                 if preferences_payload is not None:
                     student.preferences = preferences_payload
+                if classes_payload is not None:
+                    student.classes = classes_payload
 
             elif (token["Role"] == 'UAFS_ADMINS'):
                 if(request.form.get('firstname') != None):
@@ -284,6 +296,8 @@ def updateStudent(id: int) -> None:
                         student.academichold = False
                 if preferences_payload is not None:
                     student.preferences = preferences_payload
+                if classes_payload is not None:
+                    student.classes = classes_payload
             
             session.commit()
 
@@ -291,6 +305,6 @@ def updateStudent(id: int) -> None:
     except Exception as e:
         traceback.print_exc()
         session.rollback()
-        return "Student Update Failed"
+        return {"error": "Update failed"}, 400
     finally:
         session.close()

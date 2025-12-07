@@ -172,8 +172,6 @@ function goToUser(id) {
 }
 
 function selectUser(item) {
-  console.log("SELECTED:\t" + viewMode.value)
-  console.log("SELECTED 3:\t" + item.userid)
   if (editMode.value) {
     selectedItem.value = item
   } else {
@@ -195,6 +193,7 @@ function addUser() {
 
   if (viewMode.value === 'students') {
     studentToEdit.value = null
+    fetchAdvisors()
     showStudentForm.value = true
   } else {
     advisorToEdit.value = null
@@ -251,7 +250,7 @@ function refreshList() {
 async function updateDegreePlans() {
   showConfirmDialog(
     'Confirm Degree Plan Update',
-    'Are you sure you want to update all degree plans',
+    'Are you sure you want to update all degree plans?',
     executeUpdateDegreePlans
   )
 }
