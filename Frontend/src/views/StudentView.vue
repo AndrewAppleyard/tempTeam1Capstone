@@ -6,7 +6,6 @@ import AdvisorAPI from '../apis/AdvisorAPI.js'
 
 const route = useRoute()
 const studentid = route.params.id
-console.log("THIS IS THE USER ID", studentid)
 import { useUserStore } from '../store/user.js'
 
 /* =========================================================
