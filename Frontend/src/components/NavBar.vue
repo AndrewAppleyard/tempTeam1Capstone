@@ -30,12 +30,11 @@ function handleSetMode(mode) {
   drawer.value = false
 }
 
-const fullName = computed(() => {
-    const first = userStore.firstName || '';
-    const last = userStore.lastName || '';
-    return `${first} ${last}`;
+const initials = computed(() => {
+  const firstInitial = userStore.firstName && userStore.firstName.length > 0 ? userStore.firstName[0] : '';
+  const lastInitial = userStore.lastName && userStore.lastName.length > 0 ? userStore.lastName[0] : '';
+  return `${firstInitial}${lastInitial}`.toUpperCase();
 });
-const initials = computed(() => `${userStore.firstName[0]}${userStore.lastName[0]}`)
 </script>
 
 <template>
@@ -52,13 +51,13 @@ const initials = computed(() => `${userStore.firstName[0]}${userStore.lastName[0
 
       <v-divider></v-divider>
 
-      <v-list-item link :to="{ path: homePath }" @click="drawer = false">
-        <v-list-item-title>Home</v-list-item-title>
-      </v-list-item>
-
-      <v-divider></v-divider>
-
       <template v-if="!isAdminRoute">
+        <v-list-item link :to="{ path: homePath }" @click="drawer = false">
+          <v-list-item-title>Home</v-list-item-title>
+        </v-list-item>
+
+        <v-divider></v-divider>
+        
         <v-list-item link :to="{ path: `/UserProfilePage/${userStore.roleID}` }" @click="drawer = false">
           <v-list-item-title>Profile</v-list-item-title>
         </v-list-item>
@@ -97,13 +96,18 @@ const initials = computed(() => `${userStore.firstName[0]}${userStore.lastName[0
       </template>
 
       <!-- admin, advisor, student -->
-      <v-list-item link :to="{ path: '/DegreePlanView' }" @click="drawer = false">
-          <v-list-item-title>Degree Plan</v-list-item-title>
-      </v-list-item>
-      
-      <v-list-item link :to="{ path: '/courseCatalog' }" @click="drawer = false">
+      <v-list-item
+        link
+        :to="{ path: (userStore.userRole === 'UAFS_STUDENTS' && (userStore.roleID || userStore.userID)) ? `/courseCatalog/${userStore.roleID || userStore.userID}` : '/courseCatalog' }"
+        @click="drawer = false"
+      >
         <v-list-item-title>Current Courses</v-list-item-title>
       </v-list-item>
+      <template v-if="!isAdminRoute">
+        <v-list-item link :to="{ path: '/DegreePlanView' }" @click="drawer = false">
+          <v-list-item-title>Degree Plan</v-list-item-title>
+        </v-list-item>
+      </template>
 
       <v-list-item @click="userStore.logout()">
         <v-list-item-title>Logout</v-list-item-title>
@@ -126,7 +130,7 @@ const initials = computed(() => `${userStore.firstName[0]}${userStore.lastName[0
     <v-spacer />
 
     <v-card flat class="px-4 py-2 mr-4">
-      <span>Hello, {{ fullName }}!</span>
+      <span>Hello, {{ userStore.firstName }} {{ userStore.lastName }}!</span>
     </v-card>
 
     <v-avatar color="#8C4799" size="36">

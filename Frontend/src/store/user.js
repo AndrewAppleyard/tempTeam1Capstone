@@ -26,6 +26,11 @@ export const useUserStore = defineStore('user', () => {
       userRole.value = data.Role || null
       userID.value = data.UserID || null
       email.value = data.Email || null
+
+      if (email.value) {
+        await restoreUserDetails(email.value)
+      }
+
     } catch (err) {
       isLoggedIn.value = false
       userRole.value = null
@@ -56,31 +61,23 @@ export const useUserStore = defineStore('user', () => {
     return config
   })
 
-  // async function login(username, password) {
-  //   try {
-  //     const res = await axios.post('http://127.0.0.1:5000/Transfer/login', {
-  //       username,
-  //       password
-  //     })
+  async function restoreUserDetails(email) {
+    try {
+      const userInfo = await UserAPI.getUserByEmail(email)
 
-  //     token.value = res.data.Token
-  //     localStorage.setItem('token', token.value)
+      firstName.value = userInfo.firstname
+      lastName.value = userInfo.lastname
 
-  //     const payload = decodeToken(token.value)
-  //     if (payload) {
-  //       userRole.value = payload.Role
-  //       userID.value = payload.userID
-  //       email.value = payload.Email
-  //       isLoggedIn.value = true
-  //     } else {
-  //       logout()
-  //     }
-  //   } catch (err) {
-  //     console.error('Login failed', err)
-  //     logout()
-  //     throw err
-  //   }
-  // }
+      if (userRole.value === 'UAFS_STUDENTS') {
+          roleID.value = await UserAPI.getStudentByUID(userID.value);
+      } else if (userRole.value === 'UAFS_ADVISORS') {
+          roleID.value = await UserAPI.getAdvisorByUID(userID.value);
+      }
+    } catch (err) {
+      console.error('Failed to restore user details:', err)
+      // logout() 
+    }
+  }
 
   async function restoreSession() {
     const storedToken = localStorage.getItem('token')
@@ -100,6 +97,8 @@ export const useUserStore = defineStore('user', () => {
       userID.value = payload.userID // double check
       email.value = payload.Email
       isLoggedIn.value = true
+
+      await restoreUserDetails(email.value)
 
       return true
     } catch (err) {

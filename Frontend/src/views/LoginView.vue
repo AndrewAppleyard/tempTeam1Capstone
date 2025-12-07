@@ -39,8 +39,8 @@ async function login() {
       const userInfo = await UserAPI.getUserByEmail(username.value)
     
       userStore.userID = userInfo.userid
-      userStore.firstName = userInfo.firstName
-      userStore.lastName = userInfo.lastName
+      userStore.firstName = userInfo.firstname
+      userStore.lastName = userInfo.lastname
       alert('Login successful!')
 
       switch (userStore.userRole) {
