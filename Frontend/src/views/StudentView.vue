@@ -282,8 +282,6 @@ async function loadStudentProfile() {
       const name = [student.firstname, student.lastname].filter(Boolean).join(' ').trim()
       if (name) studentName.value = name
       preferenceForm.value = normalizePreferences(student.preferences)
-
-      console.log('student name?:\t' + name)
     } else {
       preferenceForm.value = { ...preferenceDefaults }
     }
@@ -511,8 +509,6 @@ onMounted(async () => {
     if (studentId.value) {
       const response = await StudentAPI.getStudentById(studentId.value)
       const userData = response.student
-      console.log(response)
-      console.log(userData)
 
       if (userData && userData.firstname && userData.lastname) {
         studentName.value = `${userData.firstname} ${userData.lastname}`
@@ -523,15 +519,11 @@ onMounted(async () => {
       if (!localStorageHasSchedule) {
         let fetchedClasses: { number: string; name: string }[] = []
 
-        console.log('CLASSES:\t' + userData.classes)
-        console.log('IS ARRAY?\t' + Array.isArray(userData.classes))
-
         if (userData && Array.isArray(userData.classes)) {
           fetchedClasses = userData.classes.map((cls: any) => ({
             number: cls.number || '—',
             name: cls.name || '—'
           }))
-          console.log('ARRAY PARSE:\t' + fetchedClasses)
         } else if (userData && typeof userData.classes === 'string') {
           try {
             const parsedClasses = JSON.parse(userData.classes)
@@ -541,7 +533,6 @@ onMounted(async () => {
                 name: cls.name || '—'
               }))
             }
-            console.log('STRING PARSE:\t' + fetchedClasses)
           } catch (e) {
             console.error('Failed to parse student classes JSON string:', e)
           }
@@ -587,7 +578,6 @@ onMounted(async () => {
   try {
     if (studentId.value) {
       const transcripts = await StudentAPI.getTranscripts(studentId.value)
-      console.log('Transcripts Loaded for Current Schedule:', transcripts)
 
       let semesterCourses: SemesterData[] = []
 
@@ -678,7 +668,6 @@ onMounted(async () => {
   try {
     if (studentId.value) {
       const advisorData = await AdvisorAPI.getAdvisorByStudent(studentId.value)
-      console.log('Fetched Advisor Data:', advisorData)
       if (advisorData) {
         advisorName.value = `${advisorData.firstname} ${advisorData.lastname}`
         advisorEmail.value = advisorData.email || 'N/A'

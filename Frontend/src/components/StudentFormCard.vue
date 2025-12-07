@@ -115,17 +115,16 @@ const requiredFields = [
 ]
 
 const isFieldEditable = computed(() => (field) => {
-  const role = userStore.userRole
   if (!props.student) return true
 
-  if (role === 'UAFS_ADMINS') {
+  if (userStore.userRole === 'UAFS_ADMINS') {
     return true
-  } else if (role === 'UAFS_ADVISORS') {
+  } else if (userStore.userRole === 'UAFS_ADVISORS') {
     return [
       'major', 'majorconcentration', 'minor', 'classstanding',
       'advisingstatus', 'dateadvised', 'advisinghold', 'preferences'
     ].includes(field)
-  } else if (role === 'UAFS_STUDENTS') {
+  } else if (userStore.userRole === 'UAFS_STUDENTS') {
     return ['phonenumber', 'preferences'].includes(field)
   }
   return false
@@ -165,7 +164,11 @@ async function save() {
     }
 
     if (props.student) {
-      studentid = props.student.studentid
+      if (userStore.userRole === "UAFS_ADMINS") {
+        studentid = props.student.studentid
+      } else if (userStore.userRole === "UAFS_ADVISORS") {
+        studentid = props.student.userid
+      }
 
       await StudentAPI.updateStudent(studentid, payload)
       alert('Successfully updated student!')
@@ -178,7 +181,7 @@ async function save() {
       alert('Successfully added student!')
     }
     
-    if (selectedAdvisor.value) {
+    if (selectedAdvisor.value && userStore.userRole === "UAFS_ADMINS") {
       await AdminAPI.addStudentToAdvisor(selectedAdvisor.value, studentid)
     }
 
@@ -286,13 +289,7 @@ watch(() => props.student, async (newStudent) => {
     if (userStore.userRole === "UAFS_ADMINS") {
       advisor = await AdvisorAPI.getAdvisorByStudent(newStudent.studentid)
     } else if (userStore.userRole === "UAFS_ADVISORS") {
-      const studentResponse = await AdvisorAPI.getAdvisorByStudent(newStudent.userid)
-      if (studentResponse) {
-        Object.assign(form.value, studentResponse)
-        newStudent.studentid = studentResponse.studentid
-      }
-
-      advisor = await AdvisorAPI.getAdvisorByStudent(newStudent.studentid)
+      advisor = await AdvisorAPI.getAdvisorByStudent(newStudent.userid)
     }
 
     if (advisor) {
