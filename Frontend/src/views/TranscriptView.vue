@@ -121,7 +121,6 @@ async function fetchAndProcessData() {
   // --- Student Data Fetching ---
   try {
     const userData = await StudentAPI.getStudentById(studentIdParam)
-    console.log('Transcript View: Fetched Student Data:', userData)
     
     if (userData) {
       student.value = {
