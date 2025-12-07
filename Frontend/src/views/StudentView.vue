@@ -239,16 +239,6 @@ const filteredDegreeOptions = computed(() =>
     .map(c => ({ label: `${c.code} — ${c.title}`, value: c.code }))
 )
 
-const userStore = useUserStore()
-
-const studentId = computed<number | null>(() => {
-  const routeId = Number(route.params.studentid)
-  if (!Number.isNaN(routeId)) return routeId
-  const storeId = userStore.userID ? Number(userStore.userID) : NaN
-  return Number.isNaN(storeId) ? null : storeId
-})
-const hasStudentId = computed(() => !!studentId.value)
-
 function showPreferenceSnackbar(message: string, color: 'success' | 'error' | 'info' = 'success', duration = 3000) {
   preferenceSnackbarMessage.value = message
   preferenceSnackbarColor.value = color
