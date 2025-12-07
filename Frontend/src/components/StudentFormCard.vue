@@ -26,7 +26,7 @@ const displayDate = ref('')
 const advisorsList = computed(() =>
   (props.advisors || []).map(a => ({
     fullname: `${a.firstname || ''} ${a.lastname || ''}`.trim(),
-    userid: a.userid
+    userid: String(a.userid)
   }))
 )
 
@@ -177,7 +177,7 @@ async function save() {
       const response = await AdminAPI.addStudent(payload)
 
       console.log('AddStudent response:', response);
-      studentid = response.data
+      studentid = response.data.studentid
       alert('Successfully added student!')
     }
     
@@ -212,7 +212,7 @@ function resetForm() { // need to reset id
     registrationstatus: null,
     advisingstatus: null,
     activestatus: null,
-    dateadvised: null // needs to be null until set
+    dateadvised: null 
   }
   selectedAdvisor.value = null
   currentAdvisor.value = null
@@ -220,26 +220,15 @@ function resetForm() { // need to reset id
   tempDate.value = null
 }
 
-function convertToYDM(date) {
-  if (!date) {
-
-    return null
-  }
-  
-  const parsedDate = new Date(date)
-  if (isNaN(parsedDate)) return null
-
-  const y = parsedDate.getFullYear()
-  const d = String(parsedDate.getDate()).padStart(2, '0')
-  const m = String(parsedDate.getMonth() + 1).padStart(2, '0')
-
-  return `${y}-${d}-${m}`
+function normalizeDate(dateString) {
+  if (!dateString) return null;
+  return dateString.split("T")[0];
 }
 
 function onDateSelect(value) {
   if (value) {
     displayDate.value = value
-    form.value.dateadvised = convertToYDM(value)
+    form.value.dateadvised = value
   } else {
     displayDate.value = ''
     form.value.dateadvised = null
@@ -292,9 +281,15 @@ watch(() => props.student, async (newStudent) => {
       advisor = await AdvisorAPI.getAdvisorByStudent(newStudent.userid)
     }
 
+    if(newStudent.dateadvised) {
+
+      displayDate.value = normalizeDate(newStudent.dateadvised)
+      tempDate.value = normalizeDate(newStudent.dateadvised)
+    }
+
     if (advisor) {
       currentAdvisor.value = advisor
-      selectedAdvisor.value = advisor.userid
+      selectedAdvisor.value = String(advisor.userid)
       console.log("current advisor : " + currentAdvisor.value.firstname + " " + currentAdvisor.value.lastname)
     } else {
       currentAdvisor.value = null
@@ -395,6 +390,7 @@ watch(() => props.student, async (newStudent) => {
           <v-row>
             <v-col>
               <v-select
+                :key="advisorsList.map(a => a.userid).join('-')"
                 v-model="selectedAdvisor"
                 :items="advisorsList"
                 item-title="fullname"

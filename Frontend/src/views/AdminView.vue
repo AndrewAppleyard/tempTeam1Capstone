@@ -192,6 +192,7 @@ function addUser() {
 
   if (viewMode.value === 'students') {
     studentToEdit.value = null
+    fetchAdvisors()
     showStudentForm.value = true
   } else {
     advisorToEdit.value = null
