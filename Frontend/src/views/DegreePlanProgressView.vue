@@ -18,6 +18,7 @@ interface CatalogCourse {
   prereqs: string[]
   coreqs: string[]
   description: string
+  termLabel: string 
 }
 
 interface TranscriptCourse {
@@ -32,7 +33,6 @@ interface ProgressCourse extends CatalogCourse {
   status: 'Complete' | 'In Progress' | 'Planned' | 'Required'
   completedGrade?: string
   completedTerm?: string
-  // For tracking which required courses have been met by an equivalent/substitute course
   metBy?: string 
 }
 
@@ -57,7 +57,6 @@ const catalogCourses = ref<CatalogCourse[]>([])
 const transcriptCourses = ref<TranscriptCourse[]>([])
 const progressCourses = ref<ProgressCourse[]>([])
 
-
 const PASSING_GRADES = ['A', 'B', 'C', 'D'] 
 
 /*======== DATA PULL & MERGE =========*/
@@ -81,16 +80,20 @@ onMounted(async () => {
     const rows: CatalogCourse[] = []
     
     Object.entries(degree.corecourses || {}).forEach(([termLabel, courses]) => {
+      const safeTermLabel = termLabel ? String(termLabel) : "";
+      const cleanedTermLabel = safeTermLabel.replace(/^(st|nd|rd|th)/i, '').trim();
+
       (courses as any[]).forEach((c, index) => {
         rows.push({
-          id: `${termLabel}-${index}-${c.code}`,
+          id: `${cleanedTermLabel}-${index}-${c.code}`,
           code: c.code || "TBD",
           title: c.title || "Untitled Course",
           credits: c.hours ?? 0,
           type: c.type || "Other", 
           prereqs: c.prereqs || [],
           coreqs: c.coreqs || [],
-          description: c.description || ""
+          description: c.description || "",
+          termLabel: cleanedTermLabel, 
         })
       })
     })
@@ -103,7 +106,7 @@ onMounted(async () => {
       grade: t.grade,
       credits: t.hours,
       term: t.term,
-      status: t.status // 'Completed' is the primary status for progress
+      status: t.status === 'Completed' ? 'Completed' : t.status
     }))
 
     mergeData()
@@ -118,48 +121,45 @@ onMounted(async () => {
 
 function mergeData() {
   const merged: ProgressCourse[] = []
-  const completedCourses = new Set(
-    transcriptCourses.value
-      .filter(t => PASSING_GRADES.includes(t.grade.toUpperCase()))
-      .map(t => t.code.toUpperCase())
-  )
   
   const transcriptMap = new Map<string, TranscriptCourse>()
   transcriptCourses.value.forEach(t => {
-      if (t.grade && PASSING_GRADES.includes(t.grade.toUpperCase())) {
-          transcriptMap.set(t.code.toUpperCase(), t)
-      } else if (!transcriptMap.has(t.code.toUpperCase())) {
-          transcriptMap.set(t.code.toUpperCase(), t)
+      const courseKey = t.code.toUpperCase()
+      const existing = transcriptMap.get(courseKey)
+      
+      const isPassing = t.grade && PASSING_GRADES.includes(t.grade.toUpperCase())
+
+      if (isPassing) {
+          transcriptMap.set(courseKey, t) 
+      } else if (!existing || existing.status !== 'Completed') {
+          transcriptMap.set(courseKey, t) 
       }
   })
 
   catalogCourses.value.forEach(catalog => {
     const progress: ProgressCourse = { ...catalog, status: 'Required' }
     const courseCode = catalog.code.toUpperCase()
+    const trans = transcriptMap.get(courseCode)
 
-    if (completedCourses.has(courseCode)) {
-      const trans = transcriptMap.get(courseCode)
-      if (trans) {
-        progress.status = 'Complete'
-        progress.completedGrade = trans.grade
-        progress.completedTerm = trans.term
-        transcriptMap.delete(courseCode) 
-      }
+    if (trans) {
+        if (trans.status === 'Completed' && trans.grade && PASSING_GRADES.includes(trans.grade.toUpperCase())) {
+            progress.status = 'Complete'
+            progress.completedGrade = trans.grade
+            progress.completedTerm = trans.term
+        } else if (trans.status === 'In Progress') {
+            progress.status = 'In Progress'
+            progress.completedTerm = trans.term
+        }
+        // track nonmatched courses (electives/transfer)
+        // transcriptMap.delete(courseCode) 
     } 
-    // Add logic here for 'In Progress' (e.g., if a matching course code is in the transcript with status 'In Progress')
-    // else if (transcriptMap.has(courseCode) && transcriptMap.get(courseCode)!.status === 'In Progress') {
-    //   progress.status = 'In Progress'
-    //   // ...
-    // }
 
     merged.push(progress)
   })
-
-  // Optionally, handle transcript courses that *don't* match a required course (e.g., electives/transfer)
-  // For simplicity, we skip this step in the progress view for now, as the focus is on required courses.
+  
+  // 'Planned' courses here (student.classes)
 
   progressCourses.value = merged
-  console.log("Progress Data Merged:", merged)
 }
 
 
@@ -170,25 +170,20 @@ type TypeOption = 'All' | RowType
 const statusOptions = ['All', 'Complete', 'In Progress', 'Required'] as const
 type StatusOption = typeof statusOptions[number]
 
-const selectedType = ref<TypeOption>('All')
-const selectedStatus = ref<StatusOption>('All')
-const search = ref('')
-
 function chipColor(type: RowType, status?: string): string {
-  if (status === 'Complete') return '#002856'
-  if (status === 'In Progress') return 'orange' 
+  if (status === 'Complete') return 'success' 
+  if (status === 'In Progress') return 'warning' 
   
   switch (type) {
-    case 'Major': return '#002856' // Using Major for 'CS Major'
-    case 'Minor': return 'indigo'
-    case 'Gen Ed': return 'teal'
-    case 'Concentration/Elective': return 'purple'
+    case 'Major': return '#002856'
+    case 'Minor': return 'indigo-darken-1'
+    case 'Gen Ed': return 'teal-darken-1'
+    case 'Concentration/Elective': return 'purple-darken-1'
     case 'Other': return 'grey'
     default: return 'grey'
   }
 }
 
-// Function for progress status colors/icons
 function statusStyle(status: string) {
   switch (status) {
     case 'Complete': 
@@ -203,23 +198,75 @@ function statusStyle(status: string) {
 
 /* ======== DERIVED DATA ======== */
 
-const filteredProgress = computed(() => {
-  let rows = progressCourses.value
+interface ProgressTermGroup {
+    termLabel: string;
+    courses: ProgressCourse[];
+    status: 'Completed' | 'In Progress' | 'Required' | 'Unscheduled';
+}
 
-  if (selectedType.value !== 'All') rows = rows.filter(r => r.type === selectedType.value)
-  if (selectedStatus.value !== 'All') rows = rows.filter(r => r.status === selectedStatus.value)
-  
-  if (search.value) {
-    const q = search.value.toLowerCase()
-    rows = rows.filter(r =>
-      r.code.toLowerCase().includes(q) ||
-      r.title.toLowerCase().includes(q) ||
-      r.description.toLowerCase().includes(q)
-    )
-  }
+const groupedProgress = computed(() => {
+    const groups: Record<string, ProgressCourse[]> = {}
+    
+    progressCourses.value.forEach(course => {
+        const term = course.termLabel || 'UNSCHEDULED'
+        if (!groups[term]) {
+            groups[term] = []
+        }
+        groups[term].push(course)
+    })
 
-  return rows.slice().sort((a, b) => a.code.localeCompare(b.code))
+    const termGroups: ProgressTermGroup[] = Object.keys(groups).map(termLabel => {
+        const courses = groups[termLabel]
+        let status: ProgressTermGroup['status'] = 'Completed'
+
+        if (termLabel.toUpperCase() === 'UNSCHEDULED') {
+            status = 'Unscheduled'
+        } else if (courses.some(c => c.status === 'In Progress')) {
+            status = 'In Progress'
+        } else if (courses.some(c => c.status === 'Required')) {
+            status = 'Required'
+        }
+        
+        return {
+            termLabel,
+            courses: courses.sort((a, b) => a.code.localeCompare(b.code)),
+            status,
+        }
+    })
+    
+    const statusOrder: Record<ProgressTermGroup['status'], number> = {
+        'In Progress': 1,
+        'Completed': 2,
+        'Required': 3,
+        'Unscheduled': 4,
+    }
+
+    termGroups.sort((a, b) => {
+        const statusDiff = statusOrder[a.status] - statusOrder[b.status]
+        if (statusDiff !== 0) return statusDiff
+
+        if (a.status === 'Unscheduled' && b.status === 'Unscheduled') {
+            return a.termLabel.localeCompare(b.termLabel)
+        }
+
+        const aYearMatch = a.termLabel.match(/\d{4}/)
+        const bYearMatch = b.termLabel.match(/\d{4}/)
+        
+        const aYear = aYearMatch ? parseInt(aYearMatch[0]) : 0
+        const bYear = bYearMatch ? parseInt(bYearMatch[0]) : 0
+
+        if (aYear !== bYear) return bYear - aYear
+
+        // Semester sort (Fall is "later" than Spring in descending order)
+        if (a.termLabel.includes('Fall') && b.termLabel.includes('Spring')) return -1 
+        if (a.termLabel.includes('Spring') && b.termLabel.includes('Fall')) return 1
+        
+        return 0
+    })
+
+    return termGroups
 })
+
 
 // Progress Summary Computations
 const progressSummary = computed(() => {
@@ -230,6 +277,10 @@ const progressSummary = computed(() => {
 
   const completeCredits = progressCourses.value
     .filter(c => c.status === 'Complete')
+    .reduce((acc, c) => acc + c.credits, 0)
+  
+  const inProgressCredits = progressCourses.value
+    .filter(c => c.status === 'In Progress')
     .reduce((acc, c) => acc + c.credits, 0)
   
   const totalCredits = progressCourses.value.reduce((acc, c) => acc + c.credits, 0)
@@ -256,26 +307,90 @@ const progressSummary = computed(() => {
   
   return {
     total, complete, required, inProgress, 
-    completeCredits, totalCredits, overallPercent,
+    completeCredits, inProgressCredits, totalCredits, overallPercent,
     categories
   }
 })
 
 /* ======== TABLE CONFIG ======== */
 const headers = [
+  { title: 'Status', key: 'status', sortable: true, width: '10%' },
+  { title: 'Code', key: 'code', sortable: true, width: '15%' },
+  { title: 'Course Title', key: 'title', sortable: false },
+  { title: 'Type', key: 'type', sortable: true, width: '15%' },
+  { title: 'Cr', key: 'credits', sortable: true, align: 'end', width: '5%' },
+  { title: 'Grade', key: 'completedGrade', sortable: true, width: '10%' },
+  { title: 'Term Taken', key: 'completedTerm', sortable: true, width: '10%' }
+]
+
+const termHeaders = [
   { title: 'Status', key: 'status', sortable: true },
   { title: 'Code', key: 'code', sortable: true },
-  { title: 'Title', key: 'title', sortable: true },
+  { title: 'Course Title', key: 'title', sortable: true },
   { title: 'Type', key: 'type', sortable: true },
   { title: 'Cr', key: 'credits', sortable: true, align: 'end' },
   { title: 'Grade', key: 'completedGrade', sortable: true },
   { title: 'Term Taken', key: 'completedTerm', sortable: true }
 ]
 
+function getTermColor(termLabel: string) {
+    const baseColor = 'rgba(0, 40, 86,' 
+    if (termLabel.includes('Fall')) return baseColor + ' 0.9)'
+    if (termLabel.includes('Spring')) return baseColor + ' 0.75)' 
+    if (termLabel.toUpperCase() === 'UNSCHEDULED') return 'grey-darken-2'
+    return baseColor + ' 0.9)' 
+}
+
+const nextPlannedTermLabel = computed(() => {
+    const hasInProgress = progressCourses.value.some(c => c.status === 'In Progress')
+    
+    for (const group of groupedProgress.value) {
+        const isFullyComplete = group.courses.every(c => c.status === 'Complete')
+        const hasRequired = group.courses.some(c => c.status === 'Required')
+
+        if (!isFullyComplete && hasRequired) {
+            if (group.courses.some(c => c.status === 'In Progress')) {
+                continue
+            }
+            return group.termLabel
+        }
+    }
+    return null
+})
+
+function isCurrentOrNextTerm(termLabel: string, progressCourses: ProgressCourse[]): 'Current' | 'Next' | null {
+    const isCurrent = progressCourses.some(c => 
+        c.status === 'In Progress' && 
+        c.completedTerm && 
+        termLabel.toUpperCase().includes(c.completedTerm.toUpperCase().split(' ').pop() || termLabel.toUpperCase()) 
+    );
+
+    if (isCurrent) {
+      return 'Current';
+    }
+
+    if (termLabel === nextPlannedTermLabel.value) {
+        return 'Next';
+    }
+        
+    return null
+}
+
+const showFutureDivider = computed(() => {
+    if (!groupedProgress.value.length) return false
+    
+    const firstRequiredIndex = groupedProgress.value.findIndex(g => g.status === 'Required')
+    
+    return firstRequiredIndex > 0
+})
+
+const firstFutureTerm = computed(() => {
+    return groupedProgress.value.find(g => g.status === 'Required')
+})
 </script>
 
 <style scoped>
-/* Inherited styles */
+
 .font-mono{
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
 }
@@ -292,14 +407,15 @@ const headers = [
     <v-row>
       <v-col cols="12" class="mx-auto" style="width:95%;">
         <v-card class="pa-5" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:16px;">
+          
           <v-row class="mb-3" align="center" no-gutters>
             <v-col cols="12" md="6" class="d-flex align-center">
               <v-card flat class="elevation-0" style="background:transparent;">
                 <v-card-title
-                  class="py-2 px-3"
+                  class="py-2 px-3 text-h6"
                   style="color:#002856;border:1px solid #002856;border-radius:8px;font-weight:700;letter-spacing:.25px;"
                 >
-                  {{ schoolName }} • {{ major || 'Loading Major...' }} • PROGRESS
+                  {{ schoolName }} • {{ major || 'Loading Major...' }} • DEGREE AUDIT
                 </v-card-title>
               </v-card>
             </v-col>
@@ -313,7 +429,7 @@ const headers = [
 
           <v-card
             class="pa-4 mb-4"
-            style="background-color:rgba(255,255,255,.8);border:1px solid #002856;text-align:left;border-radius:12px;"
+            style="background-color:rgba(255,255,255,.9);border:1px solid #002856;text-align:left;border-radius:12px;"
           >
             <div class="text-h5 mb-3" style="color:#002856; font-weight:700;">
               Overall Degree Completion
@@ -324,32 +440,36 @@ const headers = [
               height="25"
               rounded
               color="#002856"
-              class="mb-3"
+              class="mb-4"
             >
               <template #default="{ value }">
-                <strong style="color:white;">{{ Math.ceil(value) }}% COMPLETE</strong>
+                <strong style="color:white; font-size: 1.1em;">{{ Math.ceil(value) }}% COMPLETE</strong>
               </template>
             </v-progress-linear>
 
-            <v-row dense class="text-body-1">
-              <v-col cols="12" sm="4">
-                <strong>Total Required Credits:</strong> 
-                <span style="color:#002856; font-weight:700;">{{ progressSummary.totalCredits }}</span>
+            <v-row dense class="text-body-1 font-weight-medium">
+              <v-col cols="12" sm="3">
+                <strong>Total Req. Credits:</strong> 
+                <span style="color:#002856;">{{ progressSummary.totalCredits }}</span>
               </v-col>
-              <v-col cols="12" sm="4">
+              <v-col cols="12" sm="3">
                 <strong>Completed Credits:</strong> 
-                <span class="text-success font-weight-bold">{{ progressSummary.completeCredits }}</span>
+                <span class="text-success">{{ progressSummary.completeCredits }}</span>
               </v-col>
-              <v-col cols="12" sm="4">
+              <v-col cols="12" sm="3">
+                <strong>In Progress Credits:</strong> 
+                <span class="text-warning">{{ progressSummary.inProgressCredits }}</span>
+              </v-col>
+              <v-col cols="12" sm="3">
                 <strong>Remaining Credits:</strong> 
-                <span class="text-error font-weight-bold">{{ progressSummary.totalCredits - progressSummary.completeCredits }}</span>
+                <span class="text-error">{{ progressSummary.totalCredits - progressSummary.completeCredits - progressSummary.inProgressCredits }}</span>
               </v-col>
             </v-row>
           </v-card>
           
           <v-card
-            class="pa-4 mb-4"
-            style="background-color:rgba(255,255,255,.8);border:1px solid #002856;text-align:left;border-radius:12px;"
+            class="pa-4 mb-6"
+            style="background-color:rgba(255,255,255,.9);border:1px solid #002856;text-align:left;border-radius:12px;"
           >
             <div class="text-h6 mb-3" style="color:#002856; font-weight:600;">
               Progress by Requirement Type (Credit Hours)
@@ -368,13 +488,13 @@ const headers = [
                     :model-value="cat.creditsPercent"
                     height="12"
                     rounded
-                    :color="chipColor(cat.type, 'Complete')"
+                    color="success"
                   >
                     <template #default="{ value }">
                       <span class="text-white text-caption">{{ Math.ceil(value) }}%</span>
                     </template>
                   </v-progress-linear>
-                  <div class="text-caption text-right mt-1">
+                  <div class="text-caption text-right mt-1 font-weight-medium">
                     {{ cat.creditsComplete }} / {{ cat.creditsTotal }} credits
                   </div>
                 </v-card>
@@ -383,143 +503,170 @@ const headers = [
           </v-card>
 
 
-          <v-row class="mb-3">
-            <v-col cols="12" md="3">
-              <v-select
-                v-model="selectedType"
-                :items="['All', ...typeOptions]"
-                label="Requirement Type"
-                variant="outlined"
-                density="comfortable"
-                hide-details
-              />
+          <v-row v-if="loading">
+              <v-col cols="12">
+                  <v-progress-linear indeterminate color="#002856"></v-progress-linear>
+                  <div class="text-center mt-3 text-body-1">Loading degree plan and transcript data...</div>
+              </v-col>
+          </v-row>
+          <v-row v-else>
+            <v-col cols="12">
+              <div class="text-h6 mb-3" style="color:#002856; font-weight:700;">
+                Degree Requirements by Recommended Semester
+              </div>
             </v-col>
-            <v-col cols="12" md="3">
-              <v-select
-                v-model="selectedStatus"
-                :items="statusOptions"
-                label="Completion Status"
-                variant="outlined"
-                density="comfortable"
-                hide-details
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="search"
-                label="Search (code, title, description)"
-                prepend-inner-icon="mdi-magnify"
-                variant="outlined"
-                density="comfortable"
-                hide-details
-              />
+            
+            <v-col 
+              v-for="(group, index) in groupedProgress" 
+              :key="group.termLabel" 
+              cols="12"
+            >
+              <template v-if="showFutureDivider && index === groupedProgress.findIndex(g => g.status === 'Required')">
+                  <v-divider class="my-6" color="black" thickness="3"></v-divider>
+                  <v-card 
+                      flat 
+                      color="transparent" 
+                      class="text-center pa-4 mb-4"
+                  >
+                      <div class="text-h6 font-weight-bold text-error">
+                          FUTURE SEMESTERS & REQUIRED COURSES
+                      </div>
+                      <div class="text-subtitle-1 text-grey-darken-2">
+                          These terms contain courses you are currently **Required** to take.
+                      </div>
+                  </v-card>
+                  <v-divider class="mb-6" color="black" thickness="3"></v-divider>
+              </template>
+
+
+              <v-card 
+                class="pa-4 mb-4" 
+                :color="getTermColor(group.termLabel)"
+                
+                >
+                <div class="d-flex justify-space-between align-center">
+                  <div class="text-h5 font-weight-bold text-white"> 
+                    {{ group.termLabel.toUpperCase() }}
+                  </div>
+                  
+                  <v-chip 
+                    v-if="group.status === 'In Progress'"
+                    color="warning"
+                    variant="flat"
+                    class="font-weight-bold"
+                  >
+                    IN PROGRESS (CURRENT/RECENT)
+                  </v-chip>
+                  <v-chip 
+                    v-else-if="group.status === 'Required'"
+                    color="error"
+                    variant="flat"
+                    class="font-weight-bold"
+                  >
+                    REQUIRED
+                  </v-chip>
+                  <v-chip 
+                    v-else-if="group.status === 'Completed'"
+                    color="success"
+                    variant="flat"
+                    class="font-weight-bold"
+                  >
+                    COMPLETED
+                  </v-chip>
+                  <v-chip 
+                    v-else-if="group.status === 'Unscheduled'"
+                    color="grey"
+                    variant="flat"
+                    class="font-weight-bold"
+                  >
+                    UNSCHEDULED
+                  </v-chip>
+                </div>
+                
+                <v-data-table
+                  :headers="termHeaders"
+                  :items="group.courses"
+                  :items-per-page="-1"
+                  item-key="id"
+                  class="mt-3 elevation-2"
+                  show-expand
+                  style="border-radius:8px;"
+                >
+                  <template #item.status="{ item }">
+                    <v-chip 
+                      size="small" 
+                      :color="statusStyle(item.status).color" 
+                      variant="flat"
+                      :prepend-icon="statusStyle(item.status).icon"
+                      class="font-weight-medium"
+                    >
+                      {{ item.status }}
+                    </v-chip>
+                  </template>
+                  
+                  <template #item.type="{ item }">
+                    <v-chip size="small" :color="chipColor(item.type)" variant="flat" class="font-weight-medium">{{ item.type }}</v-chip>
+                  </template>
+                  
+                  <template #item.completedGrade="{ item }">
+                    <span :class="{'font-weight-bold': item.status === 'Complete', 'text-success': item.status === 'Complete' && PASSING_GRADES.includes(item.completedGrade?.toUpperCase() ?? ''), 'text-error': item.status === 'Complete' && !PASSING_GRADES.includes(item.completedGrade?.toUpperCase() ?? '')}">
+                      {{ item.completedGrade || (item.status === 'Complete' ? 'N/A' : '—') }}
+                    </span>
+                  </template>
+                  
+                  <template #item.credits="{ item }">
+                    <span class="font-mono">{{ item.credits }}</span>
+                  </template>
+                  
+                  <template #expanded-row="{ columns, item }">
+                    <td :colspan="columns.length" class="pa-4" style="background:rgba(0,40,86,.05);">
+                      <div class="text-subtitle-2 mb-1" style="color:#002856;">
+                        {{ item.code }} • {{ item.title }}
+                      </div>
+                      <div class="text-body-2">{{ item.description || 'No description available.' }}</div>
+                      
+                      <div class="d-flex flex-wrap" style="gap:16px; margin-top:8px;">
+                        <div>
+                          <strong>Prerequisites:</strong>
+                          <template v-if="item.prereqs?.length">
+                            <v-chip
+                              v-for="p in item.prereqs"
+                              :key="item.id + '-p-' + p"
+                              size="x-small"
+                              class="mr-1"
+                              variant="outlined"
+                              color="#002856"
+                            >
+                              {{ p }}
+                            </v-chip>
+                          </template>
+                          <span v-else>None</span>
+                        </div>
+                        <div>
+                          <strong>Co-requisites:</strong>
+                          <template v-if="item.coreqs?.length">
+                            <v-chip
+                              v-for="c in item.coreqs"
+                              :key="item.id + '-c-' + c"
+                              size="x-small"
+                              class="mr-1"
+                              variant="outlined"
+                            >
+                              {{ c }}
+                            </v-chip>
+                          </template>
+                          <span v-else>None</span>
+                        </div>
+                      </div>
+                    </td>
+                  </template>
+
+                  </v-data-table>
+              </v-card>
             </v-col>
           </v-row>
-
-          <v-card
-            class="pa-2"
-            style="background-color:rgba(255,255,255,.6);text-align:left;border:1px solid #002856;border-radius:12px;"
-          >
-            <v-data-table
-              :headers="headers"
-              :items="filteredProgress"
-              :items-per-page="15"
-              item-key="id"
-              class="elevation-0"
-              show-expand
-              :loading="loading"
-              loading-text="Loading degree plan and transcript data..."
-            >
-              
-              <template #item.status="{ item }">
-                <v-chip 
-                  size="small" 
-                  :color="statusStyle(item.status).color" 
-                  variant="flat"
-                  :prepend-icon="statusStyle(item.status).icon"
-                >
-                  {{ item.status }}
-                </v-chip>
-              </template>
-              
-              <template #item.type="{ item }">
-                <v-chip size="small" :color="chipColor(item.type)" variant="flat">{{ item.type }}</v-chip>
-              </template>
-              
-              <template #item.completedGrade="{ item }">
-                <span :class="{'font-weight-bold': item.status === 'Complete', 'text-success': item.status === 'Complete' && PASSING_GRADES.includes(item.completedGrade?.toUpperCase() ?? ''), 'text-error': item.status === 'Complete' && !PASSING_GRADES.includes(item.completedGrade?.toUpperCase() ?? '')}">
-                  {{ item.completedGrade || (item.status === 'Complete' ? 'N/A' : '—') }}
-                </span>
-              </template>
-              
-              <template #item.credits="{ item }">
-                <span class="font-mono">{{ item.credits }}</span>
-              </template>
-              
-              <template #expanded-row="{ columns, item }">
-                <td :colspan="columns.length" class="pa-4" style="background:rgba(0,40,86,.05);">
-                  <div class="text-subtitle-2 mb-1" style="color:#002856;">
-                    {{ item.code }} • {{ item.title }}
-                  </div>
-                  <div class="text-body-2">{{ item.description || 'No description available.' }}</div>
-                  
-                  <div class="d-flex flex-wrap" style="gap:16px; margin-top:8px;">
-                    <div>
-                      <strong>Prerequisites:</strong>
-                      <template v-if="item.prereqs?.length">
-                        <v-chip
-                          v-for="p in item.prereqs"
-                          :key="item.id + '-p-' + p"
-                          size="x-small"
-                          class="mr-1"
-                          variant="outlined"
-                          color="#002856"
-                        >
-                          {{ p }}
-                        </v-chip>
-                      </template>
-                      <span v-else>None</span>
-                    </div>
-                    <div>
-                      <strong>Co-requisites:</strong>
-                      <template v-if="item.coreqs?.length">
-                        <v-chip
-                          v-for="c in item.coreqs"
-                          :key="item.id + '-c-' + c"
-                          size="x-small"
-                          class="mr-1"
-                          variant="outlined"
-                        >
-                          {{ c }}
-                        </v-chip>
-                      </template>
-                      <span v-else>None</span>
-                    </div>
-                  </div>
-                </td>
-              </template>
-
-              <template #bottom>
-                <div
-                  class="d-flex flex-wrap justify-space-between align-center pa-4"
-                  style="border-top:1px solid #002856;"
-                >
-                  <div class="text-body-2">
-                    <strong>Showing:</strong> {{ filteredProgress.length }} courses
-                    <span v-if="selectedType !== 'All'">• {{ selectedType }}</span>
-                    <span v-if="selectedStatus !== 'All'">• {{ selectedStatus }}</span>
-                  </div>
-                  <div class="text-body-2">
-                    <strong>Total Catalog Credits:</strong> {{ progressSummary.totalCredits }}
-                    <span class="mx-2">|</span>
-                    <strong>Completed Credits:</strong> {{ progressSummary.completeCredits }}
-                  </div>
-                </div>
-              </template>
-            </v-data-table>
-          </v-card>
-
-          <div class="text-center mt-6 brand-primary" style="color:#002856;">
+          
+          <div class="text-center mt-6" style="color:#002856;">
            <div>
               © {{ new Date().getFullYear() }} — Numa Advising • University of Arkansas – Fort Smith
             </div>
