@@ -4,6 +4,8 @@ import AdminAPI from '../apis/AdminAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import { useUserStore } from '../store/user.js'
+import DegreePlanAPI from '../apis/DegreePlanAPI.js'
+
 
 const userStore = useUserStore()
 
@@ -15,13 +17,38 @@ const props = defineProps({
 
 const emits = defineEmits(['update:visible', 'close', 'saved'])
 
+/*============== STATE AND STORES =================*/
+
 const localVisible = ref(props.visible)
 const selectedAdvisor = ref(null)
 const currentAdvisor = ref(null)
-
+const majors = ref([])
+const selectedMajor = ref('')
 const datePickerVisible = ref(false)
 const tempDate = ref(null)
 const displayDate = ref('')
+
+/*============== FETCH POSSIBLE MAJORS ==============*/
+async function fetchMajors() {
+  try {
+    console.log('Fetching Majors...');
+    
+    // Call the API method to fetch majors
+    const majorOptions = await DegreePlanAPI.get_majors();
+    
+    // Check if we have valid data
+    if (majorOptions && majorOptions.length > 0) {
+      // Update the majors list with the fetched major options
+      majors.value = majorOptions;
+      console.log('Majors Fetched:', majors.value);
+    } else {
+      console.log('No majors found.');
+    }
+  } catch (err) {
+    console.error('Error fetching degree plans or majors:', err);
+  }
+}
+
 
 const advisorsList = computed(() =>
   (props.advisors || []).map(a => ({
@@ -29,6 +56,26 @@ const advisorsList = computed(() =>
     userid: String(a.userid)
   }))
 )
+
+/*============ WATCHES ==============*/
+
+watch(() => props.visible, (newVal) => {
+  localVisible.value = newVal;
+  if (newVal) {
+    fetchMajors();
+  }
+});
+
+watch(() => props.student, (newStudent) => {
+    if (newStudent) {
+      // Set the current student's data
+      form.value = { ...newStudent };
+      // Make sure form.major is set correctly
+      form.value.major = newStudent.major;
+    }
+  }, { immediate: true });
+
+
 
 //For select fields
 const holdsOptions = [
@@ -178,7 +225,8 @@ async function save() {
       const response = await AdminAPI.addStudent(payload)
 
       console.log('AddStudent response:', response);
-      studentid = response.studentid
+//       studentid = response.studentid
+      studentid = response.data.studentid
       alert('Successfully added student!')
     }
     
@@ -234,7 +282,6 @@ function formatDateToYYYYMMDD(value) {
 
   return date.toISOString().split('T')[0]
 }
-
 
 function normalizeDate(dateString) {
   if (!dateString) return null;
@@ -384,11 +431,16 @@ watch(() => props.student, async (newStudent) => {
               :rules="[requiredRule, value => charRule(value, 10, 'decimal')]" />
             </v-col>
           </v-row>
-          <v-row>
+          <v-row v-if="majors.length > 0">
             <v-col cols="6">
-              <v-text-field v-model="form.major" label="Major" 
-              :disabled="!isFieldEditable('major')"
-              :rules="[requiredRule, value => charRule(value, 50, 'string')]" />
+               <v-select
+                  v-model="form.major"
+                  :items="majors"
+                  label="Major"
+                  placeholder="Select Major"
+                  :disabled="!isFieldEditable('major')"
+                  :rules="[requiredRule]"
+                />
             </v-col>
             <v-col cols="6">
               <v-text-field v-model="form.majorconcentration" label="Major Concentration" 
