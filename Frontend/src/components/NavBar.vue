@@ -109,8 +109,12 @@ const initials = computed(() => `${advisor.value.firstName[0]}${advisor.value.la
       </v-list-item>
 
       <!-- admin, advisor, student -->
-      <v-list-item link :to="{ path: '/courseCatalog' }" @click="drawer = false">
-        <v-list-item-title>Course Catalog</v-list-item-title>
+      <v-list-item
+        link
+        :to="{ path: (userStore.userRole === 'UAFS_STUDENTS' && userStore.userID) ? `/courseCatalog/${userStore.userID}` : '/courseCatalog' }"
+        @click="drawer = false"
+      >
+        <v-list-item-title>Current Courses</v-list-item-title>
       </v-list-item>
       <template v-if="!isAdminRoute">
         <v-list-item link :to="{ path: '/DegreePlanView' }" @click="drawer = false">

@@ -163,6 +163,7 @@ const preferenceLoadError = ref('')
 const preferenceSnackbar = ref(false)
 const preferenceSnackbarColor = ref<'success' | 'error' | 'info'>('success')
 const preferenceSnackbarMessage = ref('')
+const preferenceSnackbarTimeout = ref(3000)
 
 /* =========================================================
    3) CURRENT SEMESTER DATA
@@ -229,9 +230,10 @@ const studentId = computed<number | null>(() => {
 })
 const hasStudentId = computed(() => !!studentId.value)
 
-function showPreferenceSnackbar(message: string, color: 'success' | 'error' | 'info' = 'success') {
+function showPreferenceSnackbar(message: string, color: 'success' | 'error' | 'info' = 'success', duration = 3000) {
   preferenceSnackbarMessage.value = message
   preferenceSnackbarColor.value = color
+  preferenceSnackbarTimeout.value = duration
   preferenceSnackbar.value = true
 }
 
@@ -741,11 +743,18 @@ async function runHoldCheck() {
     return
   }
   try {
-    await StudentAPI.checkAdvisingHold(studentId.value);
-    showPreferenceSnackbar('Advising hold check submitted.', 'info')
+    const response = await StudentAPI.checkAdvisingHold(studentId.value);
+    const result = response?.result || {}
+    const lifted = !!result.lift_advising_hold
+    const reason = result.reason || 'No reason provided.'
+    if (lifted) {
+      showPreferenceSnackbar(`Advising hold lifted: ${reason}`, 'success', 10000)
+    } else {
+      showPreferenceSnackbar(`Advising hold remains: ${reason}`, 'error', 10000)
+    }
   } catch (err) {
     console.error(err);
-    alert("Error checking advising hold.");
+    showPreferenceSnackbar('Error checking advising hold.', 'error', 10000)
   }
 }
 
@@ -1206,9 +1215,14 @@ async function runHoldCheck() {
       v-model="preferenceSnackbar"
       :color="preferenceSnackbarColor"
       location="bottom right"
-      :timeout="3000"
+      :timeout="preferenceSnackbarTimeout"
     >
       {{ preferenceSnackbarMessage }}
+      <template #actions>
+        <v-btn icon variant="text" @click="preferenceSnackbar = false">
+          <v-icon size="18">mdi-close</v-icon>
+        </v-btn>
+      </template>
     </v-snackbar>
     <!-- PROGRAM CHANGE REQUEST: Dialog -->
     <v-dialog
