@@ -291,6 +291,6 @@ def updateStudent(id: int) -> None:
     except Exception as e:
         traceback.print_exc()
         session.rollback()
-        return "Student Update Failed"
+        return {"error": "Update failed"}, 400
     finally:
         session.close()

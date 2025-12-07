@@ -30,12 +30,11 @@ function handleSetMode(mode) {
   drawer.value = false
 }
 
-const fullName = computed(() => {
-    const first = userStore.firstName || '';
-    const last = userStore.lastName || '';
-    return `${first} ${last}`;
+const initials = computed(() => {
+  const firstInitial = userStore.firstName && userStore.firstName.length > 0 ? userStore.firstName[0] : '';
+  const lastInitial = userStore.lastName && userStore.lastName.length > 0 ? userStore.lastName[0] : '';
+  return `${firstInitial}${lastInitial}`.toUpperCase();
 });
-const initials = computed(() => `${userStore.firstName[0]}${userStore.lastName[0]}`)
 </script>
 
 <template>
@@ -126,7 +125,7 @@ const initials = computed(() => `${userStore.firstName[0]}${userStore.lastName[0
     <v-spacer />
 
     <v-card flat class="px-4 py-2 mr-4">
-      <span>Hello, {{ fullName }}!</span>
+      <span>Hello, {{ userStore.firstName }} {{ userStore.lastName }}!</span>
     </v-card>
 
     <v-avatar color="#8C4799" size="36">
