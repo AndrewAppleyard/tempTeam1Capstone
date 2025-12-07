@@ -104,7 +104,7 @@ const initials = computed(() => {
         <v-list-item-title>Current Courses</v-list-item-title>
       </v-list-item>
       <template v-if="!isAdminRoute">
-        <v-list-item link :to="{ path: '/DegreePlanView' }" @click="drawer = false">
+        <v-list-item link :to="{ path: `/DegreePlanView/${userStore.roleID}` }" @click="drawer = false">
           <v-list-item-title>Degree Plan</v-list-item-title>
         </v-list-item>
       </template>
