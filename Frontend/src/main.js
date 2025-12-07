@@ -23,7 +23,8 @@ async function bootstrap() {
   app.use(vuetify)
 
   const userStore = useUserStore(pinia) 
-  
+
+  // await userStore.restoreSession()
   await userStore.restoreLogin()
 
   app.use(router)

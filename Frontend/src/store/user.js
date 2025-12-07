@@ -28,8 +28,7 @@ export const useUserStore = defineStore('user', () => {
       email.value = data.Email || null
 
       if (email.value) {
-        const response = await restoreUserDetails(email.value)
-        console.log("Getting user data...\t" + response)
+        await restoreUserDetails(email.value)
       }
 
     } catch (err) {
@@ -65,11 +64,9 @@ export const useUserStore = defineStore('user', () => {
   async function restoreUserDetails(email) {
     try {
       const userInfo = await UserAPI.getUserByEmail(email)
-      console.log('UserAPI response:', userInfo);
 
       firstName.value = userInfo.firstname
       lastName.value = userInfo.lastname
-      console.log('Name set to:', firstName.value, lastName.value);
 
       if (userRole.value === 'UAFS_STUDENTS') {
           roleID.value = await UserAPI.getStudentByUID(userID.value);
