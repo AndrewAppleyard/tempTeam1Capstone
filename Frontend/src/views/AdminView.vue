@@ -27,12 +27,7 @@ const studentToEdit = ref(null)
 const showAdvisorForm = ref(false)
 const advisorToEdit = ref(null)
 
-/**
- * Used as the default advisor type when creating a NEW advisor.
- * AdvisorFormCard should show a select for "ROAR" / "COLLEGE"
- * and initialize from this value.
- */
-const newAdvisorType = ref('ROAR') // 'ROAR' | 'COLLEGE'
+const newAdvisorType = ref('') // 'ROAR' | 'COLLEGE'
 
 // Search terms
 const advisorSearch = ref('')
@@ -196,7 +191,7 @@ function addUser() {
     showStudentForm.value = true
   } else {
     advisorToEdit.value = null
-    newAdvisorType.value = 'ROAR' // default category for new advisor
+    newAdvisorType.value = '' 
     showAdvisorForm.value = true
   }
 }
@@ -696,11 +691,7 @@ watch(
       @saved="refreshList"
     />
 
-    <!-- AdvisorFormCard:
-         - must expose "default-type" prop
-         - inside it, show a select for ROAR / COLLEGE
-         - save that to advisortype on submit
-    -->
+    <!-- AdvisorFormCard -->
     <AdvisorFormCard
       v-model:visible="showAdvisorForm"
       :advisor="advisorToEdit"

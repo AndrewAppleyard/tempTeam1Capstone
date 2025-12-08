@@ -99,8 +99,8 @@ function mapStudentData(response: any) {
     // --- Contact Data ---
     profile.email = studentData.email || userStore.email || '' 
     profile.phone = String(studentData.phonenumber) || '' 
-    profile.address = studentData.address || '' // 'address' field is not in this output
-    profile.pronouns = studentData.pronouns || '' // 'pronouns' field is not in this output
+    // profile.address = studentData.address || '' 
+    // profile.pronouns = studentData.pronouns || '' 
     
     // --- Stats Data ---
     stats.totalCredits = 0 // 'totalCredits' field from transcript
