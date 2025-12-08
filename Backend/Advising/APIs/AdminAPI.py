@@ -185,9 +185,9 @@ def addStudent():
     elif(request.form.get('academichold').casefold() == false.casefold()):
         student.academichold = False
     if(request.form.get('activestatus').casefold() == true.casefold()):
-        student.academichold = True
+        student.activestatus = True
     elif(request.form.get('activestatus').casefold() == false.casefold()):
-        student.academichold = False
+        student.activestatus = False
 
     try:
         with Session(engine) as session:

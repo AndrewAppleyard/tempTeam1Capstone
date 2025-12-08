@@ -81,11 +81,22 @@ router.beforeEach((to, from, next) => {
 
   if (userStore.isLoggedIn) {
     const allowed = roleRoutes[userStore.userRole] || []
-    const match = allowed.some(prefix => to.path.startsWith(prefix))
+    //const match = allowed.some(prefix => to.path.startsWith(prefix))
+    const isAllowedPath = allowed.some(prefix => {
+    return to.path === prefix || to.path.startsWith(prefix + "/")
+    })
 
-    if (!match && !isPublic) {
-      return next(allowed[0])
+    if (!isAllowedPath && !isPublic) {
+    switch (userStore.userRole) {
+      case 'UAFS_STUDENTS':
+        return next(`/student/${userStore.roleID}`)
+      case 'UAFS_ADVISORS':
+        return next(`/advisor/${userStore.roleID}`)
+      case 'UAFS_ADMINS':
+        return next('/admin')
     }
+  }
+    
   }
 
   return next()
