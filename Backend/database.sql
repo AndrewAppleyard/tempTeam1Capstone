@@ -207,7 +207,7 @@ VALUES(
 
 INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
 VALUES(
-    3,
+    1,
     'B.S. in Computer Science',
     'General',
     'Sophomore',
@@ -264,7 +264,7 @@ VALUES(
 
 INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
 VALUES(
-    4,
+    3,
     'B.S. in Computer Science',
     'General',
     'Sophomore',
