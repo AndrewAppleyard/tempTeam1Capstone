@@ -20,10 +20,8 @@ const hasStudentId = computed(() => !!studentId.value)
 const major = ref<string | null>(null)
 const schoolName = ref('UAFS')
 
-// let major = null
-
 type Semester = 'Fall' | 'Spring'
-type RowType = 'Major' | 'Minor' | 'Gen Ed' | 'Concentration/Elective' | 'Other'
+type RowType = string
 
 interface CatalogCourse {
   id: string
@@ -54,6 +52,44 @@ const T = {
 
 
 const catalog = ref<CatalogCourse[]>([])
+const majorPrefix = ref<string>('CS')
+const degreeOptions = ref<string[]>([])
+const selectedMajor = ref<string | null>(null)
+const concentrations = ref<Record<string, any[]>>({})
+
+function normalizeCode(raw: string) {
+  if (!raw) return ''
+  const upper = raw.toUpperCase().trim()
+  const base = upper.split('-')[0].trim()
+  const compact = base.replace(/\s+/g, '')
+  const m = compact.match(/^([A-Z]+)(\d{3,6})?/)
+  if (!m) return base
+  const prefix = m[1]
+  const digits = m[2] || ''
+  return `${prefix}${digits ? ' ' + digits.slice(0, 4) : ''}`.trim()
+}
+
+function computeType(code: string, title: string): RowType {
+  const norm = normalizeCode(code)
+  const prefix = (norm.match(/^([A-Z]+)/)?.[1] || '').toUpperCase()
+  const upperTitle = (title || '').toUpperCase()
+  const hasDigits = /\d/.test(norm)
+
+  const isPlaceholder = !norm || norm === 'TBD' || upperTitle.includes('REQUIREMENT') || upperTitle.includes('ELECTIVE')
+  const concentrationCue = /CONCENTRATION|ELECTIVE|CS\/MATH\/STAT|UPPER|LOWER/.test(upperTitle)
+  const genEdCue = /HUMANITIES|HUMAN|SOCIAL|HISTORY|GOVERNMENT|ENGL|COMM|FINE ARTS|COMPOSITION|WRITING|FINANCE/.test(upperTitle)
+  const scienceCue = /LAB|SCIENCE|PHYS|CHEM|BIO/.test(upperTitle)
+
+  if (isPlaceholder && concentrationCue) return 'Elective'
+  if (isPlaceholder && scienceCue) return 'STEM'
+  if (isPlaceholder && genEdCue) return 'General'
+
+  if (prefix && hasDigits) return prefix
+  if (['MATH', 'STAT', 'PHYS', 'BIOL', 'CHEM', 'STEM'].includes(prefix)) return 'STEM'
+  if (genEdCue || prefix === '' || norm === 'TBD' || prefix === 'FIN') return 'General'
+
+  return prefix || 'Other'
+}
 
 
 /*======== DATA PULL =========*/
@@ -68,6 +104,7 @@ onMounted(async () => {
       // major = studentData.student.major
       // console.log('Student major:', major)
       major.value = studentData.student.major
+      selectedMajor.value = major.value || null
       console.log('Student major:', major.value)
 
     // if (!major) {
@@ -79,63 +116,101 @@ onMounted(async () => {
       return
     }
 
-    // const res = await DegreePlanAPI.view_degree_plans_by_degree(major)
-    const res = await DegreePlanAPI.view_degree_plans_by_degree(major.value)
-    console.log('Degree Plan data:', res)
-    const degree = res.data
-
-    if (!degree) {
-      console.warn('No degree plan returned from backend.')
-      return
-    }
-
-    const core = degree.corecourses   // object: { "Freshman Fall": [...], ... }
-    const rows: CatalogCourse[] = []
-
-    const termMap: Record<string, { year: number; semester: Semester; term: string }> = {
-      "Freshman Fall":   { year: 1, semester: "Fall", term: "UAFS FALL 2025" },
-      "Freshman Spring": { year: 1, semester: "Spring", term: "UAFS SPRING 2026" },
-      "Sophomore Fall":  { year: 2, semester: "Fall", term: "UAFS FALL 2026" },
-      "Sophomore Spring":{ year: 2, semester: "Spring", term: "UAFS SPRING 2027" },
-      "Junior Fall":     { year: 3, semester: "Fall", term: "UAFS FALL 2027" },
-      "Junior Spring":   { year: 3, semester: "Spring", term: "UAFS SPRING 2028" },
-      "Senior Fall":     { year: 4, semester: "Fall", term: "UAFS FALL 2028" },
-      "Senior Spring":   { year: 4, semester: "Spring", term: "UAFS SPRING 2029" },
-    }
-
-    // Flatten the corecourses object into catalog rows
-    Object.entries(core).forEach(([termLabel, courses]) => {
-      const t = termMap[termLabel]
-      if (!t) {
-        console.warn("Unknown term label:", termLabel)
-        return
-      }
-
-      courses.forEach((c, index) => {
-        rows.push({
-          id: `${termLabel}-${index}`,
-          year: t.year,
-          semester: t.semester,
-          term: t.term,
-          code: c.code || "TBD",
-          title: c.title || "Untitled Course",
-          credits: c.hours ?? 0,
-          type: "Other",         
-          prereqs: [],           
-          coreqs: [],
-          offered: "",
-          description: ""
-        })
-      })
-    })
-
-    catalog.value = rows
-    console.log("Loaded dynamic degree plan:", rows)
+    await loadDegreeOptions()
+    await loadDegreePlan(selectedMajor.value || major.value)
   } catch (err) {
     console.error("Failed to load degree plan", err)
   }
 })
 
+async function loadDegreeOptions() {
+  try {
+    const res = await DegreePlanAPI.view_degree_plans()
+    const degrees = res?.data?.degrees || res?.data || []
+    const majors = new Set<string>()
+    degrees.forEach((d: any) => {
+      if (d?.degree) majors.add(d.degree)
+    })
+    degreeOptions.value = Array.from(majors)
+  } catch (err) {
+    console.error('Failed to load degree options', err)
+  }
+}
+
+async function loadDegreePlan(degreeName: string | null) {
+  if (!degreeName) return
+  try {
+    const res = await DegreePlanAPI.view_degree_plans_by_degree(degreeName)
+    const degree = res?.data
+    if (!degree) return
+    major.value = degree.degree || degreeName
+
+    const core = degree.corecourses || {}
+    const conc = degree.concentrations || {}
+    concentrations.value = Object.fromEntries(
+      Object.entries(conc).map(([name, value]) => {
+        const arr = Array.isArray(value)
+          ? value
+          : Array.isArray((value as any)?.courses)
+            ? (value as any).courses
+            : []
+        return [name, arr]
+      })
+    )
+    const firstCode = Object.values(core).flat().map((c: any) => normalizeCode(c.code || '')).find((c: string) => c.startsWith('CS'))
+    if (firstCode) majorPrefix.value = (firstCode.match(/^([A-Z]+)/)?.[1] || 'CS').toUpperCase()
+
+    const rows: CatalogCourse[] = []
+
+    const termMap: Record<string, { year: number; semester: Semester; term: string }> = {
+      "Freshman Fall":   { year: 1, semester: "Fall", term: "Freshman Fall" },
+      "Freshman Spring": { year: 1, semester: "Spring", term: "Freshman Spring" },
+      "Sophomore Fall":  { year: 2, semester: "Fall", term: "Sophomore Fall" },
+      "Sophomore Spring":{ year: 2, semester: "Spring", term: "Sophomore Spring" },
+      "Junior Fall":     { year: 3, semester: "Fall", term: "Junior Fall" },
+      "Junior Spring":   { year: 3, semester: "Spring", term: "Junior Spring" },
+      "Senior Fall":     { year: 4, semester: "Fall", term: "Senior Fall" },
+      "Senior Spring":   { year: 4, semester: "Spring", term: "Senior Spring" },
+    }
+
+    Object.entries(core).forEach(([termLabel, courses]) => {
+      const t = termMap[termLabel]
+      if (!t) return
+      ;(courses as any[]).forEach((c, index) => {
+        const safeCode = c.code || '-'
+        rows.push({
+          id: `${termLabel}-${index}`,
+          year: t.year,
+          semester: t.semester,
+          term: t.term,
+          code: safeCode,
+          title: c.title || "Untitled Course",
+          credits: c.hours ?? 0,
+          type: computeType(safeCode, c.title || ""),         
+          prereqs: Array.isArray(c.prereqs) ? c.prereqs : [],
+          coreqs: Array.isArray(c.coreqs) ? c.coreqs : [],
+          offered: c.offered || "",
+          description: c.description || ""
+        })
+      })
+    })
+
+    catalog.value = rows
+  } catch (err) {
+    console.error('Failed to load degree plan by degree', err)
+  }
+}
+
+watch(selectedMajor, (val) => {
+  if (val) {
+    // reset filters when switching plans
+    selectedTerm.value = 'All Terms'
+    selectedType.value = 'All'
+    search.value = ''
+    major.value = val
+    loadDegreePlan(val)
+  }
+})
 
 
 
@@ -155,31 +230,23 @@ const termOptions = computed(() => {
   return ['All Terms', ...terms]
 })
 
-// type RowType = 'CS Major' | 'Math/Science' | 'Gen Ed' | 'Concentration/Elective' | 'Other';
+const typeOptions = computed(() => {
+  const unique = Array.from(new Set(catalog.value.map(c => c.type))).sort()
+  return ['All', ...unique]
+})
 
-const typeOptions = [
-  'All',
-  'CS Major',
-  'Math/Science',
-  'Gen Ed',
-  'Concentration/Elective',
-  'Other',
-] as const
-
-type TypeOption = typeof typeOptions[number] 
-
-const selectedType = ref<TypeOption>('All')  
+const selectedType = ref<string>('All')  
 const selectedTerm = ref<string>('All Terms')
 const search = ref('')                        
 
 function chipColor(type: RowType) {
-  switch (type) {
-    case 'CS Major': return '#002856'
-    case 'Math/Science': return 'teal'
-    case 'Gen Ed': return 'indigo'
-    case 'Concentration/Elective': return 'purple'
-    case 'Other': return 'orange'
-  }
+  const upper = (type || '').toString().toUpperCase()
+  // softer, cooler palette
+  if (upper === 'CS') return '#4A90E2' // cool blue
+  if (['MATH', 'STAT', 'PHYS', 'BIOL', 'CHEM', 'STEM'].includes(upper)) return '#26A69A' // teal
+  if (['ENGL', 'COMM', 'HIST', 'GOVT', 'FIN', 'GENERAL', 'GEN ED', 'GEN'].includes(upper)) return '#5C6BC0' // soft indigo
+  if (upper === 'ELECTIVE') return '#7E57C2' // muted purple
+  return '#78909C' // blue-grey fallback
 }
 
 /* ======== DERIVED ======== */
@@ -207,14 +274,18 @@ const termSummary = computed(() => ({
   credits: filteredCourses.value.reduce((acc, r) => acc + r.credits, 0)
 }))
 
-const catalogTotals = computed(() => {
-  const credits = catalog.value.reduce((a, r) => a + r.credits, 0)
-  const csMajor = catalog.value.filter(r => r.type === 'CS Major').reduce((a, r) => a + r.credits, 0)
-  const mathSci = catalog.value.filter(r => r.type === 'Math/Science').reduce((a, r) => a + r.credits, 0)
-  const genEd = catalog.value.filter(r => r.type === 'Gen Ed').reduce((a, r) => a + r.credits, 0)
-  const concentration = catalog.value.filter(r => r.type === 'Concentration/Elective').reduce((a, r) => a + r.credits, 0)
-  const other = catalog.value.filter(r => r.type === 'Other').reduce((a, r) => a + r.credits, 0)
-  return { credits, csMajor, mathSci, genEd, concentration, other }
+const totalCredits = computed(() =>
+  catalog.value.reduce((a, r) => a + r.credits, 0)
+)
+
+const typeTotals = computed(() => {
+  const totals: Record<string, number> = {}
+  catalog.value.forEach(r => {
+    totals[r.type] = (totals[r.type] || 0) + r.credits
+  })
+  return Object.entries(totals)
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, credits]) => ({ type, credits }))
 })
 
 /* ======== ACTIONS ======== */
@@ -248,6 +319,12 @@ function downloadCSV() {
 <style scoped>
 .font-mono{
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+}
+
+.scroll-table {
+  max-height: 600px;
+  overflow-y: auto;
+  width: 100%;
 }
 
 @media print{
@@ -294,15 +371,16 @@ function downloadCSV() {
             <v-row>
               <v-col cols="12" md="8">
                 <div class="text-h6 mb-1" style="color:#002856;">{{ major }} ({{ schoolName }})</div>
-                <div class="d-flex flex-wrap" style="gap:16px;">
-                  <div><strong>Total Program Hours:</strong> {{ catalogTotals.credits }}</div>
-                  <div><strong>Major:</strong> {{ catalogTotals.csMajor }} cr</div>
-                  <div><strong>Minor:</strong> {{ catalogTotals.mathSci }} 0 cr</div>
-                  <div><strong>Gen Ed / Core:</strong> {{ catalogTotals.genEd + catalogTotals.mathSci }} cr</div>
-                  <div><strong>Concentration / Electives:</strong> {{ catalogTotals.concentration }} cr</div>
-                  <div><strong>Other:</strong> {{ catalogTotals.other }} cr</div>
+              <div class="d-flex flex-wrap" style="gap:16px;">
+                <div><strong>Total Program Hours:</strong> {{ totalCredits }}</div>
+                <div
+                  v-for="entry in typeTotals"
+                  :key="entry.type"
+                >
+                  <strong>{{ entry.type || 'Other' }}:</strong> {{ entry.credits }} cr
                 </div>
-              </v-col>
+              </div>
+            </v-col>
               <v-col cols="12" md="4" class="d-flex align-end justify-end">
                 <div class="text-right">
                   <div><strong>Credits in View:</strong> {{ termSummary.credits }}</div>
@@ -319,6 +397,16 @@ function downloadCSV() {
           <v-row class="mb-3">
             <v-col cols="12" md="4">
               <v-select
+                v-model="selectedMajor"
+                :items="degreeOptions"
+                label="Degree Plan"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-select
                 v-model="selectedTerm"
                 :items="termOptions"
                 label="View Term"
@@ -327,7 +415,7 @@ function downloadCSV() {
                 hide-details
               />
             </v-col>
-            <v-col cols="12" md="3">
+            <v-col cols="12" md="4">
               <v-select
                 v-model="selectedType"
                 :items="typeOptions"
@@ -354,10 +442,11 @@ function downloadCSV() {
             class="pa-2"
             style="background-color:rgba(255,255,255,.6);text-align:left;border:1px solid #002856;border-radius:12px;"
           >
+          <div class="scroll-table">
             <v-data-table
               :headers="headers"
               :items="filteredCourses"
-              :items-per-page="12"
+              :items-per-page="-1"
               item-key="id"
               class="elevation-0"
               show-expand
@@ -433,6 +522,7 @@ function downloadCSV() {
                 </div>
               </template>
             </v-data-table>
+          </div>
           </v-card>
 
           <!-- Concentrations helper -->
@@ -441,16 +531,28 @@ function downloadCSV() {
             style="background:rgba(255,255,255,.4);border:1px solid #002856;border-radius:12px;"
           >
             <div class="text-subtitle-1 mb-2" style="color:#002856; text-align:left;">
-              Concentrations (pick ONE set of 9 hours)
+              Concentrations
             </div>
-            <ul class="pl-6 mb-1" style="text-align:left;">
-              <li><strong>Cybersecurity</strong>: Applied Cryptography, Computer Forensics, Identity Mgmt, CyberOps, Cyber Crimes (choose 3)</li>
-              <li><strong>Data Science & AI</strong>: Big Data, Deep Learning, Data Analytics, Machine Learning, NLP, IoT Dev, Info Retrieval (choose 3)</li>
-              <li><strong>General</strong>: any 3 upper-level CSCE with advisor approval</li>
-            </ul>
-            <div class="text-body-2 text-disabled">
-              These map to the “Concentration / CS/MATH/STAT elective” rows in years 3–4.
+            <div v-if="Object.keys(concentrations).length" class="text-left">
+              <div
+                v-for="(courses, name) in concentrations"
+                :key="name"
+                class="mb-3"
+              >
+                <div class="font-weight-bold">{{ name }}</div>
+                <ul class="pl-6 mb-1">
+                  <li
+                    v-for="(c, idx) in courses"
+                    :key="name + '-' + idx"
+                  >
+                    <span class="font-mono">{{ c.code || '-' }}</span>
+                    <span v-if="c.title"> — {{ c.title }}</span>
+                    <span v-if="c.hours || c.credits"> ({{ c.hours ?? c.credits }} cr)</span>
+                  </li>
+                </ul>
+              </div>
             </div>
+            <div v-else class="text-body-2 text-disabled">No concentration details available.</div>
           </v-card>
           <div class="text-center mt-6 brand-primary" style="color:#002856;">
            <div>

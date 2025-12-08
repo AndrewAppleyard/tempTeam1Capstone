@@ -264,7 +264,7 @@ async function updateCurrentCourses() {
 
 async function executeUpdateDegreePlans() {
   try {
-    const count = 2
+    const count = 4
     const response = await AdminAPI.updateDegreePlans(count)
     console.log("Degree Plan Updated:", response);
     showNotification("Successfully updated degree plans.", 'success');
@@ -439,11 +439,11 @@ watch(
                       variant="flat"
                       style="color:#F5F5F5"
                       @click="addUser"
-                    >
-                      Add {{ viewMode === 'students' ? 'Student' : 'Advisor' }}
-                    </v-btn>
+                  >
+                    Add {{ viewMode === 'students' ? 'Student' : 'Advisor' }}
+                  </v-btn>
 
-                    <v-btn
+                  <v-btn
                       class="action-btn"
                       color="warning"
                       @click="updateUser"
