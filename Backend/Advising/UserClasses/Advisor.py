@@ -20,6 +20,7 @@ class AdvisorMap(User.Base):
     phonenumber: Mapped[int] = mapped_column(Integer)
     role: Mapped[str] = mapped_column(String(10))
     school: Mapped[str] = mapped_column(String(50))
+    advisortype: Mapped[str] = mapped_column(String(10))
 
     
 class Advisor_And_StudentsMap(User.Base):
