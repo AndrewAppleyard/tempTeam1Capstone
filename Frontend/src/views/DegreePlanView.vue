@@ -452,15 +452,14 @@ function downloadCSV() {
               These map to the “Concentration / CS/MATH/STAT elective” rows in years 3–4.
             </div>
           </v-card>
-          <div class="text-center mt-6 brand-primary" style="color:#002856;">
-           <div>
-              © {{ new Date().getFullYear() }} — Numa Advising • University of Arkansas – Fort Smith
-            </div>
-
-          </div>
         </v-card>
-        
       </v-col>
     </v-row>
+  </v-container>
+
+  <v-container fluid class="pa-2" style="background-color: transparent;">
+    <div class="text-center mt-6 brand-primary">
+      © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
+    </div>
   </v-container>
 </template>

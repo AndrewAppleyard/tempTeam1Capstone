@@ -117,6 +117,18 @@ function formatPhoneNumber(rawNumber: string | null | undefined): string {
   return rawNumber
 }
 
+function emptyNextRow(): NextPopupRow {
+  return {
+    number: '—',
+    course: '—',
+    time: '',
+    location: '',
+    professor: '',
+    availability: '',
+    waitlist: ''
+  }
+}
+
 interface SchedulePreferences {
   preferredCreditHours: number | null
   preferredDays: string[]
@@ -196,8 +208,6 @@ interface CurrentPopupRow {
   time: string
   location: string
   professor: string
-  availability: string
-  waitlist: string
 }
 
 interface TranscriptCourse {
@@ -444,67 +454,39 @@ async function submitChangeRequest() {
 ========================================================= */
 function syncNextCardFromPopup() {
   const present = nextPopupRows.value
-    .filter(r => r.number && r.course)
+    .filter(r => r.number && r.number !== '')
     .slice(0, 6)
 
   while (present.length < 6) {
-    present.push({
-      number: '—',
-      course: '—',
-      time: '',
-      location: '',
-      professor: '',
-      availability: '',
-      waitlist: ''
-    })
+    present.push(emptyNextRow())
   }
 
   nextSchedule.value = present.map(r => ({
     number: r.number,
     name: r.course || r.number
   }))
+
+  while (nextPopupRows.value.length < 6) {
+    nextPopupRows.value.push(emptyNextRow())
+  }
 }
 
-watch(
-  [nextSchedule, nextPopupRows, nextTerm],
-  () => {
-    const payload = {
-      nextSchedule: nextSchedule.value,
-      nextPopupRows: nextPopupRows.value,
-      nextTerm: nextTerm.value
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
-  },
-  { deep: true }
-)
 
 /* =========================================================
    7) DATA LOAD (student, transcripts, advisor)
 ========================================================= */
 onMounted(async () => {
   // --- Student + next-schedule data
-  let localStorageHasSchedule = false
+  if (studentId.value) await loadStudentProfile()
 
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-
-      if (Array.isArray(parsed.nextPopupRows) && parsed.nextPopupRows.some((r: any) => r.number)) {
-        nextPopupRows.value = parsed.nextPopupRows
-        localStorageHasSchedule = true
-      }
-
-      if (Array.isArray(parsed.nextSchedule)) nextSchedule.value = parsed.nextSchedule
-      if (typeof parsed.nextTerm === 'string') nextTerm.value = parsed.nextTerm
-    }
-  } catch (e) {
-    console.error('Error loading local storage for next schedule:', e)
+  if (!nextPopupRows.value.length || nextPopupRows.value.every(r => !r.number)) {
+    nextPopupRows.value = Array(6).fill(null).map(emptyNextRow)
+    syncNextCardFromPopup()
   }
 
-  syncNextCardFromPopup()
-
-  if (studentId.value) loadStudentProfile()
+  if (studentId.value) {
+    loadStudentProfile()
+  }
 
   // --- Student data (for name + next schedule seed)
   try {
@@ -518,15 +500,14 @@ onMounted(async () => {
         studentName.value = userData.firstname
       }
 
-      if (!localStorageHasSchedule) {
-        let fetchedClasses: { number: string; name: string }[] = []
+      let fetchedClasses: { number: string; name: string }[] = []
 
         if (userData && Array.isArray(userData.classes)) {
           fetchedClasses = userData.classes.map((cls: any) => ({
             number: cls.number || '—',
             name: cls.name || '—'
           }))
-        } else if (userData && typeof userData.classes === 'string') {
+        }if (userData && typeof userData.classes === 'string') {
           try {
             const parsedClasses = JSON.parse(userData.classes)
             if (Array.isArray(parsedClasses)) {
@@ -570,7 +551,6 @@ onMounted(async () => {
             })
           }
         }
-      }
     }
   } catch (err) {
     console.error('Failed to fetch student data:', err)
@@ -605,29 +585,32 @@ onMounted(async () => {
           }
         }
 
+        const lastSemester = semesterCourses[semesterCourses.length - 1]
+
+        const semesterOnlyCourses: TranscriptCourse[] = Array.isArray(lastSemester?.courses)
+          ? lastSemester.courses
+          : []
+
         const allCourses: TranscriptCourse[] = semesterCourses.flatMap(
-          (semester: any) => semester.courses || []
+          (s: any) => Array.isArray(s.courses) ? s.courses : []
         )
 
-        const coursesForCard = allCourses.slice(-6)
-        const cardCourses: CurrentRow[] = coursesForCard.map(c => ({
+        const cardCourses: CurrentRow[] = semesterOnlyCourses.map(c => ({
           number: c.code || '—',
           name: c.title || '—'
-       }))
+        }))
 
         while (cardCourses.length < 6) {
           cardCourses.push({ number: '—', name: '—' })
         }
         currentSchedule.value = cardCourses
 
-        currentPopupRows.value = allCourses.map(c => ({
+        currentPopupRows.value = semesterOnlyCourses.map(c => ({
           number: c.code || '—',
           course: c.title || '—',
           time: 'N/A (Completed)',
           location: mostRecentTranscript.institution || 'N/A',
-          professor: 'N/A',
-          availability: 'Complete',
-          waitlist: '—'
+          professor: 'N/A'
         }))
 
         while (currentPopupRows.value.length < 5) {
@@ -636,9 +619,7 @@ onMounted(async () => {
             course: '',
             time: '',
             location: '',
-            professor: '',
-            availability: '',
-            waitlist: ''
+            professor: ''
           })
         }
       } else {
@@ -982,8 +963,6 @@ async function runHoldCheck() {
                 <th>Time</th>
                 <th>Location</th>
                 <th>Professor</th>
-                <th>Availability</th>
-                <th>Waitlist</th>
               </tr>
             </thead>
             <tbody>
@@ -993,8 +972,6 @@ async function runHoldCheck() {
                 <td>{{ row.time }}</td>
                 <td>{{ row.location }}</td>
                 <td>{{ row.professor }}</td>
-                <td>{{ row.availability }}</td>
-                <td>{{ row.waitlist }}</td>
               </tr>
             </tbody>
           </v-table>
@@ -1362,8 +1339,10 @@ async function runHoldCheck() {
         </v-card-text>
       </v-card>
     </v-dialog>
+  </v-container>
 
-    <div class="text-center mt-4" style="color:#002856;">
+  <v-container fluid class="pa-2" style="background-color: transparent;">
+    <div class="text-center mt-6 brand-primary">
       © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
     </div>
   </v-container>
