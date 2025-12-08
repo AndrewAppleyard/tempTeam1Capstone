@@ -271,14 +271,14 @@ def updateStudent(id: int) -> None:
                         student.registrationstatus = False
                 if(request.form.get('advisingstatus') != None):
                     if(request.form.get('advisingstatus').casefold() == true.casefold()):
-                        student.registrationstatus = True
+                        student.advisingstatus = True
                     elif(request.form.get('advisingstatus').casefold() == false.casefold()):
-                        student.registrationstatus = False
+                        student.advisingstatus = False
                 if(request.form.get('activestatus') != None):
                     if(request.form.get('activestatus').casefold() == true.casefold()):
-                        student.registrationstatus = True
+                        student.activestatus = True
                     elif(request.form.get('activestatus').casefold() == false.casefold()):
-                        student.registrationstatus = False
+                        student.activestatus = False
                 if(request.form.get('financialhold') != None):
                     if(request.form.get('financialhold').casefold() == true.casefold()):
                         student.financialhold = True

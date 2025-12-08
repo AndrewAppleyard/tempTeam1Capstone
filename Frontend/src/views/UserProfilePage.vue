@@ -4,6 +4,18 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../store/user.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
+import DegreePlanAPI from '../apis/DegreePlanAPI.js'
+import AppointmentAPI from '../apis/AppointmentAPI.js'
+
+function formatPhoneNumber(rawNumber: string | null | undefined): string {
+  if (!rawNumber) return 'N/A'
+  const cleaned = ('' + rawNumber).replace(/\D/g, '')
+  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/)
+  if (match) {
+    return `(${match[1]}) ${match[2]}-${match[3]}`
+  }
+  return rawNumber
+}
 
 /* GPA map */
 const GPA_POINTS: Record<string, number> = {
@@ -13,7 +25,9 @@ const GPA_POINTS: Record<string, number> = {
   'D': 1.0,
   'F': 0.0, 'P': 0.0, 'W': 0.0, 'I': 0.0,
 }
-const gradePoint = (g: string) => GPA_POINTS[g] ?? 0
+const gradePoint = (g: string) => GPA_POINTS[g.toUpperCase().trim()] ?? 0
+
+const isGradeCalculated = (g: string) => gradePoint(g) > 0 || g.toUpperCase() === 'F'
 
 /* Routing */
 const route = useRoute()
@@ -38,6 +52,7 @@ const profile = reactive({
   lastName: '',
   level: '',
   major: '',
+  concentration: '',
   minor: '',
   gradTerm: '',
   standing: '',
@@ -49,18 +64,21 @@ const profile = reactive({
 
 /* Stats */
 const stats = reactive({
-  totalCredits: 0,
+  totalCredits: 0, // completed credits
   gpa: 0,
-  degreeCredits: 120,
+  degreeCredits: 0,
 })
-const progressPercent = computed(() => (stats.totalCredits / stats.degreeCredits) * 100)
+const progressPercent = computed(() => {
+  if (!stats.degreeCredits || stats.degreeCredits <= 0) return 0
+  return (stats.totalCredits / stats.degreeCredits) * 100
+})
 
 /* Advisor */
 const advisor = reactive({
   name: '—',
   title: '—',
   email: '—',
-  nextAppt: '—', // would need to add value in db for appointment date, datepicker that sends email
+  nextAppt: '—',
 })
 
 /* Tags, Activity, Courses, Involvement, Documents */
@@ -68,12 +86,71 @@ const tags = ref<string[]>([])
 const tagOptions = ref<string[]>([
   'IFC President','Sigma Nu','Dean\'s List','Senior','Athlete','Honors','Mentor'
 ])
-const activity = ref<any[]>([]) // Placeholder for activity, not in provided APIs
+const activity = ref<any[]>([]) // Placeholder for activity
 const recentCourses = ref<CourseRow[]>([])
 interface CourseRow { id: string; term: string; code: string; title: string; credits: number; grade: string }
-const orgs = ref<any[]>([]) // Placeholder for involvement, not in provided APIs
+interface CurrentClassRow {
+  code: string
+  title: string
+  meeting: string
+  location: string
+  instructor: string
+  availability: string
+  delivery: string
+}
+
+const orgs = ref<any[]>([]) // Placeholder for involvement
 interface DocRow { id: string; name: string; type: string; updated: string; size: string }
 const documents = ref<DocRow[]>([])
+const currentClasses = ref<CurrentClassRow[]>([])
+const holds = reactive({
+  financial: false,
+  advising: false,
+  academic: false,
+  registration: false,
+})
+
+const courseHeaders = [
+  { title: 'Term', key: 'term' },
+  { title: 'Code', key: 'code' },
+  { title: 'Title', key: 'title' },
+  { title: 'Credits', key: 'credits' },
+  { title: 'Grade', key: 'grade' },
+  { title: 'Points', key: 'points' },
+]
+
+const currentClassHeaders = [
+  { title: 'Code', key: 'code' },
+  { title: 'Title', key: 'title' },
+  { title: 'Meeting', key: 'meeting' },
+  { title: 'Location', key: 'location' },
+  { title: 'Instructor', key: 'instructor' },
+  { title: 'Availability', key: 'availability' },
+  { title: 'Delivery', key: 'delivery' },
+]
+
+const docHeaders = [
+  { title: 'Name', key: 'name' },
+  { title: 'Type', key: 'type' },
+  { title: 'Updated', key: 'updated' },
+  { title: 'Size', key: 'size' },
+  { title: 'Actions', key: 'actions' },
+]
+
+function splitCodeTitle(raw: string) {
+  const parts = (raw || '').split(' - ')
+  if (parts.length >= 2) return { code: parts[0].trim(), title: parts.slice(1).join(' - ').trim() }
+  return { code: raw || '—', title: raw || '—' }
+}
+
+function deriveCodeAndTitle(cls: any) {
+  const candidates = [cls?.section, cls?.name, cls?.title, cls?.number, cls?.code].filter(Boolean)
+  for (const cand of candidates) {
+    if (typeof cand === 'string' && cand.includes(' - ')) return splitCodeTitle(cand)
+  }
+  const raw = candidates.find(c => typeof c === 'string') || ''
+  return splitCodeTitle(raw)
+}
 
 
 /* --- DATA FETCHING LOGIC --- */
@@ -85,10 +162,11 @@ function mapStudentData(response: any) {
     profile.studentID = String(studentData.studentid) || studentIdParam || ''
     profile.firstName = studentData.firstname || ''
     profile.lastName = studentData.lastname || ''
-    profile.level = studentData.classstanding || transcriptData.year || 'Undergraduate'
+    profile.level = studentData.classstanding || transcriptData?.year || 'Undergraduate'
     
-    profile.major = studentData.major || transcriptData.program || ''
-    profile.minor = studentData.minor || '' 
+    profile.major = studentData.major || ''
+    profile.concentration = studentData.majorconcentration || ''
+    profile.minor = studentData.minor || ''
     
     // Grad term and standing are placeholders
     profile.gradTerm = '' 
@@ -97,17 +175,51 @@ function mapStudentData(response: any) {
     // --- Contact Data ---
     profile.email = studentData.email || userStore.email || '' 
     profile.phone = String(studentData.phonenumber) || '' 
-    profile.address = studentData.address || '' // 'address' field is not in this output
-    profile.pronouns = studentData.pronouns || '' // 'pronouns' field is not in this output
+    profile.address = studentData.school || '' 
+    // profile.pronouns = studentData.pronouns || '' 
+    holds.financial = !!studentData.financialhold
+    holds.advising = !!studentData.advisinghold
+    holds.academic = !!studentData.academichold
+    holds.registration = !!studentData.registrationstatus
     
     // --- Stats Data ---
-    stats.totalCredits = 0 // 'totalCredits' field from transcript
-    stats.gpa = parseFloat(studentData.gpa || transcriptData.cumulativegpa || 0)
-    
+    stats.totalCredits = 0 // will compute from transcript
+
+    // Current classes for academics tab
+    if (Array.isArray(studentData.classes)) {
+      currentClasses.value = studentData.classes.map((c: any, idx: number) => ({
+        ...deriveCodeAndTitle(c),
+        meeting: c.meetingpattern || c.meeting_pattern || 'TBA',
+        location: c.courselocation || c.location || 'TBA',
+        instructor: c.instructor || 'TBA',
+        availability: c.courseavailability || c.status || 'Open',
+        delivery: c.deliverymode || c.delivery_mode || 'TBA'
+      }))
+    } else if (typeof studentData.classes === 'string') {
+      try {
+        const parsed = JSON.parse(studentData.classes)
+        if (Array.isArray(parsed)) {
+          currentClasses.value = parsed.map((c: any, idx: number) => ({
+            ...deriveCodeAndTitle(c),
+            meeting: c.meetingpattern || c.meeting_pattern || 'TBA',
+            location: c.courselocation || c.location || 'TBA',
+            instructor: c.instructor || 'TBA',
+            availability: c.courseavailability || c.status || 'Open',
+            delivery: c.deliverymode || c.delivery_mode || 'TBA'
+          }))
+        }
+      } catch (e) {
+        console.error('Failed to parse classes JSON for current classes', e)
+      }
+    }
+
     tags.value = studentData.tags || []
 
     fetchStudentDocuments(profile.studentID)
+    fetchStudentAcademics(profile.studentID)
     fetchStudentAdvisor(profile.studentID)
+    fetchDegreeCredits(profile.major)
+    fetchAppointment(profile.studentID)
 }
 
 
@@ -119,7 +231,7 @@ function mapAdvisorData(response: any) {
     profile.lastName = data.lastname || ''
     profile.email = userStore.email || '' 
     profile.phone = data.phone || ''
-    profile.address = data.officeLocation || '' // no office location
+    profile.address = data.officeLocation || data.school || '' // no office location
     profile.level = 'Advisor'
     profile.major = '—'
     
@@ -139,11 +251,204 @@ async function fetchStudentAdvisor(id: string) {
         advisor.name = `${advisorData.firstname} ${advisorData.lastname}`
         advisor.title = advisorData.title || 'Academic Advisor'
         advisor.email = advisorData.email
-        // nextAppt hardcoded placeholder for now
     } catch (e) {
         console.error('Could not fetch student advisor:', e)
         advisor.name = 'No Advisor Assigned'
         advisor.email = ''
+    }
+}
+
+async function fetchAppointment(id: string) {
+  try {
+    const apptData = await AppointmentAPI.getAppointment(id)
+    
+    if (apptData.appointmentstatus === 'Scheduled' && apptData.starttime) {
+      const startTime = new Date(apptData.starttime)
+      
+      if (isNaN(startTime.getTime())) {
+         advisor.nextAppt = 'Scheduled (Time Error)'
+         return
+      }
+
+      const formattedTime = startTime.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+      const formattedDate = startTime.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      })
+      
+      advisor.nextAppt = `${formattedDate} at ${formattedTime}`
+      
+    } else {
+      advisor.nextAppt = 'None Scheduled'
+    }
+  } catch (e) {
+    const errorMsg = String(e)
+    if (errorMsg.includes('404')) {
+        advisor.nextAppt = 'None Scheduled'
+    } else {
+        console.error('Could not fetch student appointment:', e)
+        advisor.nextAppt = 'Error Fetching'
+    }
+  }
+}
+
+async function fetchStudentAcademics(id: string) {
+  let totalQualityPoints = 0
+  let totalGPAHours = 0
+  let totalAllCredits = 0
+  let transcript: any = null
+
+  try {
+        const transcripts = await StudentAPI.getTranscripts(id)
+        
+        documents.value = transcripts.map((t: any, index: number) => ({
+            id: t.id || `d${index}`,
+            name: t.name || `${t.type}_Transcript.pdf`,
+            type: t.type || 'PDF',
+            updated: t.updatedDate || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+            size: t.size || 'N/A'
+        }))
+
+        // --- Calculate Stats ---
+        transcript = transcripts[0]
+
+        // Flatten courses from transcript structure
+        const flattened: any[] = []
+        if (transcript?.courses && Array.isArray(transcript.courses)) {
+          flattened.push(...transcript.courses)
+        } else if (transcript?.coursemap && Array.isArray(transcript.coursemap)) {
+          transcript.coursemap.forEach((sem: any) => {
+            if (Array.isArray(sem.courses)) {
+              sem.courses.forEach((c: any) => flattened.push({ ...c, term: sem.semester || sem.term || '' }))
+            }
+          })
+        }
+
+        if (flattened.length) {
+          recentCourses.value = flattened.map((c: any, idx: number) => ({
+            id: c.id || `c-${idx}`,
+            term: c.term || c.semester || '',
+            code: c.code,
+            title: c.title,
+            credits: Number(c.credits || c.hours || 0),
+            grade: c.grade || ''
+          }))
+
+          recentCourses.value.forEach(course => {
+              const credits = course.credits
+              const grade = course.grade
+
+              totalAllCredits += credits 
+
+              if (isGradeCalculated(grade)) {
+                  const points = gradePoint(grade)
+                  totalQualityPoints += points * credits
+                  totalGPAHours += credits
+              }
+          })
+        }
+
+        stats.totalCredits = totalAllCredits
+        
+        // Prefer transcript cumulative GPA if provided
+        if (transcript?.cumulativegpa) {
+          stats.gpa = Number(transcript.cumulativegpa) || 0
+        } else {
+          stats.gpa = totalGPAHours > 0 ? totalQualityPoints / totalGPAHours : 0
+        }
+        
+        // Determine degree credits fallback if not loaded
+        if (!stats.degreeCredits && profile.major) {
+            const majorUpper = profile.major.toUpperCase()
+            if (majorUpper.includes('PH.D.') || majorUpper.includes('MASTERS') || majorUpper.includes('GRADUATE')) {
+                stats.degreeCredits = 36 
+            } else if (majorUpper.includes('B.S.') || majorUpper.includes('B.A.') || majorUpper.includes('BACHELOR')) {
+                stats.degreeCredits = 120
+            } else if (majorUpper.includes('A.S.') || majorUpper.includes('A.A.') || majorUpper.includes('ASSOCIATES')) {
+                stats.degreeCredits = 60
+            } else {
+                stats.degreeCredits = 120
+            }
+        }
+
+        // Expected graduation based on remaining credits (15 per term)
+        if (stats.degreeCredits > 0) {
+          const remaining = Math.max(stats.degreeCredits - stats.totalCredits, 0)
+          const termsNeeded = Math.ceil(remaining / 15)
+          const { year: currentYear, termIndex: currentTermIndex } = getCurrentTermYear()
+          let termIndex = (currentTermIndex + termsNeeded) % 2
+          let year = currentYear + Math.floor((currentTermIndex + termsNeeded) / 2)
+          const termName = termIndex === 0 ? 'Spring' : 'Fall'
+          profile.gradTerm = `${termName} ${year}`
+        }
+        
+        // Determine Expected Graduation Term 
+        if (stats.degreeCredits > 0) {
+            const remainingCredits = stats.degreeCredits - stats.totalCredits
+            const avgCreditsPerTerm = 12 
+            const remainingTerms = Math.ceil(remainingCredits / avgCreditsPerTerm)
+
+            const currentYear = new Date().getFullYear()
+            const currentMonth = new Date().getMonth()
+
+            // Determine starting term/year for calculation simplicity (assuming Fall start)
+            let startYear = currentYear
+            let currentTerm = 'Fall'
+            if (currentMonth >= 0 && currentMonth <= 4) {
+                currentTerm = 'Spring'
+            } else if (currentMonth >= 5 && currentMonth <= 7) { 
+                currentTerm = 'Summer'
+            } else { 
+                currentTerm = 'Fall'
+            }
+            
+            if (currentTerm === 'Fall') {
+                startYear++
+            }
+            
+            let targetYear = startYear
+            let targetTerm = ''
+            
+            let terms = 0
+            if (currentTerm === 'Spring') {
+                terms = 1
+            } else if (currentTerm === 'Fall') {
+                terms = 2
+            } else { 
+                terms = 0
+            }
+
+            for (let i = 0; i < remainingTerms; i++) {
+                terms++
+                if (terms % 2 === 1) { 
+                    targetTerm = 'Spring'
+                } else { 
+                    targetTerm = 'Fall'
+                }
+                if (terms % 2 === 0) {
+                    targetYear++
+                }
+            }
+            
+            if (stats.totalCredits === 0) {
+                targetYear = currentYear + (stats.degreeCredits === 60 ? 2 : 4)
+                targetTerm = 'Spring'
+            }
+
+            profile.gradTerm = `${targetTerm} ${targetYear}`
+        }
+
+
+    } catch (e) {
+        console.error('Could not fetch student academics:', e)
+        stats.totalCredits = 0
+        stats.gpa = 0
+        documents.value = []
     }
 }
 
@@ -163,6 +468,32 @@ async function fetchStudentDocuments(id: string) {
     }
 }
 
+async function fetchDegreeCredits(major: string) {
+    if (!major) return
+    try {
+        const res = await DegreePlanAPI.view_degree_plans_by_degree(major)
+        const degree = res?.data
+        if (degree?.credithourstotal) {
+            stats.degreeCredits = Number(degree.credithourstotal) || stats.degreeCredits
+        }
+    } catch (e) {
+        console.error('Could not fetch degree credits:', e)
+    }
+}
+
+function getCurrentTermYear() {
+  const now = new Date()
+  const month = now.getMonth()
+  let termIndex = 0 // 0 spring, 1 fall
+  let year = now.getFullYear()
+  if (month >= 7) { // Aug-Dec as Fall
+    termIndex = 1
+  } else {
+    termIndex = 0
+  }
+  return { termIndex, year }
+}
+
 
 onMounted(async () => {
     await userStore.restoreLogin()
@@ -178,10 +509,6 @@ onMounted(async () => {
         if (studentIdParam || isStudentRole.value) {
             const studentData = await StudentAPI.getStudentById(targetID)
             mapStudentData(studentData)
-
-            // NOTE: Courses and Activity are left as placeholder/initial data for now, 
-            // but in a real app, you would fetch those using other APIs.
-            // Example: recentCourses.value = await StudentAPI.getRecentCourses(targetID)
 
         } else if (isAdvisorRole.value && !studentIdParam) {
             const advisorData = await AdvisorAPI.getAdvisorById(targetID)
@@ -210,7 +537,7 @@ const lastRealTab = ref<RealTab>('overview')
 
 watch(tab, (next) => {
   if (next === 'students') {
-    goBack()
+    // goBack()
     tab.value = lastRealTab.value
   } else {
     lastRealTab.value = next as RealTab
@@ -270,13 +597,13 @@ const fullName = computed(() => `${profile.firstName} ${profile.lastName}`)
 function initials(f: string, l: string) { return `${f?.[0] ?? ''}${l?.[0] ?? ''}`.toUpperCase() }
 
 /* Actions */
-function goBack() {
-  if (router && router.currentRoute.value.name !== 'students') {
-    router.push({ name: 'students' }).catch(() => window.history.back())
-  } else {
-    window.history.back()
-  }
-}
+// function goBack() {
+//   if (router && router.currentRoute.value.name !== 'students') {
+//     router.push({ name: 'students' }).catch(() => window.history.back())
+//   } else {
+//     window.history.back()
+//   }
+// }
 function printPage() { window.print() }
 
 function downloadVCF() {
@@ -472,10 +799,10 @@ async function saveEdit() {
 
             <v-col cols="12" md="6"
                    class="d-flex justify-end align-center flex-wrap header-actions">
-              <v-btn variant="outlined" :ripple="false" color="#002856" @click="goBack">
+              <!-- <v-btn variant="outlined" :ripple="false" color="#002856" @click="goBack">
                 <v-icon start>mdi-arrow-left</v-icon>
                 Back
-              </v-btn>
+              </v-btn> -->
               <v-btn variant="outlined" color="#002856" @click="printPage">
                 <v-icon start>mdi-printer</v-icon>
                 Print / Save PDF
@@ -508,13 +835,17 @@ async function saveEdit() {
               <v-col cols="12" md="6" class="brand-primary text-left">
                 <v-row>
                   <v-col cols="12" sm="6" class="py-2">
-                    <div class="text-caption mb-1">Major</div>
-                    <div class="text-body-1"><strong>{{ profile.major || '—' }}</strong></div>
-                  </v-col>
-                  <v-col cols="12" sm="6" class="py-2">
-                    <div class="text-caption mb-1">Minor</div>
-                    <div class="text-body-1"><strong>{{ profile.minor || '—' }}</strong></div>
-                  </v-col>
+                  <div class="text-caption mb-1">Major</div>
+                  <div class="text-body-1"><strong>{{ profile.major || '—' }}</strong></div>
+                </v-col>
+                <v-col cols="12" sm="6" class="py-2">
+                  <div class="text-caption mb-1">Concentration</div>
+                  <div class="text-body-1"><strong>{{ profile.concentration || '—' }}</strong></div>
+                </v-col>
+                <v-col cols="12" sm="6" class="py-2">
+                  <div class="text-caption mb-1">Minor</div>
+                  <div class="text-body-1"><strong>{{ profile.minor || '—' }}</strong></div>
+                </v-col>
                   <v-col cols="12" sm="6" class="py-2">
                     <div class="text-caption mb-1">Expected Graduation</div>
                     <div class="text-body-1"><strong>{{ profile.gradTerm }}</strong></div>
@@ -529,13 +860,13 @@ async function saveEdit() {
               <v-col cols="12" md="3">
                 <v-row>
                   <v-col cols="12" class="py-1 text-right brand-primary">
-                    <div><strong>Total Credits:</strong> {{ stats.totalCredits }}</div>
+                    <div><strong>Credits:</strong> {{ stats.totalCredits }} / {{ stats.degreeCredits || '—' }}</div>
                     <div><strong>Cumulative GPA:</strong> {{ Number(stats.gpa).toFixed(2) }}</div>
                   </v-col>
                 </v-row>
                 <v-row>
                   <v-col cols="12" class="py-1 d-flex justify-end">
-                    <v-progress-circular :model-value="progressPercent" size="84" width="10">
+                  <v-progress-circular :model-value="progressPercent" size="84" width="10">
                       {{ Math.round(progressPercent) }}%
                     </v-progress-circular>
                   </v-col>
@@ -558,15 +889,15 @@ async function saveEdit() {
                 </div>
                 <div class="d-flex align-center mb-2">
                   <v-icon class="mr-2">mdi-phone</v-icon>
-                  <a :href="`tel:${profile.phone}`">{{ profile.phone }}</a>
+                  <a :href="`tel:${profile.phone}`">{{ formatPhoneNumber(profile.phone) }}</a>
                 </div>
                 <div class="d-flex align-center mb-2">
                   <v-icon class="mr-2">mdi-map-marker</v-icon>
                   <span>{{ profile.address }}</span>
                 </div>
                 <div class="d-flex align-center">
-                  <v-icon class="mr-2">mdi-account</v-icon>
-                  <span>Pronouns: {{ profile.pronouns || '—' }}</span>
+                  <!-- <v-icon class="mr-2">mdi-account</v-icon>
+                  <span>Pronouns: {{ profile.pronouns || '—' }}</span> -->
                 </div>
               </v-card>
             </v-col>
@@ -600,7 +931,7 @@ async function saveEdit() {
           <!-- Tabs -->
           <v-card class="pa-2 glass-card">
             <v-tabs v-model="tab" bg-color="transparent" class="px-2 bold-tabs">
-              <v-tab value="students"><v-icon start>mdi-arrow-left</v-icon>Students</v-tab>
+              <!-- <v-tab value="students"><v-icon start>mdi-arrow-left</v-icon>Students</v-tab> -->
               <v-tab value="overview"><v-icon start>mdi-view-dashboard</v-icon>Overview</v-tab>
               <v-tab value="academics"><v-icon start>mdi-school</v-icon>Academics</v-tab>
               <v-tab value="involvement"><v-icon start>mdi-account-group</v-icon>Involvement</v-tab>
@@ -611,25 +942,44 @@ async function saveEdit() {
               <!-- Overview -->
               <v-window-item value="overview" class="brand-primary text-left">
                 <v-card flat class="pa-5">
-                  <div class="section-title mb-3">Recent Activity</div>
-                  <v-timeline align="start" density="compact">
-                    <v-timeline-item
-                      v-for="item in activity"
-                      :key="item.id"
-                      :dot-color="item.color"
-                      :icon="item.icon"
-                    >
-                      <div class="mb-1"><strong>{{ item.title }}</strong></div>
-                      <div class="text-caption">{{ item.when }}</div>
-                    </v-timeline-item>
-                  </v-timeline>
+                  <div class="section-title mb-3">Holds & Status</div>
+                  <v-row>
+                    <v-col cols="12" md="3">
+                      <v-chip :color="holds.financial ? 'error' : 'success'" variant="flat" class="mb-2">
+                        Financial Hold: {{ holds.financial ? 'Yes' : 'No' }}
+                      </v-chip>
+                    </v-col>
+                    <v-col cols="12" md="3">
+                      <v-chip :color="holds.advising ? 'error' : 'success'" variant="flat" class="mb-2">
+                        Advising Hold: {{ holds.advising ? 'Yes' : 'No' }}
+                      </v-chip>
+                    </v-col>
+                    <v-col cols="12" md="3">
+                      <v-chip :color="holds.academic ? 'error' : 'success'" variant="flat" class="mb-2">
+                        Academic Hold: {{ holds.academic ? 'Yes' : 'No' }}
+                      </v-chip>
+                    </v-col>
+                    <v-col cols="12" md="3">
+                      <v-chip :color="holds.registration ? 'success' : 'warning'" variant="flat" class="mb-2">
+                        Registration: {{ holds.registration ? 'Open' : 'Closed' }}
+                      </v-chip>
+                    </v-col>
+                  </v-row>
                 </v-card>
               </v-window-item>
 
               <!-- Academics -->
               <v-window-item value="academics" class="brand-primary text-left">
                 <v-card flat class="pa-5">
-                  <div class="section-title mb-3">Current & Recent Courses</div>
+                  <div class="section-title mb-3">Registered Courses</div>
+                  <v-data-table
+                    :headers="currentClassHeaders"
+                    :items="currentClasses"
+                    item-key="code"
+                    class="elevation-0 bigger-table mb-6"
+                    density="comfortable"
+                  />
+                  <div class="section-title mb-3">Transcript Courses</div>
                   <v-data-table
                     :headers="courseHeaders"
                     :items="recentCourses"
@@ -682,10 +1032,6 @@ async function saveEdit() {
             </v-window>
           </v-card>
 
-          <!-- Footer -->
-          <div class="text-center mt-6 brand-primary" style="color:#002856;">
-            © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
-          </div>
         </v-card>
       </v-col>
     </v-row>
@@ -796,5 +1142,11 @@ async function saveEdit() {
     <v-snackbar v-model="snack.show" :color="snack.color" timeout="2500">
       {{ snack.message }}
     </v-snackbar>
+  </v-container>
+
+  <v-container fluid class="pa-2" style="background-color: transparent;">
+    <div class="text-center mt-6 brand-primary">
+      © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
+    </div>
   </v-container>
 </template>

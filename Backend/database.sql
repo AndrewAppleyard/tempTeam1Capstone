@@ -41,22 +41,15 @@ CREATE TABLE student
     academichold BOOLEAN DEFAULT FALSE, 
     registrationstatus BOOLEAN DEFAULT FALSE, 
     advisingstatus BOOLEAN DEFAULT FALSE, 
-    activestatus BOOLEAN DEFAULT TRUE, -- get this done!!!
+    activestatus BOOLEAN DEFAULT TRUE, 
     dateadvised TIMESTAMP,
     preferences JSONB DEFAULT '{}'::jsonb,
     classes JSONB 
 ) INHERITS (users);
 
--- CREATE TABLE admin_and_advisors 
--- (
---     adminandadvisorid BIGSERIAL PRIMARY KEY, 
---     advisorid BIGINT REFERENCES advisor (advisorid) ON DELETE CASCADE, 
---     adminid BIGINT REFERENCES admin (adminid) ON DELETE CASCADE
--- );
-
 CREATE TABLE advisor_and_students 
 (
-    advisorandstudentid BIGSERIAL PRIMARY KEY, 
+    advisorandstudentid BIGSERIAL PRIMARY KEY,
     studentid BIGINT REFERENCES student (studentid) ON DELETE CASCADE, 
     advisorid BIGINT REFERENCES advisor (advisorid) ON DELETE CASCADE
 );
@@ -72,9 +65,6 @@ CREATE TABLE transcript
     coursemap JSONB, 
     cumulativegpa NUMERIC(3,2)
 );
-
--- insertions --
-
 
 CREATE TABLE currentcourses (
     currentcourseid BIGSERIAL PRIMARY KEY,
@@ -100,13 +90,26 @@ CREATE TABLE degreeplans (
     concentrations JSONB
 );
 
+CREATE TABLE appointments (
+    appointmentid BIGSERIAL PRIMARY KEY, 
+    advisorid BIGINT REFERENCES advisor (advisorid) ON DELETE CASCADE, 
+    studentid BIGINT REFERENCES student (studentid) ON DELETE CASCADE,
+    starttime TIMESTAMP WITH TIME ZONE NOT NULL, 
+    endtime TIMESTAMP WITH TIME ZONE NOT NULL,
+    appointmentstatus VARCHAR(50) NOT NULL CHECK (appointmentstatus IN ('Scheduled', 'Completed', 'Canceled', 'No-Show')),
+    notes TEXT,
+    createdat TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- INSERTIONS --
+
 INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa, major, majorconcentration,
             minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,
             activestatus, dateadvised)
 VALUES ('Jake', 'Student', 'jake00@uafs.edu', 4790000000, 'student', 'University of Arkansas - Fort Smith', 3.20, 'B.S. in Computer Science', 'General',
             '', 'Junior', FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, CURRENT_TIMESTAMP);
 
--- INSERTIONS --
 
 INSERT INTO admin (firstname, lastname, email, phonenumber, role, school)
 VALUES ('Andrew', 'Appleyard', 'aapply00@uafs.edu', 1112223334, 'admin', 'UAFS');
@@ -130,7 +133,7 @@ INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa,
             minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,
             activestatus, dateadvised)
 VALUES ('Yash', 'Patel', 'ypatel00@uafs.edu', 4448889999, 'student', 'University of Arkansas - Fort Smith', 3.61, 'B.S. in Computer Science', 'General',
-             'Statistics', 'Senior', FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, CURRENT_TIMESTAMP);
+             '', 'Sophomore', FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, CURRENT_TIMESTAMP);
 
 INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa, major, majorconcentration,
             minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,
@@ -207,7 +210,7 @@ VALUES(
 
 INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
 VALUES(
-    3,
+    1,
     'B.S. in Computer Science',
     'General',
     'Sophomore',
@@ -245,7 +248,18 @@ VALUES(
           { "code": "CS 1024", "title": "Foundations of Programming II", "credits": 4, "grade": "A" },
           { "code": "CS 2003", "title": "Data Structures", "credits": 3, "grade": "B" }
         ],
-        "semester_gpa": 3.55
+        "semester_gpa": 3.52
+      },
+      {
+        "semester": "Junior Spring",
+        "year": 2025,
+        "courses": [
+          { "code": "MATH 2443", "title": "Discrete Mathematics I", "credits": 3, "grade": "B+" },
+          { "code": "CS 2033", "title": "Algorithms", "credits": 3, "grade": "A" },
+          { "code": "CS 3043", "title": "Database Systems", "credits": 3, "grade": "A" },
+          { "code": "COMM 1303", "title": "Public Speaking", "credits": 3, "grade": "B" }
+        ],
+        "semester_gpa": 3.45
       }
     ]'::jsonb,
     3.61
@@ -253,7 +267,7 @@ VALUES(
 
 INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
 VALUES(
-    4,
+    3,
     'B.S. in Computer Science',
     'General',
     'Sophomore',

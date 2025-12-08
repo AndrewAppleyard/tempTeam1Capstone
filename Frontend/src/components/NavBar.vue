@@ -51,6 +51,7 @@ const initials = computed(() => {
 
       <v-divider></v-divider>
 
+      <!-- advisor and student -->
       <template v-if="!isAdminRoute">
         <v-list-item link :to="{ path: homePath }" @click="drawer = false">
           <v-list-item-title>Home</v-list-item-title>
@@ -58,9 +59,6 @@ const initials = computed(() => {
 
         <v-divider></v-divider>
         
-        <v-list-item link :to="{ path: `/UserProfilePage/${userStore.roleID}` }" @click="drawer = false">
-          <v-list-item-title>Profile</v-list-item-title>
-        </v-list-item>
       </template>
 
       <!-- admin -->
@@ -74,8 +72,37 @@ const initials = computed(() => {
         <v-divider></v-divider>
       </template>
 
+      <!-- advisor -->
+       <template v-if="!isAdminRoute && !isStudentRoute">
+         <!-- <v-list-item 
+          v-if="userStore.roleID"
+          link 
+          :to="{ path: `/AdvisorProfilePage/${userStore.roleID}` }" 
+          @click="drawer = false"
+        >
+          <v-list-item-title>Profile</v-list-item-title>
+        </v-list-item> -->
+        <v-list-item 
+          v-if="userStore.roleID"
+          link 
+          :to="{ path: `/UserProfilePage/${userStore.roleID}` }" 
+          @click="drawer = false"
+        >
+          <v-list-item-title>Profile</v-list-item-title>
+        </v-list-item>
+       </template>
+
       <!-- student  -->
       <template v-if="isStudentRoute">
+        <v-list-item 
+          v-if="userStore.roleID"
+          link 
+          :to="{ path: `/UserProfilePage/${userStore.roleID}` }" 
+          @click="drawer = false"
+        >
+          <v-list-item-title>Profile</v-list-item-title>
+        </v-list-item>
+
         <v-list-item 
           v-if="userStore.roleID"
           link 
@@ -103,11 +130,17 @@ const initials = computed(() => {
       >
         <v-list-item-title>Current Courses</v-list-item-title>
       </v-list-item>
-      <template v-if="!isAdminRoute">
-        <v-list-item link :to="{ path: `/DegreePlanView/${userStore.roleID}` }" @click="drawer = false">
-          <v-list-item-title>Degree Plan</v-list-item-title>
-        </v-list-item>
-      </template>
+      <v-list-item
+        link
+        :to="{
+          path: (userStore.userRole === 'UAFS_STUDENTS' && userStore.roleID)
+            ? `/DegreePlanView/${userStore.roleID}`
+            : '/DegreePlanView'
+        }"
+        @click="drawer = false"
+      >
+        <v-list-item-title>Degree Plan</v-list-item-title>
+      </v-list-item>
 
       <v-list-item @click="userStore.logout()">
         <v-list-item-title>Logout</v-list-item-title>

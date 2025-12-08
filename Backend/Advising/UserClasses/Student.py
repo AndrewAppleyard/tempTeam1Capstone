@@ -1,7 +1,7 @@
 from UserClasses import User
 from datetime import datetime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, DateTime, String, Float, Boolean, JSON, ForeignKey
+from sqlalchemy import Integer, DateTime, String, Float, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
 
 class Student(User.User):

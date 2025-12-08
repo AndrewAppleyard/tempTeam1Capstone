@@ -1,7 +1,6 @@
 <script setup>
 import { ref, watch, defineProps, defineEmits, computed } from 'vue'
 import AdminAPI from '../apis/AdminAPI.js'
-import Popups from '../components/Popups.vue'
 
 const props = defineProps({
   advisor: { type: Object, default: null },
@@ -17,13 +16,7 @@ const form = ref({
   phonenumber: props.advisor?.phonenumber || '',
   role: 'advisor',
   school: props.advisor?.school || '',
-
-  // NEW FIELD (mandatory):
-  // When editing → use existing advisortype
-  // When adding → use the defaultType passed from admin view (“ROAR”)
-  advisortype: props.advisor?.advisortype || props.defaultType || 'ROAR'
-
-  
+  advisortype: props.advisor?.advisortype || ''
 })
 
 const advisorTypeOptions = [
@@ -90,11 +83,9 @@ async function save() {
     if (props.advisor) {
       console.log('Updating advisor ID:', props.advisor?.userid) // advisorid = userid
       await AdminAPI.updateAdvisor(props.advisor.userid, form.value)
-      alert('Successfully updated advisor!')
     } else {
       form.value.role = 'advisor'
       await AdminAPI.addAdvisor(form.value)
-      alert('Successfully added advisor!')
     }
     emits('saved')
     localVisible.value = false
@@ -112,7 +103,8 @@ function resetForm() { // need to reset id
     email: '',
     phonenumber: '',
     role: 'advisor',
-    school: ''
+    school: '',
+    advisortype: ''
   }
 }
 
@@ -189,14 +181,14 @@ watch(() => props.advisor, (newAdvisor) => {
               />
             </v-col>
 
-            <!-- NEW: Advisor Category (ROAR / College) -->
+            <!-- Advisor Category (ROAR / College) -->
             <v-col cols="6">
           <v-select
             v-model="form.advisortype"
             :items="advisorTypeOptions"
-            label="Advisor Category"
-            item-title="title"
+            item-title="title" 
             item-value="value"
+            label="Advisor Category"
             density="comfortable"
             :rules="[requiredRule]"
           />

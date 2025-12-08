@@ -27,12 +27,7 @@ const studentToEdit = ref(null)
 const showAdvisorForm = ref(false)
 const advisorToEdit = ref(null)
 
-/**
- * Used as the default advisor type when creating a NEW advisor.
- * AdvisorFormCard should show a select for "ROAR" / "COLLEGE"
- * and initialize from this value.
- */
-const newAdvisorType = ref('ROAR') // 'ROAR' | 'COLLEGE'
+const newAdvisorType = ref('') // 'ROAR' | 'COLLEGE'
 
 // Search terms
 const advisorSearch = ref('')
@@ -114,6 +109,7 @@ const unassignedAdvisors = computed(() =>
   advisors.value.filter(a => advisorCategory(a) === 'UNASSIGNED')
 )
 
+
 const filteredRoarAdvisors = computed(() => {
   const q = advisorSearch.value.trim().toLowerCase()
   if (!q) return roarAdvisors.value
@@ -174,7 +170,7 @@ function selectUser(item) {
   if (editMode.value) {
     selectedItem.value = item
   } else {
-    const key = viewMode.value === 'students' ? 'studentid' : 'userid'
+    const key = viewMode.value === 'students' ? 'studentid' : (item.advisorid ? 'advisorid' : 'userid')
     goToUser(item[key])
   }
 }
@@ -183,6 +179,7 @@ function toggleEditMode() {
   editMode.value = !editMode.value
   selectedItem.value = null
 }
+
 /**
  * Add new Student / Advisor.
  * For advisors, we pass null so AdvisorFormCard knows this is "create".
@@ -196,7 +193,7 @@ function addUser() {
     showStudentForm.value = true
   } else {
     advisorToEdit.value = null
-    newAdvisorType.value = 'ROAR' // default category for new advisor
+    newAdvisorType.value = '' 
     showAdvisorForm.value = true
   }
 }
@@ -264,7 +261,7 @@ async function updateCurrentCourses() {
 
 async function executeUpdateDegreePlans() {
   try {
-    const count = 2
+    const count = 4
     const response = await AdminAPI.updateDegreePlans(count)
     console.log("Degree Plan Updated:", response);
     showNotification("Successfully updated degree plans.", 'success');
@@ -411,6 +408,7 @@ watch(
               >
                 Update Current Courses
               </v-btn>
+
             </v-col>
           </v-row>
 
@@ -439,11 +437,11 @@ watch(
                       variant="flat"
                       style="color:#F5F5F5"
                       @click="addUser"
-                    >
-                      Add {{ viewMode === 'students' ? 'Student' : 'Advisor' }}
-                    </v-btn>
+                  >
+                    Add {{ viewMode === 'students' ? 'Student' : 'Advisor' }}
+                  </v-btn>
 
-                    <v-btn
+                  <v-btn
                       class="action-btn"
                       color="warning"
                       @click="updateUser"
@@ -684,11 +682,6 @@ watch(
               </v-col>
             </v-row>
           </v-card>
-
-          <!-- Footer -->
-          <div class="text-center mt-6 brand-primary">
-            © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
-          </div>
         </v-card>
       </v-col>
     </v-row>
@@ -701,11 +694,7 @@ watch(
       @saved="refreshList"
     />
 
-    <!-- AdvisorFormCard:
-         - must expose "default-type" prop
-         - inside it, show a select for ROAR / COLLEGE
-         - save that to advisortype on submit
-    -->
+    <!-- AdvisorFormCard -->
     <AdvisorFormCard
       v-model:visible="showAdvisorForm"
       :advisor="advisorToEdit"
