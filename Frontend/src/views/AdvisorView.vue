@@ -305,10 +305,6 @@ onMounted(fetchStudents)
               </v-col>
             </v-row>
           </v-card>
-
-          <div class="text-center mt-6 brand-primary" style="color:#002856;">
-            © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
-          </div>
         </v-card>
       </v-col>
     </v-row>
@@ -319,6 +315,11 @@ onMounted(fetchStudents)
       @saved="fetchStudents"
     />
     
+  </v-container>
+  <v-container fluid class="pa-2" style="background-color: transparent;">
+    <div class="text-center mt-6 brand-primary">
+      © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
+    </div>
   </v-container>
 </template>
 

@@ -17,13 +17,7 @@ const form = ref({
   phonenumber: props.advisor?.phonenumber || '',
   role: 'advisor',
   school: props.advisor?.school || '',
-
-  // NEW FIELD (mandatory):
-  // When editing → use existing advisortype
-  // When adding → use the defaultType passed from admin view (“ROAR”)
-  advisortype: props.advisor?.advisortype || props.defaultType || 'ROAR'
-
-  
+  advisortype: props.advisor?.advisortype || ''
 })
 
 const advisorTypeOptions = [
@@ -112,7 +106,8 @@ function resetForm() { // need to reset id
     email: '',
     phonenumber: '',
     role: 'advisor',
-    school: ''
+    school: '',
+    advisortype: ''
   }
 }
 
@@ -189,14 +184,12 @@ watch(() => props.advisor, (newAdvisor) => {
               />
             </v-col>
 
-            <!-- NEW: Advisor Category (ROAR / College) -->
+            <!-- Advisor Category (ROAR / College) -->
             <v-col cols="6">
           <v-select
             v-model="form.advisortype"
-            :items="advisorTypeOptions"
+            :items="['ROAR', 'COLLEGE']"
             label="Advisor Category"
-            item-title="title"
-            item-value="value"
             density="comfortable"
             :rules="[requiredRule]"
           />

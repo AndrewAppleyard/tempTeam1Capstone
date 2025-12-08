@@ -15,12 +15,7 @@ export default {
   async addAdvisor(advisor) {
     try {
       const formData = new FormData();
-      formData.append('firstname', advisor.firstname);
-      formData.append('lastname', advisor.lastname);
-      formData.append('email', advisor.email);
-      formData.append('phonenumber', advisor.phonenumber);
-      formData.append('role', advisor.role);
-      formData.append('school', advisor.school);
+      Object.keys(advisor).forEach(key => formData.append(key, advisor[key]));
 
       const response = await api.post('/Admin/Advisor/Insert', formData);
       console.log('Advisor Added:', response.data);
@@ -35,9 +30,8 @@ export default {
     try {
       const formData = new FormData();
       Object.keys(updates).forEach(key => formData.append(key, updates[key]));
-
-      const response = await api.post(`/Admin/Advisor/Update/${advisorid}`, formData);
-      console.log('Advisor Updated:', response.data);
+      const response = await api.post(`/Admin/Advisor/Update/}`, formData);
+      console.log('Advisor Added:', response.data);
       return response.data;
     } catch (err) {
       console.error('Update Advisor Error:', err);
