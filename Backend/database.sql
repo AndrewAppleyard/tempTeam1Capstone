@@ -207,7 +207,7 @@ VALUES(
 
 INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
 VALUES(
-    3,
+    1,
     'B.S. in Computer Science',
     'General',
     'Sophomore',
@@ -245,7 +245,18 @@ VALUES(
           { "code": "CS 1024", "title": "Foundations of Programming II", "credits": 4, "grade": "A" },
           { "code": "CS 2003", "title": "Data Structures", "credits": 3, "grade": "B" }
         ],
-        "semester_gpa": 3.55
+        "semester_gpa": 3.52
+      },
+      {
+        "semester": "Junior Spring",
+        "year": 2025,
+        "courses": [
+          { "code": "MATH 2443", "title": "Discrete Mathematics I", "credits": 3, "grade": "B+" },
+          { "code": "CS 2033", "title": "Algorithms", "credits": 3, "grade": "A" },
+          { "code": "CS 3043", "title": "Database Systems", "credits": 3, "grade": "A" },
+          { "code": "COMM 1303", "title": "Public Speaking", "credits": 3, "grade": "B" }
+        ],
+        "semester_gpa": 3.45
       }
     ]'::jsonb,
     3.61
@@ -253,7 +264,7 @@ VALUES(
 
 INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
 VALUES(
-    4,
+    3,
     'B.S. in Computer Science',
     'General',
     'Sophomore',

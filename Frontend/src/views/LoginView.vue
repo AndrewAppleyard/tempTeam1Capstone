@@ -41,8 +41,6 @@ async function login() {
       userStore.userID = userInfo.userid
       userStore.firstName = userInfo.firstname
       userStore.lastName = userInfo.lastname
-      alert('Login successful!')
-
       switch (userStore.userRole) {
         case 'UAFS_STUDENTS':
           const studentid = await UserAPI.getStudentByUID(userStore.userID)
