@@ -51,15 +51,16 @@ STUDENT DATA
 - Never recommend a class already completed.
 - Consider the student's year and progression level.
 - Maintain reasonable difficulty balance:
-    * Juniors/Seniors: mostly 3000-4000 level 
+    * Juniors/Seniors: 1000-4000 level 
     * Freshman/Sophomores: mostly 1000-2000 level
 - If a high-level course is required, include it even if difficult.
 
 DEGREE PLAN DATA
-- Use corecourses dict to know semester ordering.
+- Use corecourses dict as a guide to remaining requirements.
 - Use concentrations dict if student has declared one.
 - Use notes for elective rules and upper-level requirements.
-- Follow prerequisite ordering implied by degree plan's semester sequence.
+- Do NOT mirror the exact semester plan; pick ANY remaining requirements/electives offered this term if prereqs are satisfied.
+- Respect prerequisite sequencing, but you may pull courses from earlier/later terms if available.
 
 CURRENT COURSE OFFERINGS
 - Only choose from the CURRENT semester's offerings provided to you.

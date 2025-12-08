@@ -5,6 +5,7 @@ import { useUserStore } from '../store/user.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
 import DegreePlanAPI from '../apis/DegreePlanAPI.js'
+
 import AppointmentAPI from '../apis/AppointmentAPI.js'
 
 function formatPhoneNumber(rawNumber: string | null | undefined): string {
@@ -98,6 +99,7 @@ interface CurrentClassRow {
   availability: string
   delivery: string
 }
+  
 const orgs = ref<any[]>([]) // Placeholder for involvement
 interface DocRow { id: string; name: string; type: string; updated: string; size: string }
 const documents = ref<DocRow[]>([])
@@ -165,7 +167,7 @@ function mapStudentData(response: any) {
     
     profile.major = studentData.major || ''
     profile.concentration = studentData.majorconcentration || ''
-    profile.minor = studentData.minor || '' 
+    profile.minor = studentData.minor || ''
     
     // Grad term and standing are placeholders
     profile.gradTerm = '' 
@@ -218,6 +220,7 @@ function mapStudentData(response: any) {
     fetchStudentAcademics(profile.studentID)
     fetchStudentAdvisor(profile.studentID)
     fetchDegreeCredits(profile.major)
+
     fetchAppointment(profile.studentID)
 }
 

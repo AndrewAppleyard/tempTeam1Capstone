@@ -50,12 +50,13 @@ async function fetchMajors() {
 }
 
 
-const advisorsList = computed(() =>
-  (props.advisors || []).map(a => ({
-    fullname: `${a.firstname || ''} ${a.lastname || ''}`.trim(),
-    userid: String(a.userid)
+const advisorsList = computed(() => {
+  if (!Array.isArray(props.advisors)) return []
+  return props.advisors.map(a => ({
+    fullname: (`${a.firstname || ''} ${a.lastname || ''}`.trim() || a.email || 'Advisor'),
+    value: String(a.advisorid ?? a.userid ?? '')
   }))
-)
+})
 
 /*============ WATCHES ==============*/
 
@@ -219,13 +220,11 @@ async function save() {
       }
 
       await StudentAPI.updateStudent(studentid, payload)
-      alert('Successfully updated student!')
     } else {
       form.value.role = 'student'
       console.log(form)
       const response = await AdminAPI.addStudent(payload)
       studentid = response.studentid
-      alert('Successfully added student!')
     }
     
     if (selectedAdvisor.value && userStore.userRole === "UAFS_ADMINS") {
@@ -237,7 +236,6 @@ async function save() {
     resetForm()
   } catch (err) {
     console.error('Save Error:', err)
-    alert('Failed to save student.')
   }
 }
 
@@ -309,7 +307,6 @@ async function removeAdvisor() {
     selectedAdvisor.value = null
   } catch (err) {
     console.error('Remove Advisor Error:', err)
-    alert('Failed to remove advisor.')
   }
 }
 
@@ -357,7 +354,7 @@ watch(() => props.student, async (newStudent) => {
 
     if (advisor) {
       currentAdvisor.value = advisor
-      selectedAdvisor.value = String(advisor.userid)
+      selectedAdvisor.value = String(advisor.advisorid ?? advisor.userid ?? '')
       console.log("current advisor : " + currentAdvisor.value.firstname + " " + currentAdvisor.value.lastname)
     } else {
       currentAdvisor.value = null
@@ -463,11 +460,11 @@ watch(() => props.student, async (newStudent) => {
           <v-row>
             <v-col>
               <v-select
-                :key="advisorsList.map(a => a.userid).join('-')"
+                :key="advisorsList.map(a => a.value).join('-')"
                 v-model="selectedAdvisor"
                 :items="advisorsList"
                 item-title="fullname"
-                item-value="userid"
+                item-value="value"
                 label="Advisor"
                 placeholder="Select Advisor"
                 persistent-placeholder
