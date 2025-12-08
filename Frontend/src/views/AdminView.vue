@@ -87,12 +87,12 @@ async function fetchStudents() {
   }
 }
 
+
 /* =========================================================
    ADVISOR CATEGORY HELPER
 ========================================================= */
 function advisorCategory(a) {
-  // Support both "advisortype" and "type" in case DB changed
-  const raw = (a.advisortype || a.type || '').toString().trim().toUpperCase()
+  const raw = (a.advisortype || '').toString().trim().toUpperCase()
 
   if (raw === 'ROAR') return 'ROAR'
   if (raw === 'COLLEGE') return 'COLLEGE'
@@ -678,7 +678,7 @@ watch(
                     {{ item.firstname }} {{ item.lastname }}
                   </v-card-title>
                   <v-card-subtitle class="text-caption" style="color:black;">
-                    Category not set
+                    Uncategorized
                   </v-card-subtitle>
                 </v-card>
               </v-col>
@@ -704,7 +704,7 @@ watch(
     <!-- AdvisorFormCard:
          - must expose "default-type" prop
          - inside it, show a select for ROAR / COLLEGE
-         - save that to advisortype (or type) on submit
+         - save that to advisortype on submit
     -->
     <AdvisorFormCard
       v-model:visible="showAdvisorForm"

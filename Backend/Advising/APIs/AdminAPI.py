@@ -57,6 +57,7 @@ def addAdvisor() -> None:
     advisor.phonenumber = request.form.get('phonenumber')
     advisor.role = request.form.get('role')
     advisor.school = request.form.get('school')
+    advisr.advisortype = request.form.get('advisortype')
 
     try:
         with Session(engine) as session:
@@ -125,6 +126,8 @@ def updateAdvisor(id: int) -> None:
                 advisor.role = request.form.get('role')
             if(request.form.get('school') != None):
                 advisor.school = request.form.get('school')
+            if(request.form.get('advisortype') != None):
+                advisor.advisortype = request.form.get('advisortype')
 
             session.commit()
 

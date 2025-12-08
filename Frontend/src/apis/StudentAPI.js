@@ -33,6 +33,7 @@ export default {
       });
       const response = await api.post(`/Student/Update/${studentid}`, formData);
       console.log('Student Updated:', response.data);
+      console.log(formData)
       return response.data;
     } catch (err) {
         console.error('Update Student Error:', err);
