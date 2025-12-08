@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import AppointmentAPI from '../apis/AppointmentAPI.js'
 
-// --- START: THEME CONSTANTS (Copied from parent component for context) ---
-// In a real application, these would likely be imported or provided by a theme system.
+
 const COLOR_PRIMARY = '#002856'
 const COLOR_PANEL_BG  = '#F3F8FD' 
-// --- END: THEME CONSTANTS ---
-
 
 const props = defineProps<{
   advisorId: number | null
@@ -27,6 +24,7 @@ const appointmentSubmitting = ref(false)
 const appointmentSnackbar = ref(false)
 const appointmentSnackbarColor = ref<'success' | 'error' | 'info'>('success')
 const appointmentSnackbarMessage = ref('')
+const dateMenu = ref(false);
 
 const TIME_OPTIONS = [
   { text: '9:00 AM', value: '09:00' },
@@ -83,12 +81,17 @@ async function bookAppointment() {
 
   appointmentSubmitting.value = true
   try {
+    let cleanDate = appointmentForm.value.appointmentDate;
+    if (typeof cleanDate !== 'string') {
+        cleanDate = new Date(cleanDate).toISOString().split('T')[0];
+    }
+
     const payload = {
       advisorid: appointmentForm.value.advisorid,
-      start_time: `${appointmentForm.value.appointmentDate} ${appointmentForm.value.appointmentTime}:00`,
+      // 'YYYY-MM-DD HH:MM:SS'
+      start_time: `${cleanDate} ${appointmentForm.value.appointmentTime}:00`,
     }
     
-    // Assuming AppointmentAPI is correctly imported and available
     await AppointmentAPI.bookAppointment(props.studentId, payload) 
     
     showAppointmentSnackbar('Appointment request submitted successfully!', 'success')
@@ -101,6 +104,36 @@ async function bookAppointment() {
     appointmentSubmitting.value = false
   }
 }
+
+const availableTimes = ref([]);
+
+watch(
+  () => appointmentForm.value.appointmentDate,
+  async (newDate) => {
+    if (!newDate || !props.advisorId) return;
+
+    let cleanDate = newDate;
+    if (typeof cleanDate !== 'string' || cleanDate.includes('T')) {
+      cleanDate = new Date(cleanDate).toISOString().split('T')[0];
+    }
+
+    try {
+      const times = await AppointmentAPI.getAvailableSlots(props.advisorId, cleanDate);
+      console.log("API received the date:", cleanDate); // Verify the sent date
+      console.log("Available times received:", times);
+      availableTimes.value = times;
+      
+      if (!times.includes(appointmentForm.value.appointmentTime)) {
+        appointmentForm.value.appointmentTime = null;
+      }
+    } catch (e) {
+      console.error("Error loading available times", e);
+      availableTimes.value = [];
+    }
+  },
+  { immediate: true }
+);
+
 </script>
 
 <template>
@@ -170,34 +203,35 @@ async function bookAppointment() {
 
               <v-col cols="12" md="6">
                 <v-menu
-                  :close-on-content-click="false"
-                  transition="scale-transition"
-                  offset-y
-                  min-width="auto"
-                  v-slot="{ props: menuProps, isActive }"
+                    v-model="dateMenu"
+                    :close-on-content-click="false"
+                    transition="scale-transition"
+                    offset-y
+                    min-width="auto"
                 >
-                  <v-text-field
-                    v-model="appointmentForm.appointmentDate"
-                    label="Appointment Date"
-                    prepend-inner-icon="mdi-calendar"
-                    readonly
-                    v-bind="menuProps"
-                    density="comfortable"
-                    required
-                  />
-                  
-                  <v-date-picker
+                    <template #activator="{ props }">
+                    <v-text-field
+                        v-model="appointmentForm.appointmentDate"
+                        label="Appointment Date"
+                        prepend-inner-icon="mdi-calendar"
+                        readonly
+                        v-bind="props"
+                        density="comfortable"
+                        required
+                    />
+                    </template>
+
+                    <v-date-picker
                     v-model="appointmentForm.appointmentDate"
                     color="primary"
-                    hide-header
                     :min="new Date().toISOString().split('T')[0]"
-                    @update:model-value="v => v && (isActive = false)"
-                  />
+                    @update:model-value="() => (dateMenu = false)"
+                    />
                 </v-menu>
-              </v-col>
+                </v-col>
 
               <v-col cols="12" md="6">
-                <v-select
+                <!-- <v-select
                   v-model="appointmentForm.appointmentTime"
                   :items="TIME_OPTIONS"
                   item-title="text"
@@ -205,6 +239,13 @@ async function bookAppointment() {
                   label="Appointment Time"
                   density="comfortable"
                   required
+                /> -->
+                <v-select
+                    v-model="appointmentForm.appointmentTime"
+                    :items="availableTimes"
+                    label="Appointment Time"
+                    density="comfortable"
+                    required
                 />
               </v-col>
             </v-row>

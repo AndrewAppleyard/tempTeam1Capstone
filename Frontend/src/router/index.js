@@ -8,6 +8,7 @@ import StudentView from '../views/StudentView.vue'
 import TranscriptView from '../views/TranscriptView.vue'
 import CourseCatalogView from '../views/CourseCatalogView.vue'
 import UserProfilePage from '../views/UserProfilePage.vue'
+import AdvisorProfilePage from '../views/AdvisorProfilePage.vue'
 import DegreePlanView from '../views/DegreePlanView.vue'
 import DegreePlanProgressView from '../views/DegreePlanProgressView.vue'
 
@@ -21,6 +22,7 @@ const routes = [
   { path: '/DegreePlanView/:id', component: DegreePlanView },
   { path: '/degreePlanProgressView/:id', component: DegreePlanProgressView },
   { path: '/UserProfilePage/:id', component: UserProfilePage },
+  { path: '/AdvisorProfilePage/:id', component: AdvisorProfilePage },
 ]
 
 export const router = createRouter({
@@ -39,6 +41,7 @@ const roleRoutes = {
   ],
   UAFS_ADVISORS: [
     '/advisor',
+    // '/AdvisorProfilePage',
     '/UserProfilePage',
     '/student',
     '/transcript',
@@ -48,7 +51,6 @@ const roleRoutes = {
   ],
   UAFS_ADMINS: [
     '/admin',
-    '/UserProfilePage',
     '/advisor',
     '/student',
     '/courseCatalog',
