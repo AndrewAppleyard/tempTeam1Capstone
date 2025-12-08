@@ -130,7 +130,7 @@ INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa,
             minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,
             activestatus, dateadvised)
 VALUES ('Yash', 'Patel', 'ypatel00@uafs.edu', 4448889999, 'student', 'University of Arkansas - Fort Smith', 3.61, 'B.S. in Computer Science', 'General',
-             'Statistics', 'Senior', FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, CURRENT_TIMESTAMP);
+             '', 'Sophomore', FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, CURRENT_TIMESTAMP);
 
 INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa, major, majorconcentration,
             minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,

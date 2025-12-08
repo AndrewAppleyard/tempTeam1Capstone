@@ -84,11 +84,9 @@ async function save() {
     if (props.advisor) {
       console.log('Updating advisor ID:', props.advisor?.userid) // advisorid = userid
       await AdminAPI.updateAdvisor(props.advisor.userid, form.value)
-      alert('Successfully updated advisor!')
     } else {
       form.value.role = 'advisor'
       await AdminAPI.addAdvisor(form.value)
-      alert('Successfully added advisor!')
     }
     emits('saved')
     localVisible.value = false

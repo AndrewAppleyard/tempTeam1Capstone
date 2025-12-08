@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../store/user.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
+import DegreePlanAPI from '../apis/DegreePlanAPI.js'
 
 /* GPA map */
 const GPA_POINTS: Record<string, number> = {
@@ -40,6 +41,7 @@ const profile = reactive({
   lastName: '',
   level: '',
   major: '',
+  concentration: '',
   minor: '',
   gradTerm: '',
   standing: '',
@@ -51,11 +53,14 @@ const profile = reactive({
 
 /* Stats */
 const stats = reactive({
-  totalCredits: 0,
+  totalCredits: 0, // completed credits
   gpa: 0,
-  degreeCredits: 120,
+  degreeCredits: 0,
 })
-const progressPercent = computed(() => (stats.totalCredits / stats.degreeCredits) * 100)
+const progressPercent = computed(() => {
+  if (!stats.degreeCredits || stats.degreeCredits <= 0) return 0
+  return (stats.totalCredits / stats.degreeCredits) * 100
+})
 
 /* Advisor */
 const advisor = reactive({
@@ -73,9 +78,67 @@ const tagOptions = ref<string[]>([
 const activity = ref<any[]>([]) // Placeholder for activity, not in provided APIs
 const recentCourses = ref<CourseRow[]>([])
 interface CourseRow { id: string; term: string; code: string; title: string; credits: number; grade: string }
+interface CurrentClassRow {
+  code: string
+  title: string
+  meeting: string
+  location: string
+  instructor: string
+  availability: string
+  delivery: string
+}
 const orgs = ref<any[]>([]) // Placeholder for involvement, not in provided APIs
 interface DocRow { id: string; name: string; type: string; updated: string; size: string }
 const documents = ref<DocRow[]>([])
+const currentClasses = ref<CurrentClassRow[]>([])
+const holds = reactive({
+  financial: false,
+  advising: false,
+  academic: false,
+  registration: false,
+})
+
+const courseHeaders = [
+  { title: 'Term', key: 'term' },
+  { title: 'Code', key: 'code' },
+  { title: 'Title', key: 'title' },
+  { title: 'Credits', key: 'credits' },
+  { title: 'Grade', key: 'grade' },
+  { title: 'Points', key: 'points' },
+]
+
+const currentClassHeaders = [
+  { title: 'Code', key: 'code' },
+  { title: 'Title', key: 'title' },
+  { title: 'Meeting', key: 'meeting' },
+  { title: 'Location', key: 'location' },
+  { title: 'Instructor', key: 'instructor' },
+  { title: 'Availability', key: 'availability' },
+  { title: 'Delivery', key: 'delivery' },
+]
+
+const docHeaders = [
+  { title: 'Name', key: 'name' },
+  { title: 'Type', key: 'type' },
+  { title: 'Updated', key: 'updated' },
+  { title: 'Size', key: 'size' },
+  { title: 'Actions', key: 'actions' },
+]
+
+function splitCodeTitle(raw: string) {
+  const parts = (raw || '').split(' - ')
+  if (parts.length >= 2) return { code: parts[0].trim(), title: parts.slice(1).join(' - ').trim() }
+  return { code: raw || '—', title: raw || '—' }
+}
+
+function deriveCodeAndTitle(cls: any) {
+  const candidates = [cls?.section, cls?.name, cls?.title, cls?.number, cls?.code].filter(Boolean)
+  for (const cand of candidates) {
+    if (typeof cand === 'string' && cand.includes(' - ')) return splitCodeTitle(cand)
+  }
+  const raw = candidates.find(c => typeof c === 'string') || ''
+  return splitCodeTitle(raw)
+}
 
 
 /* --- DATA FETCHING LOGIC --- */
@@ -87,10 +150,11 @@ function mapStudentData(response: any) {
     profile.studentID = String(studentData.studentid) || studentIdParam || ''
     profile.firstName = studentData.firstname || ''
     profile.lastName = studentData.lastname || ''
-    profile.level = studentData.classstanding || 'Undergraduate'
+    profile.level = studentData.classstanding || transcriptData?.year || 'Undergraduate'
     
-    profile.major = studentData.major || ''
-    profile.minor = studentData.minor || '' 
+  profile.major = studentData.major || ''
+  profile.concentration = studentData.majorconcentration || ''
+  profile.minor = studentData.minor || '' 
     
     // Grad term and standing are placeholders
     profile.gradTerm = '' 
@@ -101,16 +165,48 @@ function mapStudentData(response: any) {
     profile.phone = String(studentData.phonenumber) || '' 
     // profile.address = studentData.address || '' 
     // profile.pronouns = studentData.pronouns || '' 
+    holds.financial = !!studentData.financialhold
+    holds.advising = !!studentData.advisinghold
+    holds.academic = !!studentData.academichold
+    holds.registration = !!studentData.registrationstatus
     
     // --- Stats Data ---
-    stats.totalCredits = 0 // 'totalCredits' field from transcript
-    // stats.gpa = parseFloat(studentData.gpa || transcriptData.cumulativegpa || 0)
-    
+    stats.totalCredits = 0 // will compute from transcript
+
+    // Current classes for academics tab
+    if (Array.isArray(studentData.classes)) {
+      currentClasses.value = studentData.classes.map((c: any, idx: number) => ({
+        ...deriveCodeAndTitle(c),
+        meeting: c.meetingpattern || c.meeting_pattern || 'TBA',
+        location: c.courselocation || c.location || 'TBA',
+        instructor: c.instructor || 'TBA',
+        availability: c.courseavailability || c.status || 'Open',
+        delivery: c.deliverymode || c.delivery_mode || 'TBA'
+      }))
+    } else if (typeof studentData.classes === 'string') {
+      try {
+        const parsed = JSON.parse(studentData.classes)
+        if (Array.isArray(parsed)) {
+          currentClasses.value = parsed.map((c: any, idx: number) => ({
+            ...deriveCodeAndTitle(c),
+            meeting: c.meetingpattern || c.meeting_pattern || 'TBA',
+            location: c.courselocation || c.location || 'TBA',
+            instructor: c.instructor || 'TBA',
+            availability: c.courseavailability || c.status || 'Open',
+            delivery: c.deliverymode || c.delivery_mode || 'TBA'
+          }))
+        }
+      } catch (e) {
+        console.error('Failed to parse classes JSON for current classes', e)
+      }
+    }
+
     tags.value = studentData.tags || []
 
     fetchStudentDocuments(profile.studentID)
     fetchStudentAcademics(profile.studentID)
     fetchStudentAdvisor(profile.studentID)
+    fetchDegreeCredits(profile.major)
 }
 
 
@@ -151,11 +247,12 @@ async function fetchStudentAdvisor(id: string) {
 }
 
 async function fetchStudentAcademics(id: string) {
-    let totalQualityPoints = 0
-    let totalGPAHours = 0
-    let totalAllCredits = 0
+  let totalQualityPoints = 0
+  let totalGPAHours = 0
+  let totalAllCredits = 0
+  let transcript: any = null
 
-    try {
+  try {
         const transcripts = await StudentAPI.getTranscripts(id)
         
         documents.value = transcripts.map((t: any, index: number) => ({
@@ -167,52 +264,76 @@ async function fetchStudentAcademics(id: string) {
         }))
 
         // --- Calculate Stats ---
-        const transcript = transcripts[0]
+        transcript = transcripts[0]
 
-        if (transcript && transcript.courses) {
-            recentCourses.value = transcript.courses.map((c: any) => ({
-                id: c.id, 
-                term: c.term, 
-                code: c.code, 
-                title: c.title, 
-                credits: Number(c.credits) || 0, 
-                grade: c.grade || ''
-            }))
+        // Flatten courses from transcript structure
+        const flattened: any[] = []
+        if (transcript?.courses && Array.isArray(transcript.courses)) {
+          flattened.push(...transcript.courses)
+        } else if (transcript?.coursemap && Array.isArray(transcript.coursemap)) {
+          transcript.coursemap.forEach((sem: any) => {
+            if (Array.isArray(sem.courses)) {
+              sem.courses.forEach((c: any) => flattened.push({ ...c, term: sem.semester || sem.term || '' }))
+            }
+          })
+        }
 
-            recentCourses.value.forEach(course => {
-                const credits = course.credits
-                const grade = course.grade
+        if (flattened.length) {
+          recentCourses.value = flattened.map((c: any, idx: number) => ({
+            id: c.id || `c-${idx}`,
+            term: c.term || c.semester || '',
+            code: c.code,
+            title: c.title,
+            credits: Number(c.credits || c.hours || 0),
+            grade: c.grade || ''
+          }))
 
-                totalAllCredits += credits 
+          recentCourses.value.forEach(course => {
+              const credits = course.credits
+              const grade = course.grade
 
-                if (isGradeCalculated(grade)) {
-                    const points = gradePoint(grade)
-                    totalQualityPoints += points * credits
-                    totalGPAHours += credits
-                }
-            })
+              totalAllCredits += credits 
+
+              if (isGradeCalculated(grade)) {
+                  const points = gradePoint(grade)
+                  totalQualityPoints += points * credits
+                  totalGPAHours += credits
+              }
+          })
         }
 
         stats.totalCredits = totalAllCredits
         
-        stats.gpa = totalGPAHours > 0 ? totalQualityPoints / totalGPAHours : 0
+        // Prefer transcript cumulative GPA if provided
+        if (transcript?.cumulativegpa) {
+          stats.gpa = Number(transcript.cumulativegpa) || 0
+        } else {
+          stats.gpa = totalGPAHours > 0 ? totalQualityPoints / totalGPAHours : 0
+        }
         
-        // Determine Level
-        if (profile.major) {
+        // Determine degree credits fallback if not loaded
+        if (!stats.degreeCredits && profile.major) {
             const majorUpper = profile.major.toUpperCase()
             if (majorUpper.includes('PH.D.') || majorUpper.includes('MASTERS') || majorUpper.includes('GRADUATE')) {
-                profile.level = 'Graduate'
                 stats.degreeCredits = 36 
             } else if (majorUpper.includes('B.S.') || majorUpper.includes('B.A.') || majorUpper.includes('BACHELOR')) {
-                profile.level = 'Undergraduate - Bachelor'
                 stats.degreeCredits = 120
             } else if (majorUpper.includes('A.S.') || majorUpper.includes('A.A.') || majorUpper.includes('ASSOCIATES')) {
-                profile.level = 'Undergraduate - Associate'
                 stats.degreeCredits = 60
             } else {
-                profile.level = 'Undergraduate'
                 stats.degreeCredits = 120
             }
+        }
+
+        // Expected graduation based on remaining credits (15 per term)
+        if (stats.degreeCredits > 0) {
+          const remaining = Math.max(stats.degreeCredits - stats.totalCredits, 0)
+          const termsNeeded = Math.ceil(remaining / 15)
+          const { year: currentYear, termIndex: currentTermIndex } = getCurrentTermYear()
+          let termIndex = (currentTermIndex + termsNeeded) % 2
+          let year = currentYear + Math.floor((currentTermIndex + termsNeeded) / 2)
+          const termName = termIndex === 0 ? 'Spring' : 'Fall'
+          profile.gradTerm = `${termName} ${year}`
         }
         
         // Determine Expected Graduation Term 
@@ -294,6 +415,32 @@ async function fetchStudentDocuments(id: string) {
         console.error('Could not fetch student transcripts:', e)
         documents.value = []
     }
+}
+
+async function fetchDegreeCredits(major: string) {
+    if (!major) return
+    try {
+        const res = await DegreePlanAPI.view_degree_plans_by_degree(major)
+        const degree = res?.data
+        if (degree?.credithourstotal) {
+            stats.degreeCredits = Number(degree.credithourstotal) || stats.degreeCredits
+        }
+    } catch (e) {
+        console.error('Could not fetch degree credits:', e)
+    }
+}
+
+function getCurrentTermYear() {
+  const now = new Date()
+  const month = now.getMonth()
+  let termIndex = 0 // 0 spring, 1 fall
+  let year = now.getFullYear()
+  if (month >= 7) { // Aug-Dec as Fall
+    termIndex = 1
+  } else {
+    termIndex = 0
+  }
+  return { termIndex, year }
 }
 
 
@@ -641,13 +788,17 @@ async function saveEdit() {
               <v-col cols="12" md="6" class="brand-primary text-left">
                 <v-row>
                   <v-col cols="12" sm="6" class="py-2">
-                    <div class="text-caption mb-1">Major</div>
-                    <div class="text-body-1"><strong>{{ profile.major || '—' }}</strong></div>
-                  </v-col>
-                  <v-col cols="12" sm="6" class="py-2">
-                    <div class="text-caption mb-1">Minor</div>
-                    <div class="text-body-1"><strong>{{ profile.minor || '—' }}</strong></div>
-                  </v-col>
+                  <div class="text-caption mb-1">Major</div>
+                  <div class="text-body-1"><strong>{{ profile.major || '—' }}</strong></div>
+                </v-col>
+                <v-col cols="12" sm="6" class="py-2">
+                  <div class="text-caption mb-1">Concentration</div>
+                  <div class="text-body-1"><strong>{{ profile.concentration || '—' }}</strong></div>
+                </v-col>
+                <v-col cols="12" sm="6" class="py-2">
+                  <div class="text-caption mb-1">Minor</div>
+                  <div class="text-body-1"><strong>{{ profile.minor || '—' }}</strong></div>
+                </v-col>
                   <v-col cols="12" sm="6" class="py-2">
                     <div class="text-caption mb-1">Expected Graduation</div>
                     <div class="text-body-1"><strong>{{ profile.gradTerm }}</strong></div>
@@ -662,13 +813,13 @@ async function saveEdit() {
               <v-col cols="12" md="3">
                 <v-row>
                   <v-col cols="12" class="py-1 text-right brand-primary">
-                    <div><strong>Total Credits:</strong> {{ stats.totalCredits }}</div>
+                    <div><strong>Credits:</strong> {{ stats.totalCredits }} / {{ stats.degreeCredits || '—' }}</div>
                     <div><strong>Cumulative GPA:</strong> {{ Number(stats.gpa).toFixed(2) }}</div>
                   </v-col>
                 </v-row>
                 <v-row>
                   <v-col cols="12" class="py-1 d-flex justify-end">
-                    <v-progress-circular :model-value="progressPercent" size="84" width="10">
+                  <v-progress-circular :model-value="progressPercent" size="84" width="10">
                       {{ Math.round(progressPercent) }}%
                     </v-progress-circular>
                   </v-col>
@@ -744,25 +895,44 @@ async function saveEdit() {
               <!-- Overview -->
               <v-window-item value="overview" class="brand-primary text-left">
                 <v-card flat class="pa-5">
-                  <div class="section-title mb-3">Recent Activity</div>
-                  <v-timeline align="start" density="compact">
-                    <v-timeline-item
-                      v-for="item in activity"
-                      :key="item.id"
-                      :dot-color="item.color"
-                      :icon="item.icon"
-                    >
-                      <div class="mb-1"><strong>{{ item.title }}</strong></div>
-                      <div class="text-caption">{{ item.when }}</div>
-                    </v-timeline-item>
-                  </v-timeline>
+                  <div class="section-title mb-3">Holds & Status</div>
+                  <v-row>
+                    <v-col cols="12" md="3">
+                      <v-chip :color="holds.financial ? 'error' : 'success'" variant="flat" class="mb-2">
+                        Financial Hold: {{ holds.financial ? 'Yes' : 'No' }}
+                      </v-chip>
+                    </v-col>
+                    <v-col cols="12" md="3">
+                      <v-chip :color="holds.advising ? 'error' : 'success'" variant="flat" class="mb-2">
+                        Advising Hold: {{ holds.advising ? 'Yes' : 'No' }}
+                      </v-chip>
+                    </v-col>
+                    <v-col cols="12" md="3">
+                      <v-chip :color="holds.academic ? 'error' : 'success'" variant="flat" class="mb-2">
+                        Academic Hold: {{ holds.academic ? 'Yes' : 'No' }}
+                      </v-chip>
+                    </v-col>
+                    <v-col cols="12" md="3">
+                      <v-chip :color="holds.registration ? 'success' : 'warning'" variant="flat" class="mb-2">
+                        Registration: {{ holds.registration ? 'Open' : 'Closed' }}
+                      </v-chip>
+                    </v-col>
+                  </v-row>
                 </v-card>
               </v-window-item>
 
               <!-- Academics -->
               <v-window-item value="academics" class="brand-primary text-left">
                 <v-card flat class="pa-5">
-                  <div class="section-title mb-3">Current & Recent Courses</div>
+                  <div class="section-title mb-3">Registered Courses</div>
+                  <v-data-table
+                    :headers="currentClassHeaders"
+                    :items="currentClasses"
+                    item-key="code"
+                    class="elevation-0 bigger-table mb-6"
+                    density="comfortable"
+                  />
+                  <div class="section-title mb-3">Transcript Courses</div>
                   <v-data-table
                     :headers="courseHeaders"
                     :items="recentCourses"

@@ -125,7 +125,7 @@ function emptyNextRow(): NextPopupRow {
     location: '',
     professor: '',
     availability: '',
-    waitlist: ''
+    deliverymode: ''
   }
 }
 
@@ -230,26 +230,23 @@ interface NextPopupRow {
   location: string
   professor: string
   availability: string
-  waitlist: string
+  deliverymode: string
+}
+interface StoredClass {
+  number: string
+  name: string
+  meetingpattern?: string
+  courselocation?: string
+  instructor?: string
+  courseavailability?: string
+  deliverymode?: string
 }
 
 const nextDialog = ref(false)
-const degreePlanTerms = computed(() =>
-  Array.from(new Set(DEGREE_PLAN.map(c => c.term)))
-)
-const nextTerm = ref<string>('Spring Y4')
-
 const STORAGE_KEY = 'uafs-cs-next-semester-schedule'
 
 const nextSchedule = ref<NextCardRow[]>([])
 const nextPopupRows = ref<NextPopupRow[]>([])
-
-const selectedDegreeCourse = ref<string | null>(null)
-const filteredDegreeOptions = computed(() =>
-  DEGREE_PLAN
-    .filter(c => c.term === nextTerm.value)
-    .map(c => ({ label: `${c.code} — ${c.title}`, value: c.code }))
-)
 
 function showPreferenceSnackbar(message: string, color: 'success' | 'error' | 'info' = 'success', duration = 3000) {
   preferenceSnackbarMessage.value = message
@@ -471,6 +468,84 @@ function syncNextCardFromPopup() {
   }
 }
 
+function splitCodeTitle(raw: string) {
+  const parts = (raw || '').split(' - ')
+  if (parts.length >= 2) {
+    return { code: parts[0].trim(), title: parts.slice(1).join(' - ').trim() }
+  }
+  return { code: raw || '—', title: raw || '—' }
+}
+
+function deriveCodeAndTitle(cls: any) {
+  const candidates = [cls?.section, cls?.name, cls?.title, cls?.number, cls?.code].filter(Boolean)
+  for (const cand of candidates) {
+    if (typeof cand === 'string' && cand.includes(' - ')) {
+      return splitCodeTitle(cand)
+    }
+  }
+  const raw = candidates.find(c => typeof c === 'string') || ''
+  return splitCodeTitle(raw)
+}
+
+function normalizeClass(cls: any) {
+  const { code, title } = deriveCodeAndTitle(cls)
+  return {
+    number: code || '—',
+    name: title || cls?.name || cls?.title || cls?.number || cls?.code || '—'
+  }
+}
+
+function normalizeClassDetailed(cls: any): StoredClass {
+  const base = normalizeClass(cls)
+  return {
+    ...base,
+    meetingpattern: cls?.meetingpattern || cls?.meeting_pattern,
+    courselocation: cls?.courselocation || cls?.location,
+    instructor: cls?.instructor,
+    courseavailability: cls?.courseavailability || cls?.status,
+    deliverymode: cls?.deliverymode || cls?.delivery_mode
+  }
+}
+
+function populateClassesFromStudent(userData: any) {
+  let fetchedClasses: StoredClass[] = []
+
+  if (userData && Array.isArray(userData.classes)) {
+    fetchedClasses = userData.classes.map((cls: any) => normalizeClassDetailed(cls))
+  }
+  if (userData && typeof userData.classes === 'string') {
+    try {
+      const parsedClasses = JSON.parse(userData.classes)
+      if (Array.isArray(parsedClasses)) {
+        fetchedClasses = parsedClasses.map((cls: any) => normalizeClassDetailed(cls))
+      }
+    } catch (e) {
+      console.error('Failed to parse student classes JSON string:', e)
+    }
+  }
+
+  const classesForCard = fetchedClasses.slice(0, 6)
+
+  if (classesForCard.length > 0 && classesForCard.some(c => c.number !== '—')) {
+    while (classesForCard.length < 6) {
+      classesForCard.push({ number: '—', name: '—' })
+    }
+    nextSchedule.value = classesForCard.map(c => ({ number: c.number, name: c.name }))
+
+    nextPopupRows.value = fetchedClasses.map((cls: StoredClass) => ({
+      number: cls.number,
+      course: cls.name,
+      time: cls.meetingpattern || 'TBA',
+      location: cls.courselocation || 'TBA',
+      professor: cls.instructor || 'TBA',
+      availability: cls.courseavailability || 'Open',
+      deliverymode: cls.deliverymode || 'TBA'
+    }))
+  }
+
+  return fetchedClasses
+}
+
 
 /* =========================================================
    7) DATA LOAD (student, transcripts, advisor)
@@ -499,58 +574,7 @@ onMounted(async () => {
       } else if (userData && userData.firstname) {
         studentName.value = userData.firstname
       }
-
-      let fetchedClasses: { number: string; name: string }[] = []
-
-        if (userData && Array.isArray(userData.classes)) {
-          fetchedClasses = userData.classes.map((cls: any) => ({
-            number: cls.number || '—',
-            name: cls.name || '—'
-          }))
-        }if (userData && typeof userData.classes === 'string') {
-          try {
-            const parsedClasses = JSON.parse(userData.classes)
-            if (Array.isArray(parsedClasses)) {
-              fetchedClasses = parsedClasses.map((cls: any) => ({
-                number: cls.number || '—',
-                name: cls.name || '—'
-              }))
-            }
-          } catch (e) {
-            console.error('Failed to parse student classes JSON string:', e)
-          }
-        }
-
-        const classesForCard = fetchedClasses.slice(0, 6)
-
-        if (classesForCard.length > 0 && classesForCard.some(c => c.number !== '—')) {
-          while (classesForCard.length < 6) {
-            classesForCard.push({ number: '—', name: '—' })
-          }
-          nextSchedule.value = classesForCard
-
-          nextPopupRows.value = fetchedClasses.map(cls => ({
-            number: cls.number,
-            course: cls.name,
-            time: 'TBA',
-            location: 'Baldor TBA',
-            professor: 'TBA',
-            availability: 'Open',
-            waitlist: '0'
-          }))
-
-          while (nextPopupRows.value.length < 5) {
-            nextPopupRows.value.push({
-              number: '',
-              course: '',
-              time: '',
-              location: '',
-              professor: '',
-              availability: '',
-              waitlist: ''
-            })
-          }
-        }
+      populateClassesFromStudent(userData)
     }
   } catch (err) {
     console.error('Failed to fetch student data:', err)
@@ -670,51 +694,6 @@ watch(studentId, (newId, oldId) => {
   }
 })
 
-/* =========================================================
-   8) ACTION: DEGREE PLAN -> NEXT SCHEDULE
-========================================================= */
-function addNextCourseFromPlan() {
-  if (!selectedDegreeCourse.value) return
-  const course = DEGREE_PLAN.find(
-    c => c.term === nextTerm.value && c.code === selectedDegreeCourse.value
-  )
-  if (!course) return
-
-  const newRow: NextPopupRow = {
-    number: course.code,
-    course: course.title,
-    time: 'TBA',
-    location: 'Baldor TBA',
-    professor: 'TBA',
-    availability: 'Open',
-    waitlist: '0'
-  }
-
-  const emptyIdx = nextPopupRows.value.findIndex(r => !r.number)
-  if (emptyIdx !== -1) nextPopupRows.value[emptyIdx] = newRow
-  else nextPopupRows.value.push(newRow)
-
-  syncNextCardFromPopup()
-  selectedDegreeCourse.value = null
-}
-
-function removeNextRow(index: number) {
-  if (index < 0 || index >= nextPopupRows.value.length) return
-  nextPopupRows.value.splice(index, 1)
-  while (nextPopupRows.value.length < 5) {
-    nextPopupRows.value.push({
-      number: '',
-      course: '',
-      time: '',
-      location: '',
-      professor: '',
-      availability: '',
-      waitlist: ''
-    })
-  }
-  syncNextCardFromPopup()
-}
-
 async function generateSchedule() {
   if (!studentId.value) {
     showPreferenceSnackbar('No student selected to generate a schedule.', 'error')
@@ -723,6 +702,11 @@ async function generateSchedule() {
   try {
     await StudentAPI.addSchedule(studentId.value)
     showPreferenceSnackbar('Schedule generation submitted.', 'info')
+    // refresh classes if user is on this screen
+    const refreshed = await StudentAPI.getStudentById(studentId.value)
+    if (refreshed?.student) {
+      populateClassesFromStudent(refreshed.student)
+    }
   } catch (err) {
     console.error('Generate Schedule error: ', err)
     alert('Failed to generate schedule.')
@@ -894,17 +878,17 @@ async function runHoldCheck() {
             </div>
           </v-card-text>
           <div class="card-fab">
-            <v-tooltip text="Edit next semester">
+            <v-tooltip text="View next semester">
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
                   icon
                   class="fab-btn"
                   :color="COLOR_PRIMARY"
-                  aria-label="Edit next semester schedule"
+                  aria-label="View next semester schedule"
                   @click="nextDialog = true"
                 >
-                  <v-icon>mdi-pencil</v-icon>
+                  <v-icon>mdi-eye</v-icon>
                 </v-btn>
               </template>
             </v-tooltip>
@@ -985,50 +969,17 @@ async function runHoldCheck() {
     <!-- NEXT: Dialog -->
     <v-dialog
       v-model="nextDialog"
-      width="1050"
+      width="1200"
       aria-label="Next Semester Course Schedule Dialog"
     >
       <v-card class="dialog-card">
         <v-card-title class="dialog-title">
-          <v-icon size="18" class="mr-2">mdi-calendar-edit</v-icon>
           Next Semester Course Schedule
         </v-card-title>
         <v-divider />
 
         <v-card-text>
-          <v-row class="mb-3" align="center" justify="space-between">
-            <v-col cols="12" md="4">
-              <v-select
-                v-model="nextTerm"
-                :items="degreePlanTerms"
-                label="Term (from degree plan)"
-                density="comfortable"
-              />
-            </v-col>
-            <v-col cols="12" md="5">
-              <v-select
-                v-model="selectedDegreeCourse"
-                :items="filteredDegreeOptions"
-                item-title="label"
-                item-value="value"
-                label="Choose course from degree plan"
-                density="comfortable"
-                clearable
-              />
-            </v-col>
-            <v-col cols="12" md="3" class="d-flex justify-end">
-              <v-btn
-                color="primary"
-                :disabled="!selectedDegreeCourse"
-                @click="addNextCourseFromPlan"
-              >
-                <v-icon start>mdi-plus</v-icon>
-                Add to schedule
-              </v-btn>
-            </v-col>
-          </v-row>
-
-          <v-table class="zebra align-left with-divider">
+          <v-table class="zebra align-left with-divider next-popup-table">
             <thead>
               <tr>
                 <th style="width: 115px;">Course No.</th>
@@ -1037,8 +988,7 @@ async function runHoldCheck() {
                 <th style="width: 120px;">Location</th>
                 <th style="width: 130px;">Professor</th>
                 <th style="width: 110px;">Availability</th>
-                <th style="width: 70px;">Waitlist</th>
-                <th style="width: 50px;"></th>
+                <th style="width: 110px;">Delivery</th>
               </tr>
             </thead>
             <tbody>
@@ -1049,24 +999,7 @@ async function runHoldCheck() {
                 <td>{{ row.location }}</td>
                 <td>{{ row.professor }}</td>
                 <td>{{ row.availability }}</td>
-                <td>{{ row.waitlist }}</td>
-                <td>
-                  <v-tooltip text="Remove row">
-                    <template #activator="{ props }">
-                      <v-btn
-                        v-if="row.number"
-                        v-bind="props"
-                        icon
-                        size="small"
-                        variant="text"
-                        color="error"
-                        @click="removeNextRow(i)"
-                      >
-                        <v-icon>mdi-delete</v-icon>
-                      </v-btn>
-                    </template>
-                  </v-tooltip>
-                </td>
+                <td>{{ row.deliverymode }}</td>
               </tr>
             </tbody>
           </v-table>
@@ -1420,6 +1353,16 @@ async function runHoldCheck() {
 .with-divider th:first-child,
 .with-divider td:first-child {
   border-right: 1px solid #c7d9ea;
+}
+
+.next-popup-table th,
+.next-popup-table td {
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.next-popup-table th {
+  background: #eef5fb;
+  font-weight: 700;
 }
 
 /* narrow first column */

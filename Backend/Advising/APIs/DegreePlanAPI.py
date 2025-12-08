@@ -127,6 +127,9 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 degree_list = {
     "B.S. in Computer Science": "https://uafs.edu/programs/degree-plans/_documents/current/bs-computer-science.pdf",
     "B.A. in English": "https://uafs.edu/programs/degree-plans/_documents/current/ba-english.pdf",
+    # "B.A. in Studio Art": "",
+    "B.S. in Chemistry": "https://uafs.edu/programs/degree-plans/_documents/current/bs-chemistry.pdf",
+    "B.S. in Graphic Design": "https://uafs.edu/programs/degree-plans/_documents/current/bs-graphic-design.pdf",
     
     # "M.Ed. in Curriculum and Instruction": "",
     # "M.Ed. in English": "",
@@ -135,7 +138,6 @@ degree_list = {
     # "B.A. in Media Communication": "",
     # "B.A. in Music": "",
     # "B.A. in Psychology": "",
-    # "B.A. in Studio Art": "",
     # "B.B.A. in Business Administration": "",
     # "B.B.A. in Business Administration - Online Completion": "",
     # "B.G.S. in Bachelor of General Studies": "",
@@ -144,7 +146,6 @@ degree_list = {
     # "B.S. in Advanced Manufacturing Engineering": "",
     # "B.S. in Biology": "",
     # "B.S. in Biology With Life Science Teacher Licensure 7-12": "",
-    # "B.S. in Chemistry": "",
     # "B.S. in Chemistry with Concentration in Biochemistry": "",
     # "B.S. in Criminal Justice": "",
     # "B.S. in Dental Hygiene": "",
@@ -154,7 +155,6 @@ degree_list = {
     # "B.S. in Elementary Education K-6": "",
     # "B.S. in English with Teacher Licensure 7-12": "",
     # "B.S. in Geoscience": "",
-    # "B.S. in Graphic Design": "",
     # "B.S. in History with Social Studies Teacher Licensure 7-12": "",
     # "B.S. in Imaging Sciences-Diagnostic Medical Sonography": "",
     # "B.S. in Mathematics": "",
