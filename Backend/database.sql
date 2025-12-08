@@ -250,9 +250,9 @@ VALUES (
         "semester": "Junior Spring",
         "year": 2025,
         "courses": [
-          { "code": "MATH 2603", "title": "Discrete Structures", "credits": 3, "grade": "B+" },
+          { "code": "MATH 2443", "title": "Discrete Mathematics I", "credits": 3, "grade": "B+" },
           { "code": "CS 2033", "title": "Algorithms", "credits": 3, "grade": "A" },
-          { "code": "CS 2043", "title": "Database Systems", "credits": 3, "grade": "A" },
+          { "code": "CS 3043", "title": "Database Systems", "credits": 3, "grade": "A" },
           { "code": "COMM 1303", "title": "Public Speaking", "credits": 3, "grade": "B" }
         ],
         "semester_gpa": 3.45
