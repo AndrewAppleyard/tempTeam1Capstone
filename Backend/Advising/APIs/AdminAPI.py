@@ -57,7 +57,7 @@ def addAdvisor() -> None:
     advisor.phonenumber = request.form.get('phonenumber')
     advisor.role = request.form.get('role')
     advisor.school = request.form.get('school')
-    advisr.advisortype = request.form.get('advisortype')
+    advisor.advisortype = request.form.get('advisortype')
 
     try:
         with Session(engine) as session:

@@ -816,6 +816,12 @@ async function saveSelectedCourses() {
       </v-card>
     </v-dialog>
   </v-container>
+
+  <v-container fluid class="pa-2" style="background-color: transparent;">
+    <div class="text-center mt-6 brand-primary">
+      © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
+    </div>
+  </v-container>
 </template>
 
 <style scoped>
