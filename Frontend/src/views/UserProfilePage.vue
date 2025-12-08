@@ -6,6 +6,18 @@ import StudentAPI from '../apis/StudentAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
 import DegreePlanAPI from '../apis/DegreePlanAPI.js'
 
+import AppointmentAPI from '../apis/AppointmentAPI.js'
+
+function formatPhoneNumber(rawNumber: string | null | undefined): string {
+  if (!rawNumber) return 'N/A'
+  const cleaned = ('' + rawNumber).replace(/\D/g, '')
+  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/)
+  if (match) {
+    return `(${match[1]}) ${match[2]}-${match[3]}`
+  }
+  return rawNumber
+}
+
 /* GPA map */
 const GPA_POINTS: Record<string, number> = {
   'A': 4.0,
@@ -67,7 +79,7 @@ const advisor = reactive({
   name: '—',
   title: '—',
   email: '—',
-  nextAppt: '—', // would need to add value in db for appointment date, datepicker that sends email
+  nextAppt: '—',
 })
 
 /* Tags, Activity, Courses, Involvement, Documents */
@@ -75,7 +87,7 @@ const tags = ref<string[]>([])
 const tagOptions = ref<string[]>([
   'IFC President','Sigma Nu','Dean\'s List','Senior','Athlete','Honors','Mentor'
 ])
-const activity = ref<any[]>([]) // Placeholder for activity, not in provided APIs
+const activity = ref<any[]>([]) // Placeholder for activity
 const recentCourses = ref<CourseRow[]>([])
 interface CourseRow { id: string; term: string; code: string; title: string; credits: number; grade: string }
 interface CurrentClassRow {
@@ -87,7 +99,8 @@ interface CurrentClassRow {
   availability: string
   delivery: string
 }
-const orgs = ref<any[]>([]) // Placeholder for involvement, not in provided APIs
+  
+const orgs = ref<any[]>([]) // Placeholder for involvement
 interface DocRow { id: string; name: string; type: string; updated: string; size: string }
 const documents = ref<DocRow[]>([])
 const currentClasses = ref<CurrentClassRow[]>([])
@@ -152,9 +165,9 @@ function mapStudentData(response: any) {
     profile.lastName = studentData.lastname || ''
     profile.level = studentData.classstanding || transcriptData?.year || 'Undergraduate'
     
-  profile.major = studentData.major || ''
-  profile.concentration = studentData.majorconcentration || ''
-  profile.minor = studentData.minor || '' 
+    profile.major = studentData.major || ''
+    profile.concentration = studentData.majorconcentration || ''
+    profile.minor = studentData.minor || ''
     
     // Grad term and standing are placeholders
     profile.gradTerm = '' 
@@ -163,7 +176,7 @@ function mapStudentData(response: any) {
     // --- Contact Data ---
     profile.email = studentData.email || userStore.email || '' 
     profile.phone = String(studentData.phonenumber) || '' 
-    // profile.address = studentData.address || '' 
+    profile.address = studentData.school || '' 
     // profile.pronouns = studentData.pronouns || '' 
     holds.financial = !!studentData.financialhold
     holds.advising = !!studentData.advisinghold
@@ -207,6 +220,8 @@ function mapStudentData(response: any) {
     fetchStudentAcademics(profile.studentID)
     fetchStudentAdvisor(profile.studentID)
     fetchDegreeCredits(profile.major)
+
+    fetchAppointment(profile.studentID)
 }
 
 
@@ -218,7 +233,7 @@ function mapAdvisorData(response: any) {
     profile.lastName = data.lastname || ''
     profile.email = userStore.email || '' 
     profile.phone = data.phone || ''
-    profile.address = data.officeLocation || '' // no office location
+    profile.address = data.officeLocation || data.school || '' // no office location
     profile.level = 'Advisor'
     profile.major = '—'
     
@@ -238,12 +253,50 @@ async function fetchStudentAdvisor(id: string) {
         advisor.name = `${advisorData.firstname} ${advisorData.lastname}`
         advisor.title = advisorData.title || 'Academic Advisor'
         advisor.email = advisorData.email
-        // nextAppt hardcoded placeholder for now
     } catch (e) {
         console.error('Could not fetch student advisor:', e)
         advisor.name = 'No Advisor Assigned'
         advisor.email = ''
     }
+}
+
+async function fetchAppointment(id: string) {
+  try {
+    const apptData = await AppointmentAPI.getAppointment(id)
+    
+    if (apptData.appointmentstatus === 'Scheduled' && apptData.starttime) {
+      const startTime = new Date(apptData.starttime)
+      
+      if (isNaN(startTime.getTime())) {
+         advisor.nextAppt = 'Scheduled (Time Error)'
+         return
+      }
+
+      const formattedTime = startTime.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+      const formattedDate = startTime.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      })
+      
+      advisor.nextAppt = `${formattedDate} at ${formattedTime}`
+      
+    } else {
+      advisor.nextAppt = 'None Scheduled'
+    }
+  } catch (e) {
+    const errorMsg = String(e)
+    if (errorMsg.includes('404')) {
+        advisor.nextAppt = 'None Scheduled'
+    } else {
+        console.error('Could not fetch student appointment:', e)
+        advisor.nextAppt = 'Error Fetching'
+    }
+  }
 }
 
 async function fetchStudentAcademics(id: string) {
@@ -458,10 +511,6 @@ onMounted(async () => {
         if (studentIdParam || isStudentRole.value) {
             const studentData = await StudentAPI.getStudentById(targetID)
             mapStudentData(studentData)
-
-            // NOTE: Courses and Activity are left as placeholder/initial data for now, 
-            // but in a real app, you would fetch those using other APIs.
-            // Example: recentCourses.value = await StudentAPI.getRecentCourses(targetID)
 
         } else if (isAdvisorRole.value && !studentIdParam) {
             const advisorData = await AdvisorAPI.getAdvisorById(targetID)
@@ -842,7 +891,7 @@ async function saveEdit() {
                 </div>
                 <div class="d-flex align-center mb-2">
                   <v-icon class="mr-2">mdi-phone</v-icon>
-                  <a :href="`tel:${profile.phone}`">{{ profile.phone }}</a>
+                  <a :href="`tel:${profile.phone}`">{{ formatPhoneNumber(profile.phone) }}</a>
                 </div>
                 <div class="d-flex align-center mb-2">
                   <v-icon class="mr-2">mdi-map-marker</v-icon>
@@ -985,10 +1034,6 @@ async function saveEdit() {
             </v-window>
           </v-card>
 
-          <!-- Footer -->
-          <div class="text-center mt-6 brand-primary" style="color:#002856;">
-            © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
-          </div>
         </v-card>
       </v-col>
     </v-row>

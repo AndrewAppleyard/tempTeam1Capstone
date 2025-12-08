@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, Blueprint, url_for
 from sqlalchemy import Column, Integer, String, create_engine, select
 from sqlalchemy.orm import Mapped, mapped_column, sessionmaker, DeclarativeBase, Session
@@ -18,7 +19,7 @@ sys.path.append(parent_dir)
 
 bp = Blueprint('AdvisorAPI', __name__, url_prefix='/Advisor')
 
-from UserClasses import Advisor, User, Student, Admin
+from UserClasses import Advisor, Student
 
 path = os.path.abspath(__file__)
 directory = os.path.dirname(path)
@@ -29,6 +30,7 @@ engine = create_engine(databaseURL)
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+dateFormatString = "%Y-%m-%d %H:%M:%S"
 
 def role_required(*required_roles):
 
@@ -190,3 +192,171 @@ def getAdvisorByStudent(studentid: int):
 
     finally:
         session.close()
+
+
+@bp.route("/Appointment/Insert/<int:studentid>", methods=['POST'])
+@role_required("UAFS_ADVISORS", "UAFS_STUDENTS")
+def bookAppointment(studentid: int):
+
+    advisorid = request.form.get('advisorid') 
+    start_time_str = request.form.get('start_time')
+    start_time = datetime.strptime(start_time_str, dateFormatString)
+
+    with Session(engine) as session:
+        new_appointment = Advisor.Appointment(
+            advisorid = advisorid,
+            studentid = studentid,
+            starttime = start_time,
+            endtime = start_time + timedelta(minutes=30),
+            appointmentstatus = 'Scheduled'
+        )
+        session.add(new_appointment)
+        session.commit()
+        return "Appointment Scheduling Successful"
+    
+@bp.route("/Appointment/Cancel/<int:appointmentid>", methods=['POST'])
+@role_required("UAFS_ADVISORS", "UAFS_STUDENTS") 
+def cancelAppointment(appointmentid: int):
+    try:
+        with Session(engine) as session:
+            statement = select(Advisor.Appointment).filter_by(appointmentid = appointmentid)
+            appointmentrecord = session.scalars(statement).first()
+
+            if not appointmentrecord:
+                return jsonify({"error": f"Appointment with ID {appointmentid} not found."}), 404
+
+            if appointmentrecord.appointmentstatus == 'Canceled':
+                return jsonify({"message": f"Appointment ID {appointmentid} is already canceled."}), 200
+
+            appointmentrecord.appointmentstatus = 'Canceled'
+ 
+            session.commit()
+
+            return jsonify({"message": f"Appointment ID {appointmentid} successfully canceled."}), 200
+
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": "An unexpected error occurred during cancellation."}), 500
+    finally:
+        session.close()
+
+@bp.route("/Appointment/GetAppointmentByStudent/<int:studentid>", methods=['GET'])
+@role_required("UAFS_ADVISORS", "UAFS_STUDENTS")
+def getAppointmentByStudent(studentid: int):
+    try:
+        with Session(engine) as session:
+            statement = (
+                select(Advisor.Appointment)
+                .filter_by(studentid=studentid)
+                .filter(Advisor.Appointment.appointmentstatus != 'Canceled')
+                .order_by(Advisor.Appointment.starttime.desc())
+            )
+            appointment_record = session.scalars(statement).first()
+
+            if not appointment_record:
+                return jsonify({"error": f"Scheduled appointment for Student ID {studentid} not found."}), 404
+
+            appointment_data = {
+                "appointmentid": appointment_record.appointmentid,
+                "advisorid": appointment_record.advisorid,
+                "studentid": appointment_record.studentid,
+                "starttime": appointment_record.starttime.strftime(dateFormatString),
+                "endtime": appointment_record.endtime.strftime(dateFormatString),
+                "appointmentstatus": appointment_record.appointmentstatus
+            }
+
+            return jsonify(appointment_data), 200
+
+    except Exception as e:
+        print(f"Error retrieving appointment by student ID: {e}") 
+        return jsonify({"error": "Error fetching appointment."}), 500
+    finally:
+        session.close()
+
+@bp.route("/Appointment/GetAdvisorAppointments/<int:advisorid>", methods=['GET'])
+@role_required("UAFS_ADVISORS", "UAFS_STUDENTS")
+def getAdvisorAppointments(advisorid: int):
+    try:
+        with Session(engine) as session:
+            statement = (
+                select(Advisor.Appointment)
+                .filter_by(advisorid=advisorid)
+                .filter(Advisor.Appointment.appointmentstatus != 'Canceled')
+                .filter(Advisor.Appointment.starttime >= datetime.now())
+            )
+            
+            appointment_records = session.scalars(statement).all()
+
+            if not appointment_records:
+                return jsonify({"message": f"No active appointments found for Advisor ID {advisorid}."}), 200
+
+            all_appointments_data = []
+            for record in appointment_records:
+                appointment_data = {
+                    "appointmentid": record.appointmentid,
+                    "advisorid": record.advisorid,
+                    "studentid": record.studentid,
+                    "starttime": record.starttime.strftime(dateFormatString),
+                    "endtime": record.endtime.strftime(dateFormatString),
+                    "appointmentstatus": record.appointmentstatus
+                }
+                all_appointments_data.append(appointment_data)
+
+            return jsonify(all_appointments_data), 200
+
+    except Exception as e:
+        print(f"Error retrieving advisor appointments: {e}") 
+        return jsonify({"error": "Error fetching advisor appointments."}), 500
+    finally:
+        session.close()
+
+@bp.route("/Appointment/AvailableSlots/<int:advisorid>", methods=['GET'])
+@role_required("UAFS_ADVISORS", "UAFS_STUDENTS")
+def getAvailableSlots(advisorid: int):
+    try:
+        date_str = request.args.get("date")
+        if not date_str:
+            return jsonify({"error": "Missing date parameter"}), 400
+        
+        selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+        if selected_date.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
+            return jsonify([]), 200
+
+        start_of_day = datetime.combine(selected_date, datetime.strptime("09:00", "%H:%M").time())
+        end_of_day = datetime.combine(selected_date, datetime.strptime("17:00", "%H:%M").time())
+
+        all_slots = []
+        current = start_of_day
+        while current < end_of_day:
+            all_slots.append(current)
+            current += timedelta(minutes=30)
+
+        with Session(engine) as session:
+            statement = (
+                select(Advisor.Appointment)
+                .filter_by(advisorid=advisorid)
+                .filter(Advisor.Appointment.appointmentstatus != 'Canceled')
+                .filter(Advisor.Appointment.starttime >= start_of_day)
+                .filter(Advisor.Appointment.starttime < end_of_day)
+            )
+            booked = session.scalars(statement).all()
+
+        booked_times = {appt.starttime for appt in booked}
+
+        available_slots = []
+        now = datetime.now()
+
+        for slot in all_slots:
+            if slot in booked_times:
+                continue
+            if selected_date == now.date() and slot <= now:
+                continue
+
+            available_slots.append(slot.strftime("%H:%M"))
+
+        return jsonify(available_slots), 200
+
+    except Exception as e:
+        print("Error in getAvailableSlots:", e)
+        return jsonify({"error": "Error generating available time slots"}), 500
