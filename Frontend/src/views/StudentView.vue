@@ -172,6 +172,8 @@ const timeOptions = [
   { label: '9:00 PM', value: '21:00' }
 ]
 const timeOptionValues = timeOptions.map(t => t.value)
+const timeLabelByValue = Object.fromEntries(timeOptions.map(t => [t.value, t.label]))
+const timeValueByLabel = Object.fromEntries(timeOptions.map(t => [t.label.toLowerCase(), t.value]))
 
 const preferencesDialog = ref(false)
 const preferenceForm = ref<SchedulePreferences>({ ...preferenceDefaults })
@@ -248,7 +250,9 @@ function showPreferenceSnackbar(message: string, color: 'success' | 'error' | 'i
 
 function normalizeTime(value: any, fallback: string) {
   if (typeof value !== 'string') return fallback
-  return timeOptionValues.includes(value) ? value : fallback
+  if (timeOptionValues.includes(value)) return value
+  const mapped = timeValueByLabel[value.toLowerCase()]
+  return mapped || fallback
 }
 
 function normalizePreferences(raw: any): SchedulePreferences {
@@ -315,19 +319,15 @@ async function savePreferences() {
   savingPreferences.value = true
   try {
     const preferredHours = preferenceForm.value.preferredCreditHours
-    const startValue = typeof preferenceForm.value.earliestStart === 'string' && timeOptionValues.includes(preferenceForm.value.earliestStart)
-      ? preferenceForm.value.earliestStart
-      : preferenceDefaults.earliestStart
-    const endValue = typeof preferenceForm.value.latestEnd === 'string' && timeOptionValues.includes(preferenceForm.value.latestEnd)
-      ? preferenceForm.value.latestEnd
-      : preferenceDefaults.latestEnd
+    const startValue = normalizeTime(preferenceForm.value.earliestStart, preferenceDefaults.earliestStart)
+    const endValue = normalizeTime(preferenceForm.value.latestEnd, preferenceDefaults.latestEnd)
     const payload = {
       ...preferenceForm.value,
       preferredCreditHours: preferredHours === null || Number.isNaN(Number(preferredHours))
         ? null
         : Number(preferredHours),
-      earliestStart: startValue,
-      latestEnd: endValue
+      earliestStart: timeLabelByValue[startValue] || startValue,
+      latestEnd: timeLabelByValue[endValue] || endValue
     }
     await StudentAPI.savePreferences(studentId.value, payload)
     showPreferenceSnackbar('Preferences saved to your student record.', 'success')
