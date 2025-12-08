@@ -665,14 +665,14 @@ const firstFutureTerm = computed(() => {
               </v-card>
             </v-col>
           </v-row>
-          
-          <div class="text-center mt-6" style="color:#002856;">
-           <div>
-              © {{ new Date().getFullYear() }} — Numa Advising • University of Arkansas – Fort Smith
-            </div>
-          </div>
         </v-card>
       </v-col>
     </v-row>
+  </v-container>
+
+  <v-container fluid class="pa-2" style="background-color: transparent;">
+    <div class="text-center mt-6 brand-primary">
+      © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
+    </div>
   </v-container>
 </template>

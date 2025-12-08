@@ -684,11 +684,6 @@ watch(
               </v-col>
             </v-row>
           </v-card>
-
-          <!-- Footer -->
-          <div class="text-center mt-6 brand-primary">
-            © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
-          </div>
         </v-card>
       </v-col>
     </v-row>
