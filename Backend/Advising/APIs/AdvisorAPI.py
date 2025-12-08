@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, Blueprint, url_for
 from sqlalchemy import Column, Integer, String, create_engine, select
 from sqlalchemy.orm import Mapped, mapped_column, sessionmaker, DeclarativeBase, Session
@@ -18,7 +19,7 @@ sys.path.append(parent_dir)
 
 bp = Blueprint('AdvisorAPI', __name__, url_prefix='/Advisor')
 
-from UserClasses import Advisor, User, Student, Admin
+from UserClasses import Advisor, Student
 
 path = os.path.abspath(__file__)
 directory = os.path.dirname(path)
@@ -29,6 +30,7 @@ engine = create_engine(databaseURL)
     
 sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+dateFormatString = "%Y-%m-%d %H:%M:%S"
 
 def role_required(*required_roles):
 
@@ -188,5 +190,52 @@ def getAdvisorByStudent(studentid: int):
         traceback.print_exc()
         return jsonify({"error": "Failed to find advisor for student"}), 500
 
+    finally:
+        session.close()
+
+
+@bp.route("/Appointment/<int:studentid>", methods=['POST'])
+@role_required("UAFS_ADVISORS", "UAFS_STUDENTS")
+def bookAppointment(studentid: int):
+
+    advisorid = request.form.get('advisorid') 
+    start_time_str = request.form.get('start_time')
+    start_time = datetime.strptime(start_time_str, dateFormatString)
+
+    with Session(engine) as session:
+        new_appointment = Advisor.Appointment(
+            advisorid = advisorid,
+            studentid = studentid,
+            starttime = start_time,
+            endtime = start_time + timedelta(minutes=30),
+            appointmentstatus = 'Scheduled'
+        )
+        session.add(new_appointment)
+        session.commit()
+        return "Appointment Scheduling Successful"
+    
+@bp.route("/Appointment/Cancel/<int:appointmentid>", methods=['POST'])
+@role_required("UAFS_ADVISORS", "UAFS_STUDENTS") 
+def cancelAppointment(appointmentid: int):
+    try:
+        with Session(engine) as session:
+            statement = select(Advisor.Appointment).filter_by(appointmentid = appointmentid)
+            appointmentrecord = session.scalars(statement).first()
+
+            if not appointmentrecord:
+                return jsonify({"error": f"Appointment with ID {appointmentid} not found."}), 404
+
+            if appointmentrecord.appointmentstatus == 'Canceled':
+                return jsonify({"message": f"Appointment ID {appointmentid} is already canceled."}), 200
+
+            appointmentrecord.appointmentstatus = 'Canceled'
+ 
+            session.commit()
+
+            return jsonify({"message": f"Appointment ID {appointmentid} successfully canceled."}), 200
+
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": "An unexpected error occurred during cancellation."}), 500
     finally:
         session.close()

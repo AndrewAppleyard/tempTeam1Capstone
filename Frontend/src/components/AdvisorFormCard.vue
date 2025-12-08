@@ -1,7 +1,6 @@
 <script setup>
 import { ref, watch, defineProps, defineEmits, computed } from 'vue'
 import AdminAPI from '../apis/AdminAPI.js'
-import Popups from '../components/Popups.vue'
 
 const props = defineProps({
   advisor: { type: Object, default: null },
@@ -188,7 +187,9 @@ watch(() => props.advisor, (newAdvisor) => {
             <v-col cols="6">
           <v-select
             v-model="form.advisortype"
-            :items="['ROAR', 'COLLEGE']"
+            :items="advisorTypeOptions"
+            item-title="title" 
+            item-value="value"
             label="Advisor Category"
             density="comfortable"
             :rules="[requiredRule]"

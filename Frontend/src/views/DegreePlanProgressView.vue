@@ -1112,7 +1112,6 @@ watch(groupedProgress, (groups) => {
       </v-col>
     </v-row>
   </v-container>
-</template>
 
   <v-container fluid class="pa-2" style="background-color: transparent;">
     <div class="text-center mt-6 brand-primary">

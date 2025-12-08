@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useUserStore } from '../store/user.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
-import { useUserStore } from '../store/user.js'
+import AppointmentCard from '../components/AppointmentCard.vue'
 
 const route = useRoute()
 const userStore = useUserStore()
 
 /* =========================================================
-   THEME — same palette, more respectful visuals (centralized)
+   THEME 
 ========================================================= */
 const COLOR_PRIMARY = '#002856'   // deep navy
 const COLOR_SURFACE = '#ffffff'   // white surface
@@ -17,66 +18,9 @@ const COLOR_ACCENT_BG = '#BDD5E7' // soft blue page background
 const COLOR_PANEL_BG  = '#F3F8FD' // very light blue for info panels
 
 /* =========================================================
-   1) DEGREE PLAN SOURCE (unchanged content)
-========================================================= */
-interface DegreePlanCourse { term: string; code: string; title: string }
-
-const DEGREE_PLAN: DegreePlanCourse[] = [
-  // Year 1
-  { term: 'Fall Y1', code: 'CSCE 10903', title: 'Computer Science Concepts' },
-  { term: 'Fall Y1', code: 'MATH 24004', title: 'Calculus I' },
-  { term: 'Fall Y1', code: 'UNIV 10041', title: 'College Prep for STEM Majors' },
-  { term: 'Fall Y1', code: 'ENGL 1203', title: 'English Composition I' },
-  { term: 'Fall Y1', code: 'Gen Ed Elective', title: 'FA / HUM / SS' },
-
-  { term: 'Spring Y1', code: 'CSCE 10104', title: 'Foundations of Programming I' },
-  { term: 'Spring Y1', code: 'CSCE 10404', title: 'Foundations of Networking' },
-  { term: 'Spring Y1', code: 'MATH 25004', title: 'Calculus II' },
-  { term: 'Spring Y1', code: 'ENGL 1213', title: 'English Composition II' },
-
-  // Year 2
-  { term: 'Fall Y2', code: 'CSCE 10204', title: 'Foundations of Programming II' },
-  { term: 'Fall Y2', code: 'CSCE 20503', title: 'Foundations of Cybersecurity' },
-  { term: 'Fall Y2', code: 'FINN 15201', title: 'Personal Finance Applications' },
-  { term: 'Fall Y2', code: 'CSCE xxxx (LL)', title: 'Lower-Level CS Elective' },
-  { term: 'Fall Y2', code: 'Lab Science I', title: 'Approved Lab Science' },
-
-  { term: 'Spring Y2', code: 'CSCE 20003', title: 'Data Structures' },
-  { term: 'Spring Y2', code: 'CSCE 20303', title: 'Web Systems' },
-  { term: 'Spring Y2', code: 'MATH 26103', title: 'Discrete Mathematics I' },
-  { term: 'Spring Y2', code: 'SPCH 10003', title: 'Intro to Speech Communication' },
-  { term: 'Spring Y2', code: 'Lab Science II', title: 'Approved Lab Science' },
-
-  // Year 3
-  { term: 'Fall Y3', code: 'CSCE 30303', title: 'Computer Architecture' },
-  { term: 'Fall Y3', code: 'CSCE 30403', title: 'Database Systems' },
-  { term: 'Fall Y3', code: 'CSCE 31003', title: 'Algorithms' },
-  { term: 'Fall Y3', code: 'MATH 33073', title: 'Discrete Mathematics II' },
-  { term: 'Fall Y3', code: 'Conc/Elective 1', title: 'Concentration / CS/MATH/STAT' },
-
-  { term: 'Spring Y3', code: 'CSCE 30003', title: 'Distributed Systems' },
-  { term: 'Spring Y3', code: 'CSCE 30503', title: 'Operating Systems' },
-  { term: 'Spring Y3', code: 'CSCE 31103', title: 'Artificial Intelligence' },
-  { term: 'Spring Y3', code: 'Conc/Elective 2', title: 'Concentration / CS/MATH/STAT' },
-  { term: 'Spring Y3', code: 'Gen Ed Elective', title: 'FA / HUM / SS' },
-
-  // Year 4
-  { term: 'Fall Y4', code: 'CSCE 40003', title: 'Software Engineering' },
-  { term: 'Fall Y4', code: 'CSCE 40303', title: 'Ethics and Professional Practice' },
-  { term: 'Fall Y4', code: 'Conc/Elective 3', title: 'Concentration / CS/MATH/STAT' },
-  { term: 'Fall Y4', code: 'History / Government', title: 'US History / Gov' },
-  { term: 'Fall Y4', code: 'Gen Ed Elective', title: 'FA / HUM / SS' },
-
-  { term: 'Spring Y4', code: 'CSCE 40203', title: 'Senior Capstone' },
-  { term: 'Spring Y4', code: 'CSCE 40433', title: 'Formal Languages' },
-  { term: 'Spring Y4', code: 'Conc/Elective 4', title: 'Concentration / CS/MATH/STAT' },
-  { term: 'Spring Y4', code: 'MATH/STAT UL', title: 'UL Math/Stat Elective' },
-  { term: 'Spring Y4', code: 'Gen Ed Elective', title: 'FA / HUM / SS' }
-]
-
-/* =========================================================
    2) STUDENT / ADVISOR INFO
 ========================================================= */
+const advisorId = ref<number | null>(null)
 const advisorName = ref('TBA')
 const advisorEmail = ref('TBA')
 const advisorPhone = ref('TBA')
@@ -90,15 +34,14 @@ const welcomeGreeting = computed(() => {
   }
 })
 
-/** Canonical student ID (number or null) from route OR store */
+/** student ID from route OR store */
 const studentId = computed<number | null>(() => {
-  // Try route params: support both :id and :studentid
+  // route params: support both :id and :studentid
   const routeParam = (route.params.id ?? route.params.studentid) as string | string[] | undefined
   const firstParam = Array.isArray(routeParam) ? routeParam[0] : routeParam
   const routeId = firstParam != null ? Number(firstParam) : NaN
   if (!Number.isNaN(routeId)) return routeId
 
-  // Fallback to user store
   const storeId = userStore.userID ? Number(userStore.userID) : NaN
   return Number.isNaN(storeId) ? null : storeId
 })
@@ -655,6 +598,8 @@ onMounted(async () => {
         advisorName.value = `${advisorData.firstname} ${advisorData.lastname}`
         advisorEmail.value = advisorData.email || 'N/A'
         advisorPhone.value = advisorData.phonenumber || 'N/A'
+
+        advisorId.value = advisorData.userid || null
       }
     }
   } catch (err) {
@@ -913,7 +858,7 @@ async function runHoldCheck() {
       </v-col>
 
       <!-- ADVISOR INFO -->
-      <v-col cols="12" md="6" class="pa-3" style="text-align: left;">
+      <!-- <v-col cols="12" md="6" class="pa-3" style="text-align: left;">
         <v-card class="panel-card" :style="{ backgroundColor: COLOR_PANEL_BG }">
           <v-card-title class="panel-title">
             <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
@@ -940,7 +885,20 @@ async function runHoldCheck() {
           </v-list>
         </v-card>
       </v-col>
-    </v-row>
+    </v-row> -->
+    <v-col cols="12" md="6" class="pa-3" style="text-align: left;">
+    <AppointmentCard
+          :advisor-id="advisorId"
+          :advisor-name="advisorName"
+          :advisor-email="advisorEmail"
+          :advisor-phone="advisorPhone"
+          :student-id="studentId"
+          :has-student-id="hasStudentId"
+          :format-phone-number="formatPhoneNumber"
+        />
+    </v-col>
+  </v-row dense>
+      
 
     <!-- CURRENT: Dialog -->
     <v-dialog
@@ -1339,6 +1297,7 @@ async function runHoldCheck() {
         </v-card-text>
       </v-card>
     </v-dialog>
+
   </v-container>
 
   <v-container fluid class="pa-2" style="background-color: transparent;">

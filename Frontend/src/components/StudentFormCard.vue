@@ -222,10 +222,8 @@ async function save() {
       alert('Successfully updated student!')
     } else {
       form.value.role = 'student'
+      console.log(form)
       const response = await AdminAPI.addStudent(payload)
-
-      console.log('AddStudent response:', response);
-//    studentid = response.data.studentid
       studentid = response.studentid
       alert('Successfully added student!')
     }
@@ -280,12 +278,11 @@ function formatDateToYYYYMMDD(value) {
   const date = new Date(value)
   if (isNaN(date)) return null
 
-  return date.toISOString().split('T')[0]
-}
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
 
-function normalizeDate(dateString) {
-  if (!dateString) return null;
-  return dateString.split("T")[0];
+  return `${year}-${month}-${day}`
 }
 
 function onDateSelect(value) {
@@ -594,13 +591,16 @@ watch(() => props.student, async (newStudent) => {
             </v-col>
           </v-row>
 
-          <v-dialog v-model="datePickerVisible" width="320px">
+          <v-dialog v-model="datePickerVisible" max-width="400px">
             <v-card>
               <v-card-title>Select Date</v-card-title>
               <v-card-text>
                 <v-date-picker
                   v-model="tempDate"
                   @update:modelValue="onDateSelect"
+                  color="primary"
+                  width="100%"
+                  hide-header
                 />
               </v-card-text>
             </v-card>
