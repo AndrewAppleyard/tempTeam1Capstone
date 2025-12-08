@@ -109,6 +109,7 @@ const unassignedAdvisors = computed(() =>
   advisors.value.filter(a => advisorCategory(a) === 'UNASSIGNED')
 )
 
+
 const filteredRoarAdvisors = computed(() => {
   const q = advisorSearch.value.trim().toLowerCase()
   if (!q) return roarAdvisors.value
@@ -169,7 +170,7 @@ function selectUser(item) {
   if (editMode.value) {
     selectedItem.value = item
   } else {
-    const key = viewMode.value === 'students' ? 'studentid' : 'userid'
+    const key = viewMode.value === 'students' ? 'studentid' : (item.advisorid ? 'advisorid' : 'userid')
     goToUser(item[key])
   }
 }
@@ -178,6 +179,7 @@ function toggleEditMode() {
   editMode.value = !editMode.value
   selectedItem.value = null
 }
+
 /**
  * Add new Student / Advisor.
  * For advisors, we pass null so AdvisorFormCard knows this is "create".
@@ -406,6 +408,7 @@ watch(
               >
                 Update Current Courses
               </v-btn>
+
             </v-col>
           </v-row>
 

@@ -19,6 +19,7 @@ const routes = [
   { path: '/transcript/:id', component: TranscriptView },
   { path: '/courseCatalog/:studentid?', component: CourseCatalogView },
   { path: '/DegreePlanView/:id', component: DegreePlanView },
+  { path: '/DegreePlanView', component: DegreePlanView },
   { path: '/degreePlanProgressView/:id', component: DegreePlanProgressView },
   { path: '/UserProfilePage/:id', component: UserProfilePage },
 ]

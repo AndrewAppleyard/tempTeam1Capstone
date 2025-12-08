@@ -29,9 +29,13 @@ export default {
   async updateAdvisor(advisorid, updates) {
     try {
       const formData = new FormData();
-      Object.keys(updates).forEach(key => formData.append(key, updates[key]));
-      const response = await api.post(`/Admin/Advisor/Update/}`, formData);
-      console.log('Advisor Added:', response.data);
+      Object.keys(updates).forEach(key => {
+        if (updates[key] !== undefined && updates[key] !== null) {
+          formData.append(key, updates[key]);
+        }
+      });
+      const response = await api.post(`/Admin/Advisor/Update/${advisorid}`, formData);
+      console.log('Advisor Updated:', response.data);
       return response.data;
     } catch (err) {
       console.error('Update Advisor Error:', err);
