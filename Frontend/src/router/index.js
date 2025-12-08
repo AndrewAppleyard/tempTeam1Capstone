@@ -8,6 +8,7 @@ import StudentView from '../views/StudentView.vue'
 import TranscriptView from '../views/TranscriptView.vue'
 import CourseCatalogView from '../views/CourseCatalogView.vue'
 import UserProfilePage from '../views/UserProfilePage.vue'
+import AdvisorProfilePage from '../views/AdvisorProfilePage.vue'
 import DegreePlanView from '../views/DegreePlanView.vue'
 import DegreePlanProgressView from '../views/DegreePlanProgressView.vue'
 
@@ -19,8 +20,10 @@ const routes = [
   { path: '/transcript/:id', component: TranscriptView },
   { path: '/courseCatalog/:studentid?', component: CourseCatalogView },
   { path: '/DegreePlanView/:id', component: DegreePlanView },
+  { path: '/DegreePlanView', component: DegreePlanView },
   { path: '/degreePlanProgressView/:id', component: DegreePlanProgressView },
   { path: '/UserProfilePage/:id', component: UserProfilePage },
+  { path: '/AdvisorProfilePage/:id', component: AdvisorProfilePage },
 ]
 
 export const router = createRouter({
@@ -39,6 +42,7 @@ const roleRoutes = {
   ],
   UAFS_ADVISORS: [
     '/advisor',
+    // '/AdvisorProfilePage',
     '/UserProfilePage',
     '/student',
     '/transcript',
@@ -48,7 +52,6 @@ const roleRoutes = {
   ],
   UAFS_ADMINS: [
     '/admin',
-    '/UserProfilePage',
     '/advisor',
     '/student',
     '/courseCatalog',
@@ -81,22 +84,11 @@ router.beforeEach((to, from, next) => {
 
   if (userStore.isLoggedIn) {
     const allowed = roleRoutes[userStore.userRole] || []
-    //const match = allowed.some(prefix => to.path.startsWith(prefix))
-    const isAllowedPath = allowed.some(prefix => {
-    return to.path === prefix || to.path.startsWith(prefix + "/")
-    })
+    const match = allowed.some(prefix => to.path.startsWith(prefix))
 
-    if (!isAllowedPath && !isPublic) {
-    switch (userStore.userRole) {
-      case 'UAFS_STUDENTS':
-        return next(`/student/${userStore.roleID}`)
-      case 'UAFS_ADVISORS':
-        return next(`/advisor/${userStore.roleID}`)
-      case 'UAFS_ADMINS':
-        return next('/admin')
+    if (!match && !isPublic) {
+      return next(allowed[0])
     }
-  }
-    
   }
 
   return next()
