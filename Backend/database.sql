@@ -24,7 +24,8 @@ CREATE TABLE admin
 
 CREATE TABLE advisor 
 (
-    advisorid BIGSERIAL PRIMARY KEY --REFERENCES users(userid) ON DELETE CASCADE
+    advisorid BIGSERIAL PRIMARY KEY, --REFERENCES users(userid) ON DELETE CASCADE
+    advisortype VARCHAR(10)
 ) INHERITS (users);
 
 CREATE TABLE student 
@@ -99,7 +100,11 @@ CREATE TABLE degreeplans (
     concentrations JSONB
 );
 
-
+INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa, major, majorconcentration,
+            minor, classstanding, financialhold, advisinghold, academichold, registrationstatus, advisingstatus,
+            activestatus, dateadvised)
+VALUES ('Jake', 'Student', 'jake00@uafs.edu', 4790000000, 'student', 'University of Arkansas - Fort Smith', 3.20, 'B.S. in Computer Science', 'General',
+            '', 'Junior', FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, CURRENT_TIMESTAMP);
 
 -- INSERTIONS --
 
@@ -140,6 +145,8 @@ INSERT INTO student (firstname, lastname, email, phonenumber, role, school, gpa,
 VALUES ('Robert', 'Farrar', 'rfarra00@uafs.edu', 4448889999, 'student', 'University of Arkansas - Fort Smith', 3.61, 'B.S. in Computer Science', 'General',
              'Math', 'Senior', FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, CURRENT_TIMESTAMP);
 
+
+
 --  advisorandstudentid | studentid | advisorid 
 
 INSERT INTO advisor_and_students (studentid, advisorid)
@@ -154,7 +161,7 @@ VALUES (3, 2);
 
 INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
 VALUES(
-    1,
+    2,
     'B.S. in Computer Science',
     'General',
     'Sophomore',
@@ -179,7 +186,7 @@ VALUES(
           { "code": "ENGL 1023", "title": "English Composition II", "credits": 3, "grade": "A" },
           { "code": "MATH 2854", "title": "Calculus II", "credits": 4, "grade": "B" },
           { "code": "CS 1014", "title": "Foundations of Programming I", "credits": 4, "grade": "A" },
-          { "code": "CS 1044", "title": "Foundations of Networking", "credits": 4, "grade": "B+" }
+          { "code": "CS 1044", "title": "Foundations of Networking", "credits": 4, "grade": "B" }
         ],
         "semester_gpa": 3.65
       },
@@ -200,52 +207,6 @@ VALUES(
 
 INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
 VALUES(
-    2,
-    'B.S. in Computer Science',
-    'General',
-    'Sophomore',
-    'University of Arkansas - Fort Smith',
-    '[
-      {
-        "semester": "Freshman Fall",
-        "year": 2024,
-        "courses": [
-          { "code": "ENGL 1013", "title": "English Composition I", "credits": 3, "grade": "A" },
-          { "code": "MATH 2804", "title": "Calculus I", "credits": 4, "grade": "B+" },
-          { "code": "CS 1093", "title": "Computer Science Concepts", "credits": 3, "grade": "A-" },
-          { "code": "FA/HUM/SOCSCI 1103", "title": "Introduction to Humanities", "credits": 3, "grade": "B" },
-          { "code": "STEM 1001", "title": "College Prep for STEM Majors", "credits": 1, "grade": "A" }
-        ],
-        "semester_gpa": 3.55
-      },
-      {
-        "semester": "Freshman Spring",
-        "year": 2025,
-        "courses": [
-          { "code": "ENGL 1023", "title": "English Composition II", "credits": 3, "grade": "A-" },
-          { "code": "MATH 2854", "title": "Calculus II", "credits": 4, "grade": "B" },
-          { "code": "CS 1014", "title": "Foundations of Programming I", "credits": 4, "grade": "A" },
-          { "code": "CS 1044", "title": "Foundations of Networking", "credits": 4, "grade": "B+" }
-        ],
-        "semester_gpa": 3.65
-      },
-      {
-        "semester": "Sophomore Fall",
-        "year": 2025,
-        "courses": [
-          { "code": "PHYS 2054", "title": "General Physics I", "credits": 4, "grade": "B" },
-          { "code": "CS 2053", "title": "Foundations of CyberSecurity", "credits": 3, "grade": "A-" },
-          { "code": "CS 1024", "title": "Foundations of Programming II", "credits": 4, "grade": "A" },
-          { "code": "CS 2003", "title": "Data Structures", "credits": 3, "grade": "B+" }
-        ],
-        "semester_gpa": 3.55
-      }
-    ]'::jsonb,
-    3.61
-);
-
-INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
-VALUES(
     3,
     'B.S. in Computer Science',
     'General',
@@ -257,8 +218,8 @@ VALUES(
         "year": 2024,
         "courses": [
           { "code": "ENGL 1013", "title": "English Composition I", "credits": 3, "grade": "A" },
-          { "code": "MATH 2804", "title": "Calculus I", "credits": 4, "grade": "B+" },
-          { "code": "CS 1093", "title": "Computer Science Concepts", "credits": 3, "grade": "A-" },
+          { "code": "MATH 2804", "title": "Calculus I", "credits": 4, "grade": "B" },
+          { "code": "CS 1093", "title": "Computer Science Concepts", "credits": 3, "grade": "A" },
           { "code": "FA/HUM/SOCSCI 1103", "title": "Introduction to Humanities", "credits": 3, "grade": "B" },
           { "code": "STEM 1001", "title": "College Prep for STEM Majors", "credits": 1, "grade": "A" }
         ],
@@ -268,10 +229,10 @@ VALUES(
         "semester": "Freshman Spring",
         "year": 2025,
         "courses": [
-          { "code": "ENGL 1023", "title": "English Composition II", "credits": 3, "grade": "A-" },
+          { "code": "ENGL 1023", "title": "English Composition II", "credits": 3, "grade": "A" },
           { "code": "MATH 2854", "title": "Calculus II", "credits": 4, "grade": "B" },
           { "code": "CS 1014", "title": "Foundations of Programming I", "credits": 4, "grade": "A" },
-          { "code": "CS 1044", "title": "Foundations of Networking", "credits": 4, "grade": "B+" }
+          { "code": "CS 1044", "title": "Foundations of Networking", "credits": 4, "grade": "B" }
         ],
         "semester_gpa": 3.65
       },
@@ -280,9 +241,55 @@ VALUES(
         "year": 2025,
         "courses": [
           { "code": "PHYS 2054", "title": "General Physics I", "credits": 4, "grade": "B" },
-          { "code": "CS 2053", "title": "Foundations of CyberSecurity", "credits": 3, "grade": "A-" },
+          { "code": "CS 2053", "title": "Foundations of CyberSecurity", "credits": 3, "grade": "A" },
           { "code": "CS 1024", "title": "Foundations of Programming II", "credits": 4, "grade": "A" },
-          { "code": "CS 2003", "title": "Data Structures", "credits": 3, "grade": "B+" }
+          { "code": "CS 2003", "title": "Data Structures", "credits": 3, "grade": "B" }
+        ],
+        "semester_gpa": 3.55
+      }
+    ]'::jsonb,
+    3.61
+);
+
+INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa)
+VALUES(
+    4,
+    'B.S. in Computer Science',
+    'General',
+    'Sophomore',
+    'University of Arkansas - Fort Smith',
+    '[
+      {
+        "semester": "Freshman Fall",
+        "year": 2024,
+        "courses": [
+          { "code": "ENGL 1013", "title": "English Composition I", "credits": 3, "grade": "A" },
+          { "code": "MATH 2804", "title": "Calculus I", "credits": 4, "grade": "B" },
+          { "code": "CS 1093", "title": "Computer Science Concepts", "credits": 3, "grade": "A" },
+          { "code": "FA/HUM/SOCSCI 1103", "title": "Introduction to Humanities", "credits": 3, "grade": "B" },
+          { "code": "STEM 1001", "title": "College Prep for STEM Majors", "credits": 1, "grade": "A" }
+        ],
+        "semester_gpa": 3.55
+      },
+      {
+        "semester": "Freshman Spring",
+        "year": 2025,
+        "courses": [
+          { "code": "ENGL 1023", "title": "English Composition II", "credits": 3, "grade": "A" },
+          { "code": "MATH 2854", "title": "Calculus II", "credits": 4, "grade": "B" },
+          { "code": "CS 1014", "title": "Foundations of Programming I", "credits": 4, "grade": "A" },
+          { "code": "CS 1044", "title": "Foundations of Networking", "credits": 4, "grade": "B" }
+        ],
+        "semester_gpa": 3.65
+      },
+      {
+        "semester": "Sophomore Fall",
+        "year": 2025,
+        "courses": [
+          { "code": "PHYS 2054", "title": "General Physics I", "credits": 4, "grade": "B" },
+          { "code": "CS 2053", "title": "Foundations of CyberSecurity", "credits": 3, "grade": "A" },
+          { "code": "CS 1024", "title": "Foundations of Programming II", "credits": 4, "grade": "A" },
+          { "code": "CS 2003", "title": "Data Structures", "credits": 3, "grade": "B" }
         ],
         "semester_gpa": 3.55
       }
@@ -291,14 +298,6 @@ VALUES(
 );
 
 -- INSERT INTO transcript (studentid, program, concentration, year, institution, coursemap, cumulativegpa) VALUES (36, 'B.S. in Computer Science', 'General', 'Sophomore', 'University of Arkansas - Fort Smith', '[{"semester":"Freshman Fall","year":2024,"courses":[{"code":"ENGL 1013","title":"English Composition I","credits":3,"grade":"A"},{"code":"MATH 2804","title":"Calculus I","credits":4,"grade":"B+"},{"code":"CS 1093","title":"Computer Science Concepts","credits":3,"grade":"A-"},{"code":"FA/HUM/SOCSCI 1103","title":"Introduction to Humanities","credits":3,"grade":"B"},{"code":"STEM 1001","title":"College Prep for STEM Majors","credits":1,"grade":"A"}],"semester_gpa":3.55},{"semester":"Freshman Spring","year":2025,"courses":[{"code":"ENGL 1023","title":"English Composition II","credits":3,"grade":"A-"},{"code":"MATH 2854","title":"Calculus II","credits":4,"grade":"B"},{"code":"CS 1014","title":"Foundations of Programming I","credits":4,"grade":"A"},{"code":"CS 1044","title":"Foundations of Networking","credits":4,"grade":"B+"}],"semester_gpa":3.65},{"semester":"Sophomore Fall","year":2025,"courses":[{"code":"PHYS 2054","title":"General Physics I","credits":4,"grade":"B"},{"code":"CS 2053","title":"Foundations of CyberSecurity","credits":3,"grade":"A-"},{"code":"CS 1024","title":"Foundations of Programming II","credits":4,"grade":"A"},{"code":"CS 2003","title":"Data Structures","credits":3,"grade":"B+"}],"semester_gpa":3.55}]'::jsonb, 3.61);
-
-UPDATE student SET classes = '[
-  {"number": "CSCE 20003", "name": "Data Structures"},
-  {"number": "CSCE 20303", "name": "Web Systems"},
-  {"number": "MATH 26103", "name": "Discrete Mathematics I"},
-  {"number": "SPCH 10003", "name": "Intro to Speech Communication"},
-  {"number": "PHYS 2064", "name": "General Physics II (Lab Science II)"}
-]'::jsonb WHERE studentid = 1;
 
 UPDATE student SET classes = '[
   {"number": "CSCE 20003", "name": "Data Structures"},
@@ -315,3 +314,11 @@ UPDATE student SET classes = '[
   {"number": "SPCH 10003", "name": "Intro to Speech Communication"},
   {"number": "PHYS 2064", "name": "General Physics II (Lab Science II)"}
 ]'::jsonb WHERE studentid = 3;
+
+UPDATE student SET classes = '[
+  {"number": "CSCE 20003", "name": "Data Structures"},
+  {"number": "CSCE 20303", "name": "Web Systems"},
+  {"number": "MATH 26103", "name": "Discrete Mathematics I"},
+  {"number": "SPCH 10003", "name": "Intro to Speech Communication"},
+  {"number": "PHYS 2064", "name": "General Physics II (Lab Science II)"}
+]'::jsonb WHERE studentid = 4;

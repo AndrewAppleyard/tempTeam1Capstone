@@ -4,15 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../store/user.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
-import AdminAPI from '../apis/AdminAPI.js'
-import UserAPI from '../apis/UserAPI.js'
 
 /* GPA map */
 const GPA_POINTS: Record<string, number> = {
-  'A': 4.0, 'A-': 3.7,
-  'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-  'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-  'D+': 1.3, 'D': 1.0,
+  'A': 4.0,
+  'B': 3.0,
+  'C': 2.0,
+  'D': 1.0,
   'F': 0.0, 'P': 0.0, 'W': 0.0, 'I': 0.0,
 }
 const gradePoint = (g: string) => GPA_POINTS[g] ?? 0
@@ -22,89 +20,187 @@ const route = useRoute()
 const router = useRouter()
 const studentIdParam = route.params.studentID as string | undefined
 
+/* Store access */
+const userStore = useUserStore() // <-- Initialize the store
+const isStudentRole = computed(() => userStore.userRole === 'UAFS_STUDENTS')
+const isAdvisorRole = computed(() => userStore.userRole === 'UAFS_ADVISORS')
+const currentRoleID = computed(() => userStore.roleID) // studentID or advisorID
+
+/* Loading State */
+const isLoading = ref(true)
+
+/* --- DATA MODELS --- */
+
 /* Profile data */
 const profile = reactive({
-  studentID: studentIdParam || 'S1002',
-  firstName: 'Andrew',
-  lastName: 'Mackey',
-  level: 'Undergraduate',
-  major: 'Computer Science',
-  minor: 'Mathematics',
-  gradTerm: 'Spring 2026',
-  standing: 'Good Standing',
-  email: 'amackey@uafs.edu',
-  phone: '(479) 555-1234',
-  address: '5210 Grand Ave, Fort Smith, AR',
-  pronouns: 'he/him',
+  studentID: '',
+  firstName: '',
+  lastName: '',
+  level: '',
+  major: '',
+  minor: '',
+  gradTerm: '',
+  standing: '',
+  email: '',
+  phone: '',
+  address: '',
+  pronouns: '',
 })
 
 /* Stats */
 const stats = reactive({
-  totalCredits: 86,
-  gpa: 3.64,
+  totalCredits: 0,
+  gpa: 0,
   degreeCredits: 120,
 })
 const progressPercent = computed(() => (stats.totalCredits / stats.degreeCredits) * 100)
 
 /* Advisor */
 const advisor = reactive({
-  name: 'Dr. Dave Stevens',
-  title: 'Dean of Students',
-  email: 'dave.stevens@uafs.edu',
-  nextAppt: 'Nov 4, 2025 • 2:30 PM',
+  name: '—',
+  title: '—',
+  email: '—',
+  nextAppt: '—', // would need to add value in db for appointment date, datepicker that sends email
 })
 
-/* Tags */
-const tags = ref<string[]>(['IFC President', 'Sigma Nu', 'Dean\'s List', 'Senior'])
+/* Tags, Activity, Courses, Involvement, Documents */
+const tags = ref<string[]>([])
 const tagOptions = ref<string[]>([
   'IFC President','Sigma Nu','Dean\'s List','Senior','Athlete','Honors','Mentor'
 ])
-
-/* Activity timeline */
-const activity = ref([
-  { id: 'a1', title: 'Submitted Degree Audit', when: 'Oct 20, 2025', icon: 'mdi-check-circle', color: 'primary' },
-  { id: 'a2', title: 'Advising Session Completed', when: 'Oct 14, 2025', icon: 'mdi-account-tie', color: 'primary' },
-  { id: 'a3', title: 'Enrolled in Spring 2026', when: 'Oct 10, 2025', icon: 'mdi-calendar-plus', color: 'primary' },
-])
-
-/* Recent courses */
+const activity = ref<any[]>([]) // Placeholder for activity, not in provided APIs
+const recentCourses = ref<CourseRow[]>([])
 interface CourseRow { id: string; term: string; code: string; title: string; credits: number; grade: string }
-const recentCourses = ref<CourseRow[]>([
-  { id: 'r1', term: 'Fall 2025', code: 'CS 4013', title: 'Operating Systems', credits: 3, grade: 'A' },
-  { id: 'r2', term: 'Fall 2025', code: 'CS 4113', title: 'Database Systems', credits: 3, grade: 'A-' },
-  { id: 'r3', term: 'Fall 2025', code: 'CS 4213', title: 'Networks', credits: 3, grade: 'B+' },
-  { id: 'r4', term: 'Fall 2025', code: 'MATH 3403', title: 'Linear Algebra', credits: 3, grade: 'A' },
-])
-const courseHeaders = [
-  { title: 'Term', key: 'term', sortable: true },
-  { title: 'Course #', key: 'code', sortable: true },
-  { title: 'Title', key: 'title', sortable: true },
-  { title: 'Credits', key: 'credits', sortable: true, align: 'end' },
-  { title: 'Grade', key: 'grade', sortable: true, align: 'center' },
-  { title: 'Points', key: 'points', align: 'end' },
-]
-
-/* Involvement */
-const orgs = ref([
-  { id: 'o1', name: 'Interfraternity Council', role: 'President', since: '2025' },
-  { id: 'o2', name: 'Sigma Nu', role: 'Member', since: '2023' },
-  { id: 'o3', name: 'UAFS AI Society', role: 'Co-founder', since: '2024' },
-])
-
-/* Documents */
+const orgs = ref<any[]>([]) // Placeholder for involvement, not in provided APIs
 interface DocRow { id: string; name: string; type: string; updated: string; size: string }
-const documents = ref<DocRow[]>([
-  { id: 'd1', name: 'Unofficial_Transcript.pdf', type: 'PDF', updated: 'Oct 22, 2025', size: '142 KB' },
-  { id: 'd2', name: 'Degree_Audit.pdf', type: 'PDF', updated: 'Oct 20, 2025', size: '228 KB' },
-  { id: 'd3', name: 'Resume_YashPatel.pdf', type: 'PDF', updated: 'Oct 08, 2025', size: '198 KB' },
-])
-const docHeaders = [
-  { title: 'Name', key: 'name' },
-  { title: 'Type', key: 'type', align: 'center' },
-  { title: 'Updated', key: 'updated', align: 'center' },
-  { title: 'Size', key: 'size', align: 'end' },
-  { title: '', key: 'actions', align: 'end' },
-]
+const documents = ref<DocRow[]>([])
+
+
+/* --- DATA FETCHING LOGIC --- */
+function mapStudentData(response: any) {
+    const studentData = response.student || response; 
+    const transcriptData = response.transcript || {};
+    
+    // --- Profile Data ---
+    profile.studentID = String(studentData.studentid) || studentIdParam || ''
+    profile.firstName = studentData.firstname || ''
+    profile.lastName = studentData.lastname || ''
+    profile.level = studentData.classstanding || transcriptData.year || 'Undergraduate'
+    
+    profile.major = studentData.major || transcriptData.program || ''
+    profile.minor = studentData.minor || '' 
+    
+    // Grad term and standing are placeholders
+    profile.gradTerm = '' 
+    profile.standing = studentData.advisingstatus === false ? 'Advising Hold' : 'Good Standing' 
+    
+    // --- Contact Data ---
+    profile.email = studentData.email || userStore.email || '' 
+    profile.phone = String(studentData.phonenumber) || '' 
+    profile.address = studentData.address || '' // 'address' field is not in this output
+    profile.pronouns = studentData.pronouns || '' // 'pronouns' field is not in this output
+    
+    // --- Stats Data ---
+    stats.totalCredits = 0 // 'totalCredits' field from transcript
+    stats.gpa = parseFloat(studentData.gpa || transcriptData.cumulativegpa || 0)
+    
+    tags.value = studentData.tags || []
+
+    fetchStudentDocuments(profile.studentID)
+    fetchStudentAdvisor(profile.studentID)
+}
+
+
+function mapAdvisorData(response: any) {
+    const data = response.advisor || response;
+
+    profile.studentID = data.advisorid // using studentID field to hold advisor ID
+    profile.firstName = data.firstname || ''
+    profile.lastName = data.lastname || ''
+    profile.email = userStore.email || '' 
+    profile.phone = data.phone || ''
+    profile.address = data.officeLocation || '' // no office location
+    profile.level = 'Advisor'
+    profile.major = '—'
+    
+    advisor.name = `${data.firstname} ${data.lastname}`
+    advisor.title = data.title || 'Academic Advisor'
+    advisor.email = data.email || ''
+    
+    // Tags, Stats, Courses, Documents not relevant for an advisor
+    tags.value = []
+    stats.totalCredits = 0
+    stats.gpa = 0
+}
+
+async function fetchStudentAdvisor(id: string) {
+    try {
+        const advisorData = await AdvisorAPI.getAdvisorByStudent(id)
+        advisor.name = `${advisorData.firstname} ${advisorData.lastname}`
+        advisor.title = advisorData.title || 'Academic Advisor'
+        advisor.email = advisorData.email
+        // nextAppt hardcoded placeholder for now
+    } catch (e) {
+        console.error('Could not fetch student advisor:', e)
+        advisor.name = 'No Advisor Assigned'
+        advisor.email = ''
+    }
+}
+
+async function fetchStudentDocuments(id: string) {
+    try {
+        const transcripts = await StudentAPI.getTranscripts(id)
+        documents.value = transcripts.map((t: any, index: number) => ({
+            id: t.id || `d${index}`,
+            name: t.name || `${t.type}_Transcript.pdf`,
+            type: t.type || 'PDF',
+            updated: t.updatedDate || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+            size: t.size || 'N/A'
+        }))
+    } catch (e) {
+        console.error('Could not fetch student transcripts:', e)
+        documents.value = []
+    }
+}
+
+
+onMounted(async () => {
+    await userStore.restoreLogin()
+    if (!userStore.roleID) {
+        console.error('User role ID not available. Cannot fetch profile.')
+        isLoading.value = false
+        return
+    }
+
+    const targetID = studentIdParam || currentRoleID.value
+    
+    try {
+        if (studentIdParam || isStudentRole.value) {
+            const studentData = await StudentAPI.getStudentById(targetID)
+            mapStudentData(studentData)
+
+            // NOTE: Courses and Activity are left as placeholder/initial data for now, 
+            // but in a real app, you would fetch those using other APIs.
+            // Example: recentCourses.value = await StudentAPI.getRecentCourses(targetID)
+
+        } else if (isAdvisorRole.value && !studentIdParam) {
+            const advisorData = await AdvisorAPI.getAdvisorById(targetID)
+            mapAdvisorData(advisorData)
+
+        } else {
+            console.warn('Unknown role or missing ID. Cannot fetch profile.')
+        }
+
+    } catch (e) {
+        console.error('Error fetching profile data:', e)
+        snack.show = true
+        snack.message = 'Failed to load user profile data.'
+        snack.color = 'error'
+    } finally {
+        isLoading.value = false
+    }
+})
+
 
 /* Tabs + back-to-students behavior */
 type RealTab = 'overview' | 'academics' | 'involvement' | 'documents'
@@ -149,6 +245,24 @@ const editable = reactive({
   pronouns: profile.pronouns,
   // tags
   tags: [...tags.value],
+})
+
+watch([profile, stats, tags], () => {
+  editable.studentID = profile.studentID
+  editable.firstName = profile.firstName
+  editable.lastName = profile.lastName
+  editable.level = profile.level
+  editable.major = profile.major
+  editable.minor = profile.minor
+  editable.gradTerm = profile.gradTerm
+  editable.standing = profile.standing
+  editable.totalCredits = stats.totalCredits
+  editable.gpa = stats.gpa
+  editable.email = profile.email
+  editable.phone = profile.phone
+  editable.address = profile.address
+  editable.pronouns = profile.pronouns
+  editable.tags = [...tags.value]
 })
 
 /* Computed helpers */
@@ -204,31 +318,63 @@ async function saveEdit() {
     return
   }
 
-  // Assign back to live state
-  profile.studentID = editable.studentID
-  profile.firstName = editable.firstName
-  profile.lastName = editable.lastName
-  profile.level = editable.level
+  // API Update Logic
+  try {
+    const updates = {
+      // Identity
+      firstname: editable.firstName,
+      lastname: editable.lastName,
+      // studentid: editable.studentID, // Usually immutable
+      level: editable.level,
+      // Academics
+      major: editable.major,
+      minor: editable.minor,
+      gradterm: editable.gradTerm,
+      standing: editable.standing,
+      totalCredits: editable.totalCredits,
+      gpa: editable.gpa,
+      // Contact
+      email: editable.email,
+      phone: editable.phone,
+      address: editable.address,
+      pronouns: editable.pronouns,
+      // Tags
+      tags: editable.tags,
+    }
 
-  profile.major = editable.major
-  profile.minor = editable.minor
-  profile.gradTerm = editable.gradTerm
-  profile.standing = editable.standing
+    if (isStudentRole.value || studentIdParam) {
+      await StudentAPI.updateStudent(editable.studentID, updates)
+      
+      profile.firstName = editable.firstName
+      profile.lastName = editable.lastName
+      profile.level = editable.level
+      profile.major = editable.major
+      profile.minor = editable.minor
+      profile.gradTerm = editable.gradTerm
+      profile.standing = editable.standing
+      stats.totalCredits = Number(editable.totalCredits) || 0
+      stats.gpa = Math.max(0, Math.min(4, Number(editable.gpa) || 0))
+      profile.email = editable.email
+      profile.phone = editable.phone
+      profile.address = editable.address
+      profile.pronouns = editable.pronouns
+      tags.value = [...editable.tags]
 
-  stats.totalCredits = Number(editable.totalCredits) || 0
-  stats.gpa = Math.max(0, Math.min(4, Number(editable.gpa) || 0))
+      snack.message = 'Profile updated.'
+    } else {
+        snack.message = 'Only student profiles can be updated here.'
+        snack.color = 'warning'
+    }
 
-  profile.email = editable.email
-  profile.phone = editable.phone
-  profile.address = editable.address
-  profile.pronouns = editable.pronouns
-
-  tags.value = [...editable.tags]
-
-  openEdit.value = false
-  snack.show = true
-  snack.message = 'Profile updated.'
-  snack.color = 'success'
+  } catch (e) {
+      console.error('Save failed:', e)
+      snack.message = 'Error updating profile.'
+      snack.color = 'error'
+  } finally {
+      openEdit.value = false
+      snack.show = true
+      snack.color = snack.color === 'error' ? 'error' : 'success'
+  }
 }
 </script>
 

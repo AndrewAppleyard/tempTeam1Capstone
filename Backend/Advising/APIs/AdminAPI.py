@@ -57,6 +57,7 @@ def addAdvisor() -> None:
     advisor.phonenumber = request.form.get('phonenumber')
     advisor.role = request.form.get('role')
     advisor.school = request.form.get('school')
+    advisr.advisortype = request.form.get('advisortype')
 
     try:
         with Session(engine) as session:
@@ -125,6 +126,8 @@ def updateAdvisor(id: int) -> None:
                 advisor.role = request.form.get('role')
             if(request.form.get('school') != None):
                 advisor.school = request.form.get('school')
+            if(request.form.get('advisortype') != None):
+                advisor.advisortype = request.form.get('advisortype')
 
             session.commit()
 
@@ -169,9 +172,13 @@ def addStudent():
         student.advisingstatus = True
     elif(request.form.get('advisingstatus').casefold() == false.casefold()):
         student.advisingstatus = False
-    if(request.form.get('dateadvised') != None):
-        date = datetime.strptime(request.form.get('dateadvised'), dateFormatString)
-        student.dateadvised = date
+
+    date_str = request.form.get('dateadvised')
+    if date_str:
+        student.dateadvised = datetime.strptime(date_str, dateFormatString)
+    else:
+        student.dateadvised = None
+        
     if(request.form.get('financialhold').casefold() == true.casefold()):
         student.financialhold = True
     elif(request.form.get('financialhold').casefold() == false.casefold()):
@@ -200,14 +207,16 @@ def addStudent():
             except Exception as ex:
                 print("LDAP insert failed:", ex)
 
-            return jsonify({ "studentid": student.studentid })
+            return jsonify({
+                "studentid": student.studentid
+            }), 201
 
     except Exception as e:
         traceback.print_exc()
         session.rollback()
-        return "Student Add Failed"
-    finally:
-        session.close()
+        return jsonify({
+            "error": "Student Add Failed"
+        }), 500
 
 @bp.route("/Student/<int:id>", methods=['POST'])
 @role_required("UAFS_ADMINS")

@@ -68,6 +68,7 @@ def getAdvisors():
                 a.phonenumber = advisor.phonenumber
                 a.role = advisor.role
                 a.school = advisor.school
+                a.advisortype = advisor.advisortype
 
                 advisorList.append(a.__dict__)
 
@@ -95,6 +96,7 @@ def getAdvisor(advisorid: int):
             advisor.phonenumber = result.phonenumber
             advisor.role = result.role
             advisor.school = result.school
+            advisor.advisortype = result.advisortype
 
             return advisor.__dict__
     except Exception as e:
@@ -178,6 +180,7 @@ def getAdvisorByStudent(studentid: int):
             advisor.phonenumber = result.phonenumber
             advisor.role = result.role
             advisor.school = result.school
+            advisor.advisortype = result.advisortype
 
             return jsonify(advisor.__dict__), 200
 

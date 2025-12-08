@@ -62,9 +62,6 @@ export default {
       Object.keys(student).forEach(key => formData.append(key, student[key]));
       const response = await api.post('/Admin/Student/Insert', formData);
       console.log('Student Added:', response.data);
-
-      // const ldapResponse = await api.post('/Admin/Student/Insert', formData);
-      // console.log('Student Added to LDAP DB:', ldapResponse.data);
       return response.data;
     } catch (err) {
       console.error('Add Student Error:', err);

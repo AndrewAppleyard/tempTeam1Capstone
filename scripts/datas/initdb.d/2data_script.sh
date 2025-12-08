@@ -112,6 +112,16 @@ objectClass: inetuser
 userPassword: password123
 EOF
 
+ldapadd -D "cn=Directory Manager" -w ${DS_DM_PASSWORD} -H ldap://localhost:3389 -x <<EOF
+dn: uid=jake00@uafs.edu,cn=Users,cn=Person,${DS_SUFFIX_NAME}
+uid: jake00@uafs.edu
+givenName: Jake
+sn: Student
+cn: Jake Student
+objectClass: inetorgperson
+objectClass: inetuser
+userPassword: password123
+EOF
 
 
 echo "addings Users to group"
@@ -141,4 +151,5 @@ add: member
 member: uid=ypatel00@uafs.edu,cn=Users,cn=Person,${DS_SUFFIX_NAME}
 member: uid=cmonte00@uafs.edu,cn=Users,cn=Person,${DS_SUFFIX_NAME}
 member: uid=rfarra00@uafs.edu,cn=Users,cn=Person,${DS_SUFFIX_NAME}
+member: uid=jake00@uafs.edu,cn=Users,cn=Person,${DS_SUFFIX_NAME}
 EOF

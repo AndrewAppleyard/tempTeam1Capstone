@@ -1,19 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '../store/user.js'
 import StudentAPI from '../apis/StudentAPI.js'
-import UserAPI from '../apis/UserAPI.js'
 
-
-const userStore = useUserStore()
 
 /* ===== GPA scale (4.0) ===== */
 const GPA_POINTS: Record<string, number> = {
-  'A': 4.0, 'A-': 3.7,
-  'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-  'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-  'D+': 1.3, 'D': 1.0,
+  'A': 4.0,
+  'B': 3.0,
+  'C': 2.0,
+  'D': 1.0,
   'F': 0.0, 'P': 0.0, 'W': 0.0, 'I': 0.0,
 }
 
@@ -22,15 +18,16 @@ const route = useRoute()
 const router = useRouter()
 const studentIdParam = route.params.id
 
-// const student = ref({ 
-//   studentID: '', 
-//   firstName: '', 
-//   lastName: '', 
-//   level: 'Undergraduate', 
-//   major: 'N/A', 
-//   minor: undefined,
-//   fullName: 'Loading...'
-// })
+
+const student = ref({ 
+  studentID: '', 
+  firstName: '', 
+  lastName: '', 
+  level: '', 
+  major: 'N/A', 
+  minor: 'N/A',
+  fullName: 'Loading...'
+})
 
 interface TranscriptCourseAPI {
   code: string;
@@ -78,11 +75,11 @@ const search = ref('')
 /* ===== Helpers ===== */
 const gradePoint = (g: string) => GPA_POINTS[g] ?? 0
 function gradeColor(g: string) {
-  if (['A','A-'].includes(g)) return '#2e7d32'    // green-ish
-  if (['B+','B','B-'].includes(g)) return '#1565c0' // blue-ish
-  if (['C+','C','C-'].includes(g)) return '#6a1b9a' // purple-ish
-  if (['D+','D'].includes(g)) return '#ef6c00'      // orange-ish
-  return '#b00020'                                  // red for F/others
+  if (['A'].includes(g)) return '#2e7d32' // green-ish
+  if (['B'].includes(g)) return '#1565c0' // blue-ish
+  if (['C'].includes(g)) return '#6a1b9a' // purple-ish
+  if (['D'].includes(g)) return '#ef6c00' // orange-ish
+  return '#b00020'                        // red for F/others
 }
 
 const filteredCourses = computed(() => {
@@ -112,6 +109,8 @@ const termSummary = computed(() => summarize(filteredCourses.value))
 const cumulative  = computed(() => summarize(transcript.value))
 
 /* ===== Actions and Fetching ===== */
+const currentPage = ref(1)
+
 async function fetchAndProcessData() {
   if (!studentIdParam) {
     console.error("No student ID provided in route params.")
@@ -121,17 +120,25 @@ async function fetchAndProcessData() {
   // --- Student Data Fetching ---
   try {
     const userData = await StudentAPI.getStudentById(studentIdParam)
-    console.log('Transcript View: Fetched Student Data:', userData)
     
     if (userData) {
+      const data = userData.student
+
+      const majorName = data.major ? data.major.toUpperCase() : '';
+      let studentLevel = 'Undergraduate';
+
+      if (majorName.includes('M.S.') || majorName.includes('M.A.') || majorName.includes('PH.D.')) {
+          studentLevel = 'Graduate';
+      }
+
       student.value = {
-          studentID: userData.studentid?.toString() || studentIdParam,
-          firstName: userData.firstname || 'N/A',
-          lastName: userData.lastname || 'N/A',
-          level: userData.classstanding || 'Undergraduate',
-          major: userData.major || 'N/A',
-          minor: userData.minor,
-          fullName: `${userData.firstname || ''} ${userData.lastname || ''}`.trim() || 'N/A'
+          studentID: data.studentid?.toString() || studentIdParam,
+          firstName: data.firstname || 'N/A',
+          lastName: data.lastname || 'N/A',
+          level: studentLevel || 'Undergraduate',
+          major: data.major || 'N/A',
+          minor: data.minor,
+          fullName: `${data.firstname || ''} ${data.lastname || ''}`.trim() || 'N/A'
       }
     }
   } catch(e) {
@@ -198,20 +205,24 @@ async function fetchAndProcessData() {
   }
 }
 
+watch([selectedTerm, search], () => {
+  currentPage.value = 1
+})
+
 onMounted(() => {
   fetchAndProcessData()
 })
 
 
-async function goBack() {
-  const roleid = await UserAPI.getStudentByUID(userStore.userID)
-  userStore.roleID = roleid
-  if (router && router.currentRoute.value.name !== 'student') {
-    router.push(`/student/${userStore.roleID}`).catch(() => window.history.back())
-  } else {
-    window.history.back()
-  }
-}
+// async function goBack() {
+//   const roleid = await UserAPI.getStudentByUID(userStore.userID)
+//   userStore.roleID = roleid
+//   if (router && router.currentRoute.value.name !== 'student') {
+//     router.push(`/student/${userStore.roleID}`).catch(() => window.history.back())
+//   } else {
+//     window.history.back()
+//   }
+// }
 
 function printPage() { window.print() }
 
@@ -269,10 +280,10 @@ function downloadCSV() {
               </v-card>
             </v-col>
             <v-col cols="12" md="6" class="d-flex justify-end align-center gap-2">
-              <v-btn variant="outlined" :ripple="false" class="mr-2" color="#002856" @click="goBack">
+              <!-- <v-btn variant="outlined" :ripple="false" class="mr-2" color="#002856" @click="goBack">
                 <v-icon start>mdi-arrow-left</v-icon>
                 Back to Students
-              </v-btn>
+              </v-btn> -->
               <v-btn variant="outlined" color="#002856" class="mr-2" @click="printPage">
                 <v-icon start>mdi-printer</v-icon>
                 Print / Save PDF
@@ -284,7 +295,7 @@ function downloadCSV() {
             </v-col>
           </v-row>
 
-          <!-- Student Summary Card (same look as degree-plan summary) -->
+          <!-- Student Summary Card -->
           <v-card class="pa-3 mb-4"
                   style="background-color:rgba(255,255,255,.6); border:1px solid #002856; text-align:left; border-radius:12px;">
             <v-row>
@@ -306,7 +317,7 @@ function downloadCSV() {
             </v-row>
           </v-card>
 
-          <!-- Controls Row (identical layout) -->
+          <!-- Controls Row -->
           <v-row class="mb-3" text-align="center">
             <v-col cols="12" md="6">
               <v-select
@@ -330,16 +341,16 @@ function downloadCSV() {
             </v-col>
           </v-row>
 
-          <!-- Courses Table (same shell as degree plan) -->
+          <!-- Courses Table -->
           <v-card class="pa-2"
-                  style="background-color:rgba(255,255,255,.6); text-align:left; border:1px solid #002856; border-radius:12px;">
+            style="background-color:rgba(255,255,255,.6); text-align:left; border:1px solid #002856; border-radius:12px;">
             <v-data-table
               :headers="headers"
               :items="filteredCourses"
-              :items-per-page="10"
               item-key="id"
               class="elevation-0"
-              :search="search"
+              :items-per-page="10"
+              v-model:page="currentPage"
             >
               <template #item.credits="{ item }">
                 <span class="font-mono">{{ item.credits }}</span>
@@ -352,19 +363,65 @@ function downloadCSV() {
               </template>
 
               <template #item.points="{ item }">
-                <span class="font-mono">{{ (item.credits * gradePoint(item.grade)).toFixed(2) }}</span>
+                <span class="font-mono">
+                  {{ (item.credits * gradePoint(item.grade)).toFixed(2) }}
+                </span>
               </template>
 
-              <template #bottom>
-                <div class="d-flex flex-wrap justify-space-between align-center pa-4" style="border-top:1px solid #002856;">
-                  <div class="text-body-2"><strong>Term:</strong> {{ selectedTerm }}</div>
-                  <div class="text-body-2">
-                    <strong>Term Credits:</strong> {{ termSummary.credits }}
-                    <span class="mx-2">|</span>
-                    <strong>Term GPA:</strong> {{ termSummary.gpa.toFixed(2) }}
-                  </div>
+              <template #footer>
+                <div
+                  class="d-flex align-center justify-center pa-3"
+                  style="border-top:1px solid #002856;"
+                >
+                  <v-pagination
+                    v-model="currentPage"
+                    :length="Math.ceil(filteredCourses.length / 10)"
+                    density="comfortable"
+                    total-visible="5"
+                  />
                 </div>
               </template>
+
+              <!-- <template #bottom="{ page, pageCount, itemsPerPage, itemsLength, setPage, setItemsPerPage, startIndex, stopIndex }">
+                  <div class="d-flex flex-wrap align-center pa-4" style="border-top:1px solid #002856;">
+                      <div class="text-body-2 mr-6">
+                          <strong>Term:</strong> {{ selectedTerm }}
+                          <span class="mx-2">|</span>
+                          <strong>Term Credits:</strong> {{ termSummary.credits }}
+                          <span class="mx-2">|</span>
+                          <strong>Term GPA:</strong> {{ termSummary.gpa.toFixed(2) }}
+                      </div>
+                      
+                      <v-select
+                        :model-value="itemsPerPage"
+                        @update:model-value="setItemsPerPage"
+                        :items="[10, 25, 50, -1]"
+                        density="compact"
+                        hide-details
+                        label="Items per page"
+                        style="max-width: 150px; margin-right: 16px;"
+                      />
+
+                      <div class="text-caption mr-4">
+                        <template v-if="itemsLength === 0">
+                          0 of 0
+                        </template>
+                        <template v-else-if="itemsPerPage === -1">
+                          1 – {{ itemsLength }} of {{ itemsLength }}
+                        </template>
+                        <template v-else>
+                          {{ startIndex + 1 }} – {{ stopIndex + 1 }} of {{ itemsLength }}
+                        </template>
+                      </div>
+
+                      <v-pagination
+                          :model-value="page"  @update:model-value="setPage" :length="pageCount"
+                          density="compact"
+                          total-visible="3"
+                          class="flex-grow-1 justify-end"
+                      />
+                  </div>
+              </template> -->
             </v-data-table>
           </v-card>
 

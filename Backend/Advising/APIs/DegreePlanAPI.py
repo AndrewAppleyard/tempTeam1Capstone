@@ -1,5 +1,5 @@
 import re
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -13,6 +13,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import fitz
 import requests
+import logging
 
 bp = Blueprint("DegreePlanAPI", __name__, url_prefix="/DegreePlan")
 
@@ -25,6 +26,10 @@ directory = os.path.dirname(path)
 databaseURL = URL.decrypt(directory + "/config/config.txt", directory + "/config/.gitignore.key")
 engine = create_engine(databaseURL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+logging.basicConfig(level=logging.DEBUG)
+
+sys.stdout.flush()
 
 def role_required(*required_roles):
     def decorator(fn):
@@ -50,9 +55,9 @@ def view_degree_plans():
     try:
         with Session(engine) as session:
             degrees = session.query(DegreePlan.DegreePlanMap).all()
-
             result = []
             for d in degrees:
+                print("degree: " + d.degree)
                 result.append({
                     "degree": d.degree,
                     "institution": d.institution,
@@ -72,8 +77,42 @@ def view_degree_plans():
         traceback.print_exc()
         return jsonify({"message": "Failed to fetch degree plans.", "error": str(e)}), 500
 
+@bp.route("/View/ByDegree", methods=["POST"])
+@role_required("UAFS_ADMINS", "UAFS_ADVISORS", "UAFS_STUDENTS")
+def view_degree_plans_by_degree():
+    try:
+        plan = DegreePlan.DegreePlan()
+        degree = request.form.get("major")
+        if not degree:
+            return jsonify({"message": "Missing 'major' in data"}), 400
 
+        with Session(engine) as session:
+            # Get the first matching degree plan
+            d = session.query(DegreePlan.DegreePlanMap).filter(
+                DegreePlan.DegreePlanMap.degree == degree
+            ).first()
 
+            if not d:
+                return jsonify({"message": "Degree plan not found"}), 404
+
+            # Build the result object
+            
+            plan.degree = d.degree
+            plan.institution = d.institution
+            plan.majorcode = d.majorcode
+            plan.credithourstotal = d.credithourstotal
+            plan.notes = d.notes
+            plan.corecourses = d.corecourses
+            plan.concentrations = d.concentrations
+
+        return jsonify(plan.__dict__), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({
+            "message": "Failed to fetch degree plans.",
+            "error": str(e)
+        }), 500
 
 
 
