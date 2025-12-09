@@ -5,14 +5,32 @@ import DegreePlanAPI from '../apis/DegreePlanAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import { useUserStore } from '../store/user.js'
 
-const route = useRoute()
+
 const userStore = useUserStore()
 
 const studentId = computed<number | null>(() => {
-  const routeId = Number(route.params.id)
-  if (!Number.isNaN(routeId)) return routeId
-  const storeId = userStore.userID ? Number(userStore.userID) : NaN
-  return Number.isNaN(storeId) ? null : storeId
+  if (!userStore.isLoggedIn) return null
+
+  if (userStore.userRole === 'UAFS_STUDENTS') {
+    // Students use their own roleID
+    const id = userStore.roleID ? Number(userStore.roleID) : NaN
+    return Number.isNaN(id) ? null : id
+  } else {
+    // Advisors/admins use the selected student. note that this DOES show 
+    // the previously selected student's degree plan if accessed through navbar
+    // after clicking on a student before
+    const id = localStorage.getItem('selected_user1') ? Number(localStorage.getItem('selected_user1')) : NaN
+    if (!Number.isNaN(id) && id > 0) {
+      return Number.isNaN(id) ? null : id
+    } else {
+      // advisors/admins see default view
+      major.value = 'B.S. in Computer Science'
+      loadDegreeOptions()
+      loadDegreePlan(selectedMajor.value || major.value)
+
+      return null
+    }
+  }
 })
 
 const hasStudentId = computed(() => !!studentId.value)
@@ -96,21 +114,15 @@ function computeType(code: string, title: string): RowType {
 onMounted(async () => {
   try {
 
-     if (!hasStudentId.value) {
-    console.warn("No student ID found")
-    return
+    if (!hasStudentId.value) {
+      console.warn("No student ID found")
+      return
     }
-      const studentData = await StudentAPI.getStudentById(studentId.value)
-      // major = studentData.student.major
-      // console.log('Student major:', major)
-      major.value = studentData.student.major
-      selectedMajor.value = major.value || null
-      console.log('Student major:', major.value)
+    const studentData = await StudentAPI.getStudentById(studentId.value)
+    major.value = studentData.student.major
+    selectedMajor.value = major.value || null
+    console.log('Student major:', major.value)
 
-    // if (!major) {
-    //   console.warn('No major found, cannot load degree plan.')
-    //   return
-    // }
     if (!major.value) {
       console.warn('No major found, cannot load degree plan.')
       return
@@ -118,6 +130,7 @@ onMounted(async () => {
 
     await loadDegreeOptions()
     await loadDegreePlan(selectedMajor.value || major.value)
+
   } catch (err) {
     console.error("Failed to load degree plan", err)
   }

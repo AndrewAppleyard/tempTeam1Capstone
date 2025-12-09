@@ -15,6 +15,8 @@ export const useUserStore = defineStore('user', () => {
   const token = ref(null)
   const firstName = ref(null)
   const lastName = ref(null)
+  const selectedStudentID = ref(null)
+  const selectedAdvisorID = ref(null)
 
   async function restoreLogin() {
     const refreshToken = Cookies.get('csrf_refresh_token')
@@ -26,6 +28,14 @@ export const useUserStore = defineStore('user', () => {
       userRole.value = data.Role || null
       userID.value = data.UserID || null
       email.value = data.Email || null
+      roleID.value = localStorage.getItem("role_id")
+
+      if(localStorage.getItem("selected_user1")){
+        selectedStudentID.value = localStorage.getItem("selected_user1")
+      }
+      if(localStorage.getItem("selected_user2")){
+        selectedAdvisorID.value = localStorage.getItem("selected_user2")
+      }
 
       if (email.value) {
         await restoreUserDetails(email.value)
@@ -67,11 +77,10 @@ export const useUserStore = defineStore('user', () => {
 
       firstName.value = userInfo.firstname
       lastName.value = userInfo.lastname
+      const userId = userInfo.userid
 
       if (userRole.value === 'UAFS_STUDENTS') {
-          roleID.value = await UserAPI.getStudentByUID(userID.value);
-      } else if (userRole.value === 'UAFS_ADVISORS') {
-          roleID.value = await UserAPI.getAdvisorByUID(userID.value);
+          roleID.value = await UserAPI.getStudentByUID(userId);
       }
     } catch (err) {
       console.error('Failed to restore user details:', err)
@@ -94,7 +103,7 @@ export const useUserStore = defineStore('user', () => {
 
       token.value = storedToken
       userRole.value = payload.Role
-      userID.value = payload.userID // double check
+      userID.value = payload.userID
       email.value = payload.Email
       isLoggedIn.value = true
 
@@ -116,6 +125,13 @@ export const useUserStore = defineStore('user', () => {
     roleID.value = null
     firstName.value = null
     lastName.value = null
+    selectedStudentID.value = null
+    selectedAdvisorID.value = null
+    
+    // localStorage.clear()
+    localStorage.removeItem("selected_user1")
+    localStorage.removeItem("selected_user2")
+    localStorage.removeItem("role_id")
 
     try{
       const data = await TransferAPI.logout()
@@ -127,5 +143,20 @@ export const useUserStore = defineStore('user', () => {
     router.replace('/')
   }
 
-  return { isLoggedIn, userRole, userID, email, roleID, token, firstName, lastName, logout, restoreSession, restoreLogin, decodeToken }
+  return { 
+    isLoggedIn, 
+    userRole, 
+    userID, 
+    email, 
+    roleID, 
+    token, 
+    firstName, 
+    lastName, 
+    selectedAdvisorID, 
+    selectedStudentID, 
+    logout, 
+    restoreSession, 
+    restoreLogin, 
+    decodeToken 
+  }
 })

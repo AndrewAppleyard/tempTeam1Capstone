@@ -18,7 +18,7 @@ export default {
         console.log('Student Data:', response.data);
         return response.data;
       } catch (err) {
-        console.error('Get Advisor Error:', err);
+        console.error('Get Student Error:', err);
         throw err;
       }
   },

@@ -33,17 +33,19 @@ const welcomeGreeting = computed(() => {
     return 'Welcome, Student!'
   }
 })
-
 /** student ID from route OR store */
 const studentId = computed<number | null>(() => {
-  // route params: support both :id and :studentid
-  const routeParam = (route.params.id ?? route.params.studentid) as string | string[] | undefined
-  const firstParam = Array.isArray(routeParam) ? routeParam[0] : routeParam
-  const routeId = firstParam != null ? Number(firstParam) : NaN
-  if (!Number.isNaN(routeId)) return routeId
+  if (!userStore.isLoggedIn) return null
 
-  const storeId = userStore.userID ? Number(userStore.userID) : NaN
-  return Number.isNaN(storeId) ? null : storeId
+  if (userStore.userRole === 'UAFS_STUDENTS') {
+    // Students use their own roleID
+    const id = userStore.roleID ? Number(userStore.roleID) : NaN
+    return Number.isNaN(id) ? null : id
+  } else {
+    // Advisors/admins use the selected student
+    const id = Number(localStorage.getItem('selected_user1'))
+    return Number.isNaN(id) ? null : id
+  }
 })
 
 const hasStudentId = computed(() => studentId.value !== null)
