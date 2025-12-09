@@ -310,6 +310,39 @@ def getAdvisorAppointments(advisorid: int):
     finally:
         session.close()
 
+@bp.route("/Appointment/Next/<int:advisorid>", methods=['GET'])
+@role_required("UAFS_ADVISORS", "UAFS_ADMINS")
+def getNextAppointment(advisorid: int):
+    try:
+        with Session(engine) as session:
+            statement = (
+                select(Advisor.Appointment)
+                .filter_by(advisorid=advisorid)
+                .filter(Advisor.Appointment.appointmentstatus != 'Canceled')
+                .filter(Advisor.Appointment.starttime >= datetime.now())
+                .order_by(Advisor.Appointment.starttime.asc())
+            )
+            appt = session.scalars(statement).first()
+            if not appt:
+                return jsonify({"message": "No upcoming appointments"}), 200
+
+            start_local = appt.starttime.replace(tzinfo=None) if appt.starttime.tzinfo else appt.starttime
+            end_local = appt.endtime.replace(tzinfo=None) if appt.endtime and appt.endtime.tzinfo else appt.endtime
+            data = {
+                "appointmentid": appt.appointmentid,
+                "advisorid": appt.advisorid,
+                "studentid": appt.studentid,
+                "starttime": start_local.isoformat() if start_local else None,
+                "endtime": end_local.isoformat() if end_local else None,
+                "appointmentstatus": appt.appointmentstatus
+            }
+            return jsonify(data), 200
+    except Exception as e:
+        print(f"Error retrieving next appointment: {e}")
+        return jsonify({"error": "Error fetching next appointment."}), 500
+    finally:
+        session.close()
+
 @bp.route("/Appointment/AvailableSlots/<int:advisorid>", methods=['GET'])
 @role_required("UAFS_ADVISORS", "UAFS_STUDENTS")
 def getAvailableSlots(advisorid: int):

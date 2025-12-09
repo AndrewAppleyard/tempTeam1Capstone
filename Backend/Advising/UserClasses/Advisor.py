@@ -45,3 +45,5 @@ class Appointment(User.Base):
         DateTime(timezone=True), 
         default=lambda: datetime.now(timezone.utc) # Use lambda to call on insertion
     )
+    reminded24h: Mapped[bool] = mapped_column(default=False)
+    reminded3h: Mapped[bool] = mapped_column(default=False)
