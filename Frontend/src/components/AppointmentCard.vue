@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useUserStore } from '../store/user.js'
 import AppointmentAPI from '../apis/AppointmentAPI.js'
 
+const userStore = useUserStore()
 
 const COLOR_PRIMARY = '#002856'
 const COLOR_PANEL_BG  = '#F3F8FD' 
@@ -172,7 +174,7 @@ watch(
         <v-btn
           color="primary" 
           variant="flat"
-          :disabled="!hasStudentId || advisorName === 'TBA'"
+          :disabled="!hasStudentId || advisorName === 'TBA' || userStore.userRole != 'UAFS_STUDENTS'"
           @click="openAppointmentDialog"
         >
           <v-icon start>mdi-calendar-plus</v-icon>

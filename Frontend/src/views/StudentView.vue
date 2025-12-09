@@ -884,6 +884,7 @@ async function sendTestSMS() {
                   borderColor: COLOR_PRIMARY,
                   color: COLOR_PRIMARY
                 }"
+                :disabled="!hasStudentId || userStore.userRole != 'UAFS_STUDENTS'"
                 @click="changeRequestDialog = true"
               >
                 <v-icon start>mdi-file-document-edit-outline</v-icon>
@@ -891,7 +892,7 @@ async function sendTestSMS() {
               </v-btn>
 
               <v-btn
-                :disabled="!hasStudentId"
+                :disabled="!hasStudentId || userStore.userRole != 'UAFS_STUDENTS'"
                 variant="outlined"
                 color="#002856"
                 @click="openPreferencesDialog"
@@ -901,7 +902,7 @@ async function sendTestSMS() {
               </v-btn>
 
               <v-btn
-                :disabled="!hasStudentId"
+                :disabled="!hasStudentId || userStore.userRole != 'UAFS_STUDENTS'"
                 color="primary"
                 @click="generateSchedule"
               >
@@ -910,7 +911,7 @@ async function sendTestSMS() {
               </v-btn>
 
               <v-btn
-                :disabled="!hasStudentId"
+                :disabled="!hasStudentId || userStore.userRole != 'UAFS_STUDENTS'"
                 color="primary"
                 variant="outlined"
                 @click="runHoldCheck"

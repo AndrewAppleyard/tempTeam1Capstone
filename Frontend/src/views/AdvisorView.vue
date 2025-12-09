@@ -330,7 +330,7 @@ onMounted(fetchStudents)
             </v-col>
           </v-row>
           
-          <v-card class="pa-4 mb-5 glass-card">
+          <v-card v-if="store.userRole === 'UAFS_ADVISORS'" class="pa-4 mb-5 glass-card">
             <v-row justify="center">
               <v-col
                 cols="12"
