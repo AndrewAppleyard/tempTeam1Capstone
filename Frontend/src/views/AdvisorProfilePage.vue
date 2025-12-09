@@ -42,14 +42,6 @@ const error = ref<string | null>(null)
    DATA MODELS
 ========================================================= */
 
-/* Store access */
-const userStore = useUserStore()
-const advisorId = computed(() => userStore.roleID) // advisorID
-const fullName = computed(() => `${profile.firstName} ${profile.lastName}`)
-
-/* Loading State */
-const isLoading = ref(true)
-
 /* --- DATA MODELS --- */
 const profile = reactive({
   advisorID: '',
