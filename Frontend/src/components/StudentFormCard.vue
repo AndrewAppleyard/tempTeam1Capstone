@@ -269,18 +269,35 @@ function resetForm() { // need to reset id
 function formatDateToYYYYMMDD(value) {
   if (!value) return null
 
+  // already YYYY-MM-DD
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return value
   }
 
-  const date = new Date(value)
-  if (isNaN(date)) return null
+  if (typeof value === 'string') {
+    const parsed = new Date(value)
+    if (!isNaN(parsed.getTime())) {
+      const y = parsed.getUTCFullYear()
+      const m = String(parsed.getUTCMonth() + 1).padStart(2, '0')
+      const d = String(parsed.getUTCDate()).padStart(2, '0')
+      return `${y}-${m}-${d}`
+    }
 
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+    const isoMatch = value.match(/(\d{4})[-\/](\d{2})[-\/](\d{2})/)
+    if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`
 
-  return `${year}-${month}-${day}`
+    return null
+  }
+
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return null
+    const y = value.getFullYear()
+    const m = String(value.getMonth() + 1).padStart(2, '0')
+    const d = String(value.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  return null
 }
 
 function onDateSelect(value) {
@@ -289,7 +306,7 @@ function onDateSelect(value) {
   if (formatted) {
     displayDate.value = formatted
     form.value.dateadvised = formatted
-    tempDate.value = value
+    tempDate.value = formatted
   } else {
     displayDate.value = ''
     form.value.dateadvised = null
@@ -343,9 +360,9 @@ watch(() => props.student, async (newStudent) => {
 
     if (newStudent.dateadvised) {
       const formatted = formatDateToYYYYMMDD(newStudent.dateadvised)
-      displayDate.value = formatted
-      form.value.dateadvised = formatted
-      tempDate.value = formatted
+      displayDate.value = formatted || ''
+      form.value.dateadvised = formatted || null
+      tempDate.value = formatted || null
     } else {
       displayDate.value = ''
       form.value.dateadvised = null
