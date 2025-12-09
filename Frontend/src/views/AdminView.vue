@@ -369,7 +369,7 @@ watch(
 </script>
 
 <template>
-  <v-container fluid class="pa-2" style="background-color: transparent;">
+  <v-container fluid class="pa-2" style="background-color: transparent; padding-right: 5%;">
     <v-row>
       <!-- 95% width shell, centered to match other pages -->
       <v-col cols="12" class="mx-auto admin-shell">
@@ -741,8 +741,8 @@ watch(
     </v-dialog>
   </v-container>
 
-  <v-container fluid class="pa-2" style="background-color: transparent;">
-    <div class="text-center mt-6 brand-primary">
+  <v-container fluid class="pa-2" style="background-color: transparent; justify-content: center;">
+    <div class="text-center mt-6 brand-primary" style="padding-right: 5%;">
       © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
     </div>
 
@@ -772,6 +772,7 @@ watch(
 /* 95% width shell, centered to align with your other pages */
 .admin-shell {
   width: 95%;
+  padding-right: 5%;
   margin-left: auto;
   margin-right: auto;
 }

@@ -524,7 +524,7 @@ onMounted(fetchStudents)
     
   </v-container>
   <v-container fluid class="pa-2" style="background-color: transparent;">
-    <div class="text-center mt-6 brand-primary">
+    <div class="text-center mt-6 brand-primary"style="padding-right: 5%;">
       © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
     </div>
   </v-container>
@@ -534,6 +534,7 @@ onMounted(fetchStudents)
 /* Existing Styles */
 .advisor-shell {
   width: 95%;
+  padding-right: 5%;
   margin-left: auto;
   margin-right: auto;
 }

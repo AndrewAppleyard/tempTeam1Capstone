@@ -317,6 +317,10 @@ function downloadCSV() {
 </script>
 
 <style scoped>
+  v-container{
+    padding-right: 5%;
+  }
+
 .font-mono{
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
 }
@@ -327,6 +331,10 @@ function downloadCSV() {
   width: 100%;
 }
 
+.center {
+ padding-right: 5%;
+}
+
 @media print{
   .v-btn,.v-select,.v-text-field{ display:none !important; }
   body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -335,10 +343,10 @@ function downloadCSV() {
 </style>
 
 <template>
-  <v-container fluid class="pa-2" style="background-color: transparent;">
-    <v-row>
+  <v-container class="pa-2" style="background-color: transparent; padding-right: 5%;">
+    <v-row style="padding-right: 5%;">
       <v-col cols="12" class="mx-auto" style="width:95%;">
-        <v-card class="pa-5" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:16px;">
+        <v-card class="pa-5" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:16px; padding-right: 5%;">
           <!-- Header / Title -->
           <v-row class="mb-3" align="center" no-gutters>
             <v-col cols="12" md="6" class="d-flex align-center">
@@ -559,8 +567,8 @@ function downloadCSV() {
     </v-row>
   </v-container>
 
-  <v-container fluid class="pa-2" style="background-color: transparent;">
-    <div class="text-center mt-6 brand-primary">
+  <v-container class="pa-2" style="background-color: transparent;padding-right: 5%;">
+    <div class="text-center mt-6 brand-primary" style="padding-right: 5%;">
       © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
     </div>
   </v-container>
