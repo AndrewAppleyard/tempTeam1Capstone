@@ -16,8 +16,6 @@ const props = defineProps<{
   formatPhoneNumber: (rawNumber: string | null | undefined) => string
 }>()
 
-console.log("Inside appointment card", props)
-
 /* =========================================================
    APPOINTMENT DATA & STATE
 ========================================================= */
@@ -107,7 +105,7 @@ async function bookAppointment() {
   }
 }
 
-const availableTimes = ref([]);
+const availableTimes = ref<string[]>([]);
 
 watch(
   () => appointmentForm.value.appointmentDate,
@@ -121,16 +119,19 @@ watch(
 
     try {
       const times = await AppointmentAPI.getAvailableSlots(props.advisorId, cleanDate);
-      console.log("API received the date:", cleanDate); // Verify the sent date
+      console.log("API received the date:", cleanDate);
       console.log("Available times received:", times);
       availableTimes.value = times;
       
-      if (!times.includes(appointmentForm.value.appointmentTime)) {
+      if (!times.includes(appointmentForm.value.appointmentTime as string) && times.length > 0) {
+        appointmentForm.value.appointmentTime = times[0]; 
+      } else if (times.length === 0) {
         appointmentForm.value.appointmentTime = null;
       }
     } catch (e) {
       console.error("Error loading available times", e);
       availableTimes.value = [];
+      appointmentForm.value.appointmentTime = null;
     }
   },
   { immediate: true }
@@ -139,16 +140,19 @@ watch(
 </script>
 
 <template>
-      <v-card-title class="panel-card">
-        <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
-        Advisor Information
-      </v-card-title>
-      <v-divider />
-      <v-list density="comfortable" class="info-list">
-        <v-list-item class="info-item">
+  <div class="panel-title" :style="{ color: COLOR_PRIMARY, padding: '12px 16px', fontWeight: 700, textAlign: 'center' }">
+    <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
+    Advisor Information
+  </div>
+  <v-divider />
+
+  <div class="d-flex flex-column justify-space-between" style="height: calc(100% - 40px);">
+      <v-list density="comfortable" class="info-list flex-grow-0">
+        <v-list-item class="info-item text-left">
           <strong>Name:</strong> {{ advisorName }}
         </v-list-item>
-        <v-list-item class="info-item">
+        
+        <v-list-item class="info-item text-left">
           <strong>Email: </strong>
           <a
             :href="'mailto:' + advisorEmail"
@@ -158,11 +162,13 @@ watch(
           </a>
           <span v-else>{{ advisorEmail }}</span>
         </v-list-item>
-        <v-list-item class="info-item">
+        
+        <v-list-item class="info-item text-left">
           <strong>Phone:</strong> {{ formatPhoneNumber(advisorPhone) }}
         </v-list-item>
       </v-list>
-      <v-card-actions class="justify-end pt-0 pb-3 pr-4">
+
+      <v-card-actions class="justify-end pt-0 pb-3 pr-4 flex-grow-0">
         <v-btn
           color="primary" 
           variant="flat"
@@ -173,109 +179,129 @@ watch(
           Book Appointment
         </v-btn>
       </v-card-actions>
+  </div>
 
-    <v-dialog
-      v-model="appointmentDialog"
-      max-width="600"
-      aria-label="Book Appointment Dialog"
-    >
-      <v-card class="dialog-card">
-        <v-card-title class="dialog-title">
-          Book Appointment with {{ advisorName }}
-        </v-card-title>
-        <v-divider />
-        <v-card-text>
-          <v-form @submit.prevent="bookAppointment">
-            <v-row dense>
-              <v-col cols="12">
-                <v-text-field
-                  v-model.number="appointmentForm.advisorid"
-                  label="Advisor ID"
-                  :hint="`Booking with: ${advisorName}`"
-                  persistent-hint
-                  density="comfortable"
-                  :disabled="true"
-                  type="number"
-                  required
-                />
+
+  <v-dialog
+    v-model="appointmentDialog"
+    max-width="600"
+    aria-label="Book Appointment Dialog"
+  >
+    <v-card class="dialog-card">
+      <v-card-title class="dialog-title">
+        Book Appointment with {{ advisorName }}
+      </v-card-title>
+      <v-divider />
+      <v-card-text>
+        <v-form @submit.prevent="bookAppointment">
+          <v-row dense>
+            <v-col cols="12">
+              <v-text-field
+                v-model.number="appointmentForm.advisorid"
+                label="Advisor ID"
+                :hint="`Booking with: ${advisorName}`"
+                persistent-hint
+                density="comfortable"
+                :disabled="true"
+                type="number"
+                required
+              />
+            </v-col>
+
+            <v-col cols="12" md="6">
+              <v-menu
+                  v-model="dateMenu"
+                  :close-on-content-click="false"
+                  transition="scale-transition"
+                  offset-y
+                  min-width="auto"
+              >
+                  <template #activator="{ props }">
+                  <v-text-field
+                      v-model="appointmentForm.appointmentDate"
+                      label="Appointment Date"
+                      prepend-inner-icon="mdi-calendar"
+                      readonly
+                      v-bind="props"
+                      density="comfortable"
+                      required
+                  />
+                  </template>
+
+                  <v-date-picker
+                  v-model="appointmentForm.appointmentDate"
+                  color="primary"
+                  :min="new Date().toISOString().split('T')[0]"
+                  @update:model-value="() => (dateMenu = false)"
+                  />
+              </v-menu>
               </v-col>
 
-              <v-col cols="12" md="6">
-                <v-menu
-                    v-model="dateMenu"
-                    :close-on-content-click="false"
-                    transition="scale-transition"
-                    offset-y
-                    min-width="auto"
-                >
-                    <template #activator="{ props }">
-                    <v-text-field
-                        v-model="appointmentForm.appointmentDate"
-                        label="Appointment Date"
-                        prepend-inner-icon="mdi-calendar"
-                        readonly
-                        v-bind="props"
-                        density="comfortable"
-                        required
-                    />
-                    </template>
-
-                    <v-date-picker
-                    v-model="appointmentForm.appointmentDate"
-                    color="primary"
-                    :min="new Date().toISOString().split('T')[0]"
-                    @update:model-value="() => (dateMenu = false)"
-                    />
-                </v-menu>
-                </v-col>
-
-              <v-col cols="12" md="6">
-                <!-- <v-select
+            <v-col cols="12" md="6">
+              <v-select
                   v-model="appointmentForm.appointmentTime"
-                  :items="TIME_OPTIONS"
-                  item-title="text"
-                  item-value="value"
+                  :items="availableTimes"
                   label="Appointment Time"
                   density="comfortable"
                   required
-                /> -->
-                <v-select
-                    v-model="appointmentForm.appointmentTime"
-                    :items="availableTimes"
-                    label="Appointment Time"
-                    density="comfortable"
-                    required
-                />
-              </v-col>
-            </v-row>
-          </v-form>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn text @click="appointmentDialog = false" :disabled="appointmentSubmitting">Cancel</v-btn>
-          <v-btn 
-            color="primary" 
-            @click="bookAppointment" 
-            :loading="appointmentSubmitting"
-            :disabled="!appointmentForm.appointmentDate || !appointmentForm.appointmentTime"
-          >
-            Confirm Booking
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <v-snackbar
-      v-model="appointmentSnackbar"
-      :timeout="5000"
-      :color="appointmentSnackbarColor"
-      location="bottom right"
-    >
-      {{ appointmentSnackbarMessage }}
-      <template #actions>
-        <v-btn :color="appointmentSnackbarColor === 'success' ? 'white' : 'red'" variant="text" @click="appointmentSnackbar = false">
-          Close
+                  :disabled="availableTimes.length === 0"
+                  :hint="availableTimes.length === 0 ? 'No slots available for this date' : ''"
+                  persistent-hint
+              />
+            </v-col>
+          </v-row>
+        </v-form>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn text @click="appointmentDialog = false" :disabled="appointmentSubmitting">Cancel</v-btn>
+        <v-btn 
+          color="primary" 
+          @click="bookAppointment" 
+          :loading="appointmentSubmitting"
+          :disabled="!appointmentForm.appointmentDate || !appointmentForm.appointmentTime"
+        >
+          Confirm Booking
         </v-btn>
-      </template>
-    </v-snackbar>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-snackbar
+    v-model="appointmentSnackbar"
+    :timeout="5000"
+    :color="appointmentSnackbarColor"
+    location="bottom right"
+  >
+    {{ appointmentSnackbarMessage }}
+    <template #actions>
+      <v-btn :color="appointmentSnackbarColor === 'success' ? 'white' : 'red'" variant="text" @click="appointmentSnackbar = false">
+        Close
+      </v-btn>
+    </template>
+  </v-snackbar>
 </template>
+
+<style scoped>
+.info-list { 
+  background: transparent;
+  padding-bottom: 8px; 
+}
+.info-item { 
+    padding-left: 16px; 
+}
+.panel-title {
+
+}
+
+.dialog-card {
+  border: 1px solid #002856;
+  border-radius: 12px;
+}
+.dialog-title {
+  color: #002856;
+  padding: 10px 16px;
+  font-weight: 700;
+  text-align: center;
+}
+</style>

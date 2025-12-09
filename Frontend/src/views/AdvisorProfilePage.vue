@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '../store/user.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
 import AppointmentAPI from '../apis/AppointmentAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
@@ -43,7 +44,7 @@ const error = ref<string | null>(null)
 
 /* Store access */
 const userStore = useUserStore()
-const currentRoleID = computed(() => userStore.roleID) // advisorID
+const advisorId = computed(() => userStore.roleID) // advisorID
 const fullName = computed(() => `${profile.firstName} ${profile.lastName}`)
 
 /* Loading State */
@@ -61,8 +62,6 @@ const profile = reactive({
   phone: '',
   pronouns: '',
 })
-
-const fullName = computed(() => `${profile.firstName} ${profile.lastName}`)
 
 /* Advisor Stats */
 const stats = reactive({
@@ -118,7 +117,7 @@ function mapAdvisorData(response: any) {
   const data = response.advisor || response
 
   // --- Profile Data ---
-  profile.advisorID = String(data.advisorid || advisorId || '')
+  profile.advisorID = String(data.advisorid || advisorId.value || '')
   profile.firstName = data.firstname || ''
   profile.lastName = data.lastname || ''
   profile.title = data.title || 'Academic Advisor'
@@ -259,14 +258,14 @@ async function fetchInstructorCourses(lastName: string) {
 ========================================================= */
 onMounted(async () => {
   try {
-    if (!advisorId) {
+    if (!advisorId.value) {
       console.error('Advisor ID not available from route.')
       error.value = 'Advisor not found. Please check the URL or log in again.'
       loading.value = false
       return
     }
 
-    const advisorData = await AdvisorAPI.getAdvisorById(advisorId)
+    const advisorData = await AdvisorAPI.getAdvisorById(advisorId.value)
     mapAdvisorData(advisorData)
   } catch (e) {
     console.error('Error fetching advisor profile data:', e)
@@ -308,7 +307,9 @@ function printPage() {
 }
 
 function viewStudent(studentId: string) {
-  router.push({ path: `/student/${studentId}` })
+  localStorage.setItem("selected_user1", studentId)
+    console.log("Viewing Page for Student ID ", localStorage.getItem("selected_user1"))
+    router.push(`/student`)
 }
 
 function downloadDoc(item: any) {
