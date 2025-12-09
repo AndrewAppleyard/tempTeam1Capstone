@@ -149,6 +149,7 @@ function mapAdvisorData(response: any) {
 //     profile.email = data.email || userStore.email || '' 
 //     profile.phone = String(data.phone) || '' 
 //     // profile.pronouns = data.pronouns || '' 
+
     fetchAdvisorStudents(profile.advisorID)
     fetchNextAppointment(profile.advisorID)
     if (profile.lastName) {
@@ -276,6 +277,7 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+
 //     const targetID = currentRoleID.value
     
 //     try {
@@ -310,7 +312,7 @@ function viewStudent(studentId: string) {
 }
 
 function downloadDoc(item: any) {
-  // Placeholder to keep the button from throwing errors
+  // Placeholder
   console.log('Download document:', item)
 }
 
