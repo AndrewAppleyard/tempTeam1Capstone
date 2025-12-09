@@ -260,7 +260,13 @@ function getAdvisingDateText(s) {
     
     if (s.dateadvised) {
         const date = new Date(s.dateadvised)
-        const formattedDate = date.toLocaleDateString()
+
+      const displayDate = new Date(date)
+      displayDate.setDate(displayDate.getDate() + 1)
+      const formattedDate = displayDate.toLocaleDateString()
+
+
+
         if (date > new Date()) {
             return `Upcoming Advising: ${formattedDate}`
         } else {
