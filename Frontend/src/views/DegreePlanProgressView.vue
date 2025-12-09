@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import DegreePlanAPI from '../apis/DegreePlanAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import { useUserStore } from '../store/user.js'
@@ -38,12 +38,25 @@ interface ProgressCourse extends CatalogCourse {
 }
 
 // --- Component Setup ---
-
+const router = useRouter()
 const userStore = useUserStore()
 
+// const studentId = computed<number | null>(() => {
+//   const storeId = userStore.roleID ? Number(userStore.roleID) : NaN
+//   return Number.isNaN(storeId) ? null : storeId
+// })
 const studentId = computed<number | null>(() => {
-  const storeId = userStore.roleID ? Number(userStore.roleID) : NaN
-  return Number.isNaN(storeId) ? null : storeId
+  if (!userStore.isLoggedIn) return null
+
+  if (userStore.userRole === 'UAFS_STUDENTS') {
+    // Students use their own roleID
+    const id = userStore.roleID ? Number(userStore.roleID) : NaN
+    return Number.isNaN(id) ? null : id
+  } else {
+    // Advisors use the selected student
+    const id = Number(localStorage.getItem('selected_user1'))
+    return Number.isNaN(id) ? null : id
+  }
 })
 
 const hasStudentId = computed(() => !!studentId.value)
@@ -58,6 +71,7 @@ const progressCourses = ref<ProgressCourse[]>([])
 const termOrder = ref<string[]>([])
 const expandedPanels = ref<string[]>([])
 const studentMinor = ref<string | null>(null)
+
 
 function extractCourseCodeAndTitle(obj: any) {
   const raw = (obj?.code || obj?.course || obj?.section || obj?.number || obj?.name || '').toString().trim()
@@ -329,6 +343,10 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+async function goBack() {
+  router.push('/student')
+}
 
 
 function mergeData() {
@@ -872,7 +890,12 @@ watch(groupedProgress, (groups) => {
                 </v-card-title>
               </v-card>
             </v-col>
+            
             <v-col cols="12" md="6" class="d-flex justify-end align-center flex-wrap" style="gap:10px;">
+              <v-btn variant="outlined" :ripple="false" class="mr-2" color="#002856" @click="goBack">
+                <v-icon start>mdi-arrow-left</v-icon>
+                Back
+              </v-btn>
               <v-btn variant="outlined" color="#002856" @click="() => window.print()">
                 <v-icon start>mdi-printer</v-icon>
                 Print / Save PDF

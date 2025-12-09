@@ -82,14 +82,6 @@ const initials = computed(() => {
         >
           <v-list-item-title>Profile</v-list-item-title>
         </v-list-item>
-<!--<v-list-item 
-          v-if="userStore.roleID"
-          link 
-          :to="{ path: `/userProfilePage` }" 
-          @click="drawer = false"
-        >
-          <v-list-item-title>Profile</v-list-item-title>
-        </v-list-item> -->
        </template>
 
       <!-- student  -->

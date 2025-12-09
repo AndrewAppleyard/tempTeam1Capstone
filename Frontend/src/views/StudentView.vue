@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../store/user.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
 import AppointmentCard from '../components/AppointmentCard.vue'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 
 /* =========================================================
@@ -392,6 +393,22 @@ async function submitChangeRequest() {
   }
 }
 
+function goToTranscript() {
+  if (!studentId.value) return
+  router.push('/transcript')
+}
+
+function goToDegreePlanProgress() {
+  if (!studentId.value) return
+  router.push('/degreePlanProgressView')
+}
+
+function goToDegreePlan() {
+  if (!studentId.value) return
+  router.push('/degreePlanView')
+}
+
+
 /* =========================================================
    6) PERSISTENCE (load / save next-semester)
 ========================================================= */
@@ -704,38 +721,24 @@ async function sendTestSMS() {
       backgroundColor: COLOR_ACCENT_BG,
       borderRadius: '16px',
       border: `1px solid ${COLOR_PRIMARY}`,
-      margin: '0 auto'
     }"
   >
-      <!-- Header: Degree Planner LEFT, Welcome center, Actions RIGHT -->
       <header class="mb-4 layout-head">
         <v-row align="center" class="header-grid">
           
-          <!-- Left column -->
           <v-col cols="12" md="4" class="text-left">
             <div class="planner-left" :style="{ color: COLOR_PRIMARY }">
               Degree Planner
             </div>
           </v-col>
 
-          <!-- Center column -->
           <v-col cols="12" md="4" class="text-center">
             <h1 class="welcome-center" :style="{ color: COLOR_PRIMARY }">
               {{ welcomeGreeting }}
             </h1>
           </v-col>
 
-          <!-- Right column (button aligned right) -->
           <v-col cols="12" md="4" class="d-flex justify-end" style="gap: 30px; padding-right: 20px;">
-            <v-btn
-              :disabled="!hasStudentId"
-              variant="outlined"
-              color="#002856"
-              @click="openPreferencesDialog"
-            >
-              <v-icon start>mdi-clipboard-text</v-icon>
-              Schedule Preferences
-            </v-btn>
             <v-btn
               v-if="isAdvisor"
               :disabled="!hasStudentId"
@@ -753,7 +756,6 @@ async function sendTestSMS() {
 
 
       <v-row dense>
-        <!-- CURRENT SEMESTER -->
         <v-col cols="12" md="6" class="pa-3">
           <v-card class="panel-card ensure-fab-visibility">
             <v-card-title class="panel-title">
@@ -802,7 +804,6 @@ async function sendTestSMS() {
           </v-card>
         </v-col>
 
-        <!-- NEXT SEMESTER -->
         <v-col cols="12" md="6" class="pa-3">
           <v-card class="panel-card ensure-fab-visibility">
             <v-card-title class="panel-title">
@@ -850,115 +851,97 @@ async function sendTestSMS() {
             </div>
           </v-card>
         </v-col>
-
-        <!-- ADVISOR INFO -->
-        <!-- <v-col cols="12" md="6" class="pa-3" style="text-align: left;">
-          <v-card class="panel-card" :style="{ backgroundColor: COLOR_PANEL_BG }">
-            <v-card-title class="panel-title">
-              <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
-              Advisor Information
-            </v-card-title>
-            <v-divider />
-            <v-list density="comfortable" class="info-list">
-              <v-list-item class="info-item">
-                <strong>Name:</strong> {{ advisorName }}
-              </v-list-item>
-              <v-list-item class="info-item">
-                <strong>Email: </strong>
-                <a
-                  :href="'mailto:' + advisorEmail"
-                  v-if="advisorEmail !== 'TBA' && advisorEmail !== 'N/A'"
-                >
-                  {{ advisorEmail }}
-                </a>
-                <span v-else>{{ advisorEmail }}</span>
-              </v-list-item>
-              <v-list-item class="info-item">
-                <strong>Phone:</strong> {{ formatPhoneNumber(advisorPhone) }}
-              </v-list-item>
-            </v-list>
+      </v-row>
+      
+      <v-row dense class="mt-4">
+        <v-col cols="12" md="6" class="pa-3">
+          <v-card
+            class="panel-card"
+            style="
+              background-color: #ffffff;
+              border: 1px solid #002856;
+              border-radius: 12px;
+              height: 100%; 
+            "
+          >
+             <AppointmentCard
+              :advisor-id="advisorId"
+              :advisor-name="advisorName"
+              :advisor-email="advisorEmail"
+              :advisor-phone="advisorPhone"
+              :student-id="studentId"
+              :has-student-id="hasStudentId"
+              :format-phone-number="formatPhoneNumber"
+            />
           </v-card>
         </v-col>
-      </v-row> -->
-      <v-row dense class="mt-4">
-  <!-- LEFT: Appointment Card -->
-  <v-col
-    cols="12"
-    md="5"
-    style="
-      text-align: left;
-      background-color: #ffffff;
-      border: 1px solid #002856;
-      border-radius: 12px;
-      margin-left: 13px;
-    "
-  >
-    <AppointmentCard
-      :advisor-id="advisorId"
-      :advisor-name="advisorName"
-      :advisor-email="advisorEmail"
-      :advisor-phone="advisorPhone"
-      :student-id="studentId"
-      :has-student-id="hasStudentId"
-      :format-phone-number="formatPhoneNumber"
-    />
-  </v-col>
 
-  <!-- RIGHT: Actions -->
-  <v-col
-  cols="6"
-  md="4"
-  class="d-flex flex-column align-end"
-  style="
-    background-color: transparent;
-    border-radius: 12px;
-    padding-right: 1px;
-    margin-left: 325px;
-  "
->
-  <!-- Button 1: Request change -->
-  <v-btn
-    class="request-btn mb-2"
-    variant="outlined"
-    :style="{
-      borderColor: COLOR_PRIMARY,
-      color: COLOR_PRIMARY
-    }"
-    @click="changeRequestDialog = true"
-  >
-    <v-icon start>mdi-file-document-edit-outline</v-icon>
-    Request Major / Minor Change
-  </v-btn>
+        <v-col cols="12" md="6" class="pa-3">
+          <v-card
+            class="panel-card"
+            style="
+              background-color: #ffffff;
+              border: 1px solid #002856;
+              border-radius: 12px;
+              height: 100%; 
+            "
+          >
+            <v-card-title class="panel-title pb-1">
+              <v-icon size="20" class="mr-2">mdi-cogs</v-icon>
+              Student Actions
+            </v-card-title>
+            <v-divider class="mx-4" />
+            
+            <v-card-text class="d-flex flex-column pt-4" style="gap: 12px;"> 
+              <v-btn
+                class="request-btn"
+                variant="outlined"
+                :style="{
+                  borderColor: COLOR_PRIMARY,
+                  color: COLOR_PRIMARY
+                }"
+                :disabled="!hasStudentId || userStore.userRole != 'UAFS_STUDENTS'"
+                @click="changeRequestDialog = true"
+              >
+                <v-icon start>mdi-file-document-edit-outline</v-icon>
+                Request Major / Minor Change
+              </v-btn>
 
-  <!-- Button 2: Generate Schedule -->
-  <v-btn
-    class="mb-2"
-    :disabled="!hasStudentId"
-    color="primary"
-    @click="generateSchedule"
-  >
-    <v-icon start>mdi-calendar-refresh</v-icon>
-    Generate Schedule
-  </v-btn>
+              <v-btn
+                :disabled="!hasStudentId || userStore.userRole != 'UAFS_STUDENTS'"
+                variant="outlined"
+                color="#002856"
+                @click="openPreferencesDialog"
+              >
+                <v-icon start>mdi-clipboard-text</v-icon>
+                Schedule Preferences
+              </v-btn>
 
-  <!-- Button 3: Check Advising Hold -->
-  <v-btn
-    :disabled="!hasStudentId"
-    color="primary"
-    variant="outlined"
-    @click="runHoldCheck"
-  >
-    <v-icon start>mdi-shield-check-outline</v-icon>
-    Check Advising Hold
-  </v-btn>
-</v-col>
+              <v-btn
+                :disabled="!hasStudentId || userStore.userRole != 'UAFS_STUDENTS'"
+                color="primary"
+                @click="generateSchedule"
+              >
+                <v-icon start>mdi-calendar-refresh</v-icon>
+                Generate Schedule
+              </v-btn>
 
-</v-row>
+              <v-btn
+                :disabled="!hasStudentId || userStore.userRole != 'UAFS_STUDENTS'"
+                color="primary"
+                variant="outlined"
+                @click="runHoldCheck"
+              >
+                <v-icon start>mdi-shield-check-outline</v-icon>
+                Check Advising Hold
+              </v-btn>
 
-    </v-row dense>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
         
 
-      <!-- CURRENT: Dialog -->
       <v-dialog
         v-model="currentDialog"
         width="900"
@@ -998,7 +981,6 @@ async function sendTestSMS() {
         </v-card>
       </v-dialog>
 
-      <!-- NEXT: Dialog -->
       <v-dialog
         v-model="nextDialog"
         width="1200"
@@ -1043,7 +1025,6 @@ async function sendTestSMS() {
         </v-card>
       </v-dialog>
 
-      <!-- PREFERENCES: Dialog -->
       <v-dialog v-model="preferencesDialog" width="780" aria-label="Schedule Preferences Dialog">
         <v-card class="dialog-card">
           <v-card-title class="dialog-title">
@@ -1177,7 +1158,6 @@ async function sendTestSMS() {
         </template>
       </v-snackbar>
 
-      <!-- PROGRAM CHANGE REQUEST: Dialog -->
       <v-dialog
         v-model="changeRequestDialog"
         width="800"
@@ -1305,6 +1285,74 @@ async function sendTestSMS() {
         </v-card>
       </v-dialog>
 
+      
+      <v-row dense class="mt-4">
+        <v-col cols="12" class="pa-3">
+          <v-card
+            class="panel-card"
+            style="
+              background-color: #F3F8FD; 
+              border: 1px solid #002856;
+              border-radius: 12px;
+              height: 100%;
+            "
+          >
+            <v-card-title class="panel-title pb-1">
+              <v-icon size="20" class="mr-2">mdi-shield-crown-outline</v-icon>
+              Navigation
+            </v-card-title>
+            <v-divider class="mx-4" />
+            
+            <v-card-text class="pa-3">
+                <div class="d-flex flex-wrap justify-space-between align-center" style="gap: 12px;">
+
+                    <v-btn
+                        :disabled="!hasStudentId || userStore.userRole == 'UAFS_ADMINS'"
+                        :style="{
+                          borderColor: COLOR_PRIMARY,
+                          color: COLOR_PRIMARY
+                        }"
+                        variant="outlined"
+                        @click="goToTranscript"
+                        class="flex-grow-1"
+                    >
+                        <v-icon start>mdi-file-document-outline</v-icon>
+                        View Transcript
+                    </v-btn>
+
+                    <v-btn
+                        :disabled="!hasStudentId || userStore.userRole == 'UAFS_ADMINS'"
+                        :style="{
+                          borderColor: COLOR_PRIMARY,
+                          color: COLOR_PRIMARY
+                        }"
+                        variant="outlined"
+                        @click="goToDegreePlanProgress"
+                        class="flex-grow-1"
+                    >
+                        <v-icon start>mdi-progress-check</v-icon>
+                        Degree Plan Progress
+                    </v-btn>
+
+                    <v-btn
+                        :disabled="!hasStudentId || userStore.userRole == 'UAFS_ADMINS'"
+                        :style="{
+                          borderColor: COLOR_PRIMARY,
+                          color: COLOR_PRIMARY
+                        }"
+                        variant="outlined"
+                        @click="goToDegreePlan"
+                        class="flex-grow-1"
+                    >
+                        <v-icon start>mdi-clipboard-list-outline</v-icon>
+                        Full Degree Plan
+                    </v-btn>
+                </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
     </v-container>
 
     <v-container fluid class="pa-2" style="background-color: transparent;">
@@ -1315,16 +1363,14 @@ async function sendTestSMS() {
 </template>
 
 <style scoped>
-/* =========================================================
-   BASE IMPROVEMENTS — subtle, respectful, not flashy
-========================================================= */
 .respectful-shell {
-
   box-shadow: 0 1px 0 rgba(0,0,0,0.05) inset;
-   max-width: 100%;
-  padding-right: 5%;
-  margin-left: calc(46% - 36.5vw ) !important;
-  
+  max-width: 1400px; 
+  width: 100%; 
+
+  margin: 0 auto; 
+  margin-left: calc(50% - (1400px / 2) - 2vw) !important;
+  padding-right: 10%;
 }
 
 /* Header layout */

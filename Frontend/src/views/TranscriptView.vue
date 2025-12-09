@@ -14,6 +14,7 @@ const GPA_POINTS: Record<string, number> = {
 }
 
 /* ===== Routing ===== */
+const router = useRouter()
 const userStore = useUserStore()
 
 const isStudent = computed(() => userStore.userRole === 'UAFS_STUDENTS')
@@ -227,15 +228,9 @@ onMounted(() => {
 })
 
 
-// async function goBack() {
-//   const roleid = await UserAPI.getStudentByUID(userStore.userID)
-//   userStore.roleID = roleid
-//   if (router && router.currentRoute.value.name !== 'student') {
-//     router.push(`/student/${userStore.roleID}`).catch(() => window.history.back())
-//   } else {
-//     window.history.back()
-//   }
-// }
+async function goBack() {
+  router.push('/student')
+}
 
 function printPage() { window.print() }
 
@@ -293,10 +288,10 @@ function downloadCSV() {
               </v-card>
             </v-col>
             <v-col cols="12" md="6" class="d-flex justify-end align-center gap-2">
-              <!-- <v-btn variant="outlined" :ripple="false" class="mr-2" color="#002856" @click="goBack">
+              <v-btn variant="outlined" :ripple="false" class="mr-2" color="#002856" @click="goBack">
                 <v-icon start>mdi-arrow-left</v-icon>
-                Back to Students
-              </v-btn> -->
+                Back
+              </v-btn>
               <v-btn variant="outlined" color="#002856" class="mr-2" @click="printPage">
                 <v-icon start>mdi-printer</v-icon>
                 Print / Save PDF
