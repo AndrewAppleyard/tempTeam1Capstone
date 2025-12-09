@@ -250,7 +250,7 @@ def getStudentInfo(studentid: int):
             student_result["classstanding"] = student.classstanding
             student_result["registrationstatus"] = student.registrationstatus
             student_result["advisingstatus"] = student.advisingstatus
-            student_result["activestatus"] = student.activestatus #actvestatus added
+            student_result["activestatus"] = student.activestatus
             student_result["dateadvised"] = student.dateadvised
             student_result["financialhold"] = student.financialhold
             student_result["advisinghold"] = student.advisinghold

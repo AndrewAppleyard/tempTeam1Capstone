@@ -333,9 +333,6 @@ function close() {
   emits('close')
 }
 
-watch(() => props.visible, (newVal) => {
-  localVisible.value = newVal
-})
 watch(localVisible, (val) => {
   emits('update:visible', val)
 })

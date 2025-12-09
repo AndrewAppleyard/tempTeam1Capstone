@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import AdvisorAPI from '../apis/AdvisorAPI'
 import AppointmentAPI from '../apis/AppointmentAPI'
 import StudentFormCard from '../components/StudentFormCard.vue'
+import { useUserStore } from '../store/user.js'
 
 /* =========================
     STATE
@@ -13,7 +14,20 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref(null)
 const studentList = ref([]) 
-const advisorid = route.params.id
+const store = useUserStore()
+
+const advisorId = computed(() => {
+  if (!store.isLoggedIn) return null
+
+  if (store.userRole === 'UAFS_ADVISORS') {
+    return store.roleID ? Number(store.roleID) : null
+  } else {
+    //selected_user2 == advisor left ambiguous for security purposes
+    //localStorage.getItem('selected_user2', userStore.selectedAdvisorID)
+    return Number(localStorage.getItem('selected_user2'))
+  }
+})
+
 
 const showStudentForm = ref(false)
 const studentToEdit = ref(null)
@@ -65,7 +79,7 @@ async function fetchStudents() {
   loading.value = true
   error.value = null
   try {
-    let response = await AdvisorAPI.getAdvisorStudents(advisorid)
+    let response = await AdvisorAPI.getAdvisorStudents(advisorId.value)
     
     response = await fetchUpcomingAppointments(response)
     studentList.value = response
@@ -193,8 +207,11 @@ function handleStudentClick(student) {
     if (editMode.value) {
         studentToEdit.value = student
         showStudentForm.value = true
+        localStorage.setItem('selected_user1', student.userid)
+
     } else {
-        router.push(`/student/${student.userid}`)
+        localStorage.setItem('selected_user1', student.userid)
+        router.push(`/student`)
     }
 }
 
@@ -254,7 +271,7 @@ function getAdvisingDateText(s) {
 }
 
 onMounted(async () => {
-  const userData = await AdvisorAPI.getAdvisorById(advisorid)
+  const userData = await AdvisorAPI.getAdvisorById(advisorId.value)
   console.log(userData)
 })
 onMounted(fetchStudents)

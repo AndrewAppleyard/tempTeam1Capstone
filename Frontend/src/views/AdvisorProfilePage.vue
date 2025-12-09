@@ -28,7 +28,7 @@ function initials(f: string, l: string) {
 ========================================================= */
 const route = useRoute()
 const router = useRouter()
-const advisorId = route.params.id as string // same pattern as student list
+
 const TIME_ZONE = 'America/Chicago'
 
 /* =========================================================
@@ -40,6 +40,16 @@ const error = ref<string | null>(null)
 /* =========================================================
    DATA MODELS
 ========================================================= */
+
+/* Store access */
+const userStore = useUserStore()
+const currentRoleID = computed(() => userStore.roleID) // advisorID
+const fullName = computed(() => `${profile.firstName} ${profile.lastName}`)
+
+/* Loading State */
+const isLoading = ref(true)
+
+/* --- DATA MODELS --- */
 const profile = reactive({
   advisorID: '',
   firstName: '',
@@ -125,6 +135,21 @@ function mapAdvisorData(response: any) {
 
   // Dependent data
   if (profile.advisorID) {
+//     const data = response.advisor || response;
+    
+//     // --- Profile Data ---
+//     profile.advisorID = String(data.advisorid) || ''
+//     profile.firstName = data.firstname || ''
+//     profile.lastName = data.lastname || ''
+//     profile.title = data.title || 'Academic Advisor'
+//     profile.department = data.department || '—'
+//     profile.officeLocation = data.officeLocation || '—'
+    
+//     // --- Contact Data ---
+//     profile.email = data.email || userStore.email || '' 
+//     profile.phone = String(data.phone) || '' 
+//     // profile.pronouns = data.pronouns || '' 
+
     fetchAdvisorStudents(profile.advisorID)
     fetchNextAppointment(profile.advisorID)
     if (profile.lastName) {
@@ -252,6 +277,21 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+
+//     const targetID = currentRoleID.value
+    
+//     try {
+//         const advisorData = await AdvisorAPI.getAdvisorById(targetID)
+//         mapAdvisorData(advisorData)
+
+//     } catch (e) {
+//         console.error('Error fetching advisor profile data:', e)
+//         snack.show = true
+//         snack.message = 'Failed to load advisor profile data.'
+//         snack.color = 'error'
+//     } finally {
+//         isLoading.value = false
+//     }
 })
 
 /* =========================================================
@@ -272,7 +312,7 @@ function viewStudent(studentId: string) {
 }
 
 function downloadDoc(item: any) {
-  // Placeholder to keep the button from throwing errors
+  // Placeholder
   console.log('Download document:', item)
 }
 

@@ -41,16 +41,19 @@ async function login() {
       userStore.userID = userInfo.userid
       userStore.firstName = userInfo.firstname
       userStore.lastName = userInfo.lastname
+
       switch (userStore.userRole) {
         case 'UAFS_STUDENTS':
           const studentid = await UserAPI.getStudentByUID(userStore.userID)
           userStore.roleID = studentid
-          router.replace(userStore.roleID ? `/student/${userStore.roleID}` : '/student')
+          localStorage.setItem('role_id', userStore.roleID)
+          router.replace(userStore.roleID ? `/student` : '/student')
           break
         case 'UAFS_ADVISORS':
           const advisorid = await UserAPI.getAdvisorByUID(userStore.userID)
           userStore.roleID = advisorid
-          router.replace(`/advisor/${userStore.roleID}`)
+          localStorage.setItem('role_id', userStore.roleID)
+          router.replace(`/advisor`)
           break
         case 'UAFS_ADMINS':
           router.replace('/admin')

@@ -11,85 +11,93 @@ import UserProfilePage from '../views/UserProfilePage.vue'
 import AdvisorProfilePage from '../views/AdvisorProfilePage.vue'
 import DegreePlanView from '../views/DegreePlanView.vue'
 import DegreePlanProgressView from '../views/DegreePlanProgressView.vue'
+import NotFoundView from '../views/NotFoundView.vue'
+
 
 const routes = [
   { path: '/', component: LoginView },
-  { path: '/admin', component: AdminView },
-  { path: '/advisor/:id', component: AdvisorView },
-  { path: '/student/:id', component: StudentView },
-  { path: '/transcript/:id', component: TranscriptView },
-  { path: '/courseCatalog/:studentid?', component: CourseCatalogView },
-  { path: '/DegreePlanView/:id', component: DegreePlanView },
-  { path: '/DegreePlanView', component: DegreePlanView },
-  { path: '/degreePlanProgressView/:id', component: DegreePlanProgressView },
-  { path: '/UserProfilePage/:id', component: UserProfilePage },
-  { path: '/AdvisorProfilePage/:id', component: AdvisorProfilePage },
+
+  {
+    path: '/admin',
+    component: AdminView,
+    meta: { roles: ['UAFS_ADMINS'] }
+  },
+  {
+    path: '/advisor',
+    component: AdvisorView,
+    meta: { roles: ['UAFS_ADVISORS', 'UAFS_ADMINS'] }
+  },
+  {
+    path: '/student',
+    component: StudentView,
+    meta: { roles: ['UAFS_STUDENTS', 'UAFS_ADVISORS', 'UAFS_ADMINS'] }
+  },
+  {
+    path: '/transcript',
+    component: TranscriptView,
+    meta: { roles: ['UAFS_STUDENTS', 'UAFS_ADVISORS'] }
+  },
+  {
+    path: '/courseCatalog',
+    component: CourseCatalogView,
+    meta: { roles: ['UAFS_STUDENTS', 'UAFS_ADVISORS', 'UAFS_ADMINS'] }
+  },
+  {
+    path: '/degreePlanView',
+    component: DegreePlanView,
+    meta: { roles: ['UAFS_STUDENTS', 'UAFS_ADVISORS', 'UAFS_ADMINS'] }
+  },
+  {
+    path: '/degreePlanProgressView',
+    component: DegreePlanProgressView,
+    meta: { roles: ['UAFS_STUDENTS', 'UAFS_ADVISORS'] }
+  },
+  {
+    path: '/userProfilePage',
+    component: UserProfilePage,
+    meta: { roles: ['UAFS_STUDENTS'] }
+  },
+  {
+    path: '/advisorProfilePage',
+    component: AdvisorProfilePage,
+    meta: { roles: ['UAFS_ADVISORS'] }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/not-found'
+  },
+  {
+    path: '/not-found',
+    component: NotFoundView
+  }
 ]
+
 
 export const router = createRouter({
   history: createWebHistory(),
   routes,
 })
 
-const roleRoutes = {
-  UAFS_STUDENTS: [
-    '/student',
-    '/transcript',
-    '/courseCatalog',
-    '/DegreePlanView',
-    '/degreePlanProgressView',
-    '/UserProfilePage',
-  ],
-  UAFS_ADVISORS: [
-    '/advisor',
-    '/AdvisorProfilePage',
-    //'/UserProfilePage',
-    '/student',
-    '/transcript',
-    '/courseCatalog',
-    '/DegreePlanView',
-    '/degreePlanProgressView'
-  ],
-  UAFS_ADMINS: [
-    '/admin',
-    '/advisor',
-    '/student',
-    '/courseCatalog',
-    '/DegreePlanView',
-  ],
-}
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
 
-  const publicPaths = ['/']
-  const isPublic = publicPaths.includes(to.path)
-
-  if (!userStore.isLoggedIn && !isPublic) {
-    return next('/')
+  if (!userStore.isLoggedIn) {
+    await userStore.restoreLogin()
   }
 
-  if (userStore.isLoggedIn && to.path === '/') {
-    switch (userStore.userRole) {
-      case 'UAFS_STUDENTS': return next(userStore.roleID ? `/student/${userStore.roleID}` : '/student')
-      case 'UAFS_ADVISORS': return next(userStore.roleID ? `/advisor/${userStore.roleID}` : '/advisor')
-      case 'UAFS_ADMINS': return next('/admin')
-      default: return next('/')
+  const allowedRoles = to.meta?.roles
+  if (allowedRoles) {
+    if (!userStore.isLoggedIn) {
+      return next('/') 
+    }
+
+    if (!allowedRoles.includes(userStore.userRole)) {
+      return next('/not-found')
     }
   }
 
-  if (userStore.isLoggedIn && userStore.userRole === 'UAFS_STUDENTS' && to.path === '/student' && userStore.roleID) {
-    return next(`/student/${userStore.roleID}`)
-  }
-
-  if (userStore.isLoggedIn) {
-    const allowed = roleRoutes[userStore.userRole] || []
-    const match = allowed.some(prefix => to.path.startsWith(prefix))
-
-    if (!match && !isPublic) {
-      return next(allowed[0])
-    }
-  }
-
-  return next()
+  next()
 })
+
+export default router
