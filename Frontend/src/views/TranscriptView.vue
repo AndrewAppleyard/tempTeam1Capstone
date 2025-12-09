@@ -2,7 +2,7 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentAPI from '../apis/StudentAPI.js'
-
+import { useUserStore } from '../store/user.js'
 
 /* ===== GPA scale (4.0) ===== */
 const GPA_POINTS: Record<string, number> = {
@@ -14,9 +14,22 @@ const GPA_POINTS: Record<string, number> = {
 }
 
 /* ===== Routing ===== */
-const route = useRoute()
-const router = useRouter()
-const studentIdParam = route.params.id
+const userStore = useUserStore()
+
+const isStudent = computed(() => userStore.userRole === 'UAFS_STUDENTS')
+const studentId = computed<number | null>(() => {
+  if (!userStore.isLoggedIn) return null
+
+  if (userStore.userRole === 'UAFS_STUDENTS') {
+    // Students use their own roleID
+    const id = userStore.roleID ? Number(userStore.roleID) : NaN
+    return Number.isNaN(id) ? null : id
+  } else {
+    // Advisors/admins use the selected student
+    const id = Number(localStorage.getItem('selected_user1'))
+    return Number.isNaN(id) ? null : id
+  }
+})
 
 
 const student = ref({ 
@@ -112,14 +125,14 @@ const cumulative  = computed(() => summarize(transcript.value))
 const currentPage = ref(1)
 
 async function fetchAndProcessData() {
-  if (!studentIdParam) {
+  if (!studentId.value) {
     console.error("No student ID provided in route params.")
     return
   }
 
   // --- Student Data Fetching ---
   try {
-    const userData = await StudentAPI.getStudentById(studentIdParam)
+    const userData = await StudentAPI.getStudentById(studentId.value)
     
     if (userData) {
       const data = userData.student
@@ -132,7 +145,7 @@ async function fetchAndProcessData() {
       }
 
       student.value = {
-          studentID: data.studentid?.toString() || studentIdParam,
+          studentID: data.studentid?.toString() || studentId.value,
           firstName: data.firstname || 'N/A',
           lastName: data.lastname || 'N/A',
           level: studentLevel || 'Undergraduate',
@@ -147,7 +160,7 @@ async function fetchAndProcessData() {
 
   // --- Transcript Data Fetching and Processing ---
   try {
-    const fetchedTranscripts = await StudentAPI.getTranscripts(studentIdParam)
+    const fetchedTranscripts = await StudentAPI.getTranscripts(studentId.value)
     allTranscripts.value = fetchedTranscripts
 
     const processedCourses: CourseRow[] = []

@@ -40,6 +40,7 @@ export default {
 
     async logout() {
         try {
+            localStorage.clear()
             const response = await api.post("/Transfer/logout");
             console.log("Logout successful:", response.data);
             return response.data;

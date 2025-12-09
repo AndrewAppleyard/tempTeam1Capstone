@@ -39,13 +39,10 @@ interface ProgressCourse extends CatalogCourse {
 
 // --- Component Setup ---
 
-const route = useRoute()
 const userStore = useUserStore()
 
 const studentId = computed<number | null>(() => {
-  const routeId = Number(route.params.id)
-  if (!Number.isNaN(routeId)) return routeId
-  const storeId = userStore.userID ? Number(userStore.userID) : NaN
+  const storeId = userStore.roleID ? Number(userStore.roleID) : NaN
   return Number.isNaN(storeId) ? null : storeId
 })
 

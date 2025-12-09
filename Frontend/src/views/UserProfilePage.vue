@@ -30,14 +30,12 @@ const gradePoint = (g: string) => GPA_POINTS[g.toUpperCase().trim()] ?? 0
 const isGradeCalculated = (g: string) => gradePoint(g) > 0 || g.toUpperCase() === 'F'
 
 /* Routing */
-const route = useRoute()
-const router = useRouter()
-const studentIdParam = route.params.studentID as string | undefined
+const userStore = useUserStore()
+const studentId = computed(() => {
+  return userStore.roleID ? Number(userStore.roleID) : null
+})
 
-/* Store access */
-const userStore = useUserStore() // <-- Initialize the store
 const isStudentRole = computed(() => userStore.userRole === 'UAFS_STUDENTS')
-const isAdvisorRole = computed(() => userStore.userRole === 'UAFS_ADVISORS')
 const currentRoleID = computed(() => userStore.roleID) // studentID or advisorID
 
 /* Loading State */
@@ -159,7 +157,7 @@ function mapStudentData(response: any) {
     const transcriptData = response.transcript || {};
     
     // --- Profile Data ---
-    profile.studentID = String(studentData.studentid) || studentIdParam || ''
+    profile.studentID = String(studentData.studentid) || studentId || ''
     profile.firstName = studentData.firstname || ''
     profile.lastName = studentData.lastname || ''
     profile.level = studentData.classstanding || transcriptData?.year || 'Undergraduate'
@@ -503,14 +501,14 @@ onMounted(async () => {
         return
     }
 
-    const targetID = studentIdParam || currentRoleID.value
+    const targetID = studentId.value || currentRoleID.value
     
     try {
-        if (studentIdParam || isStudentRole.value) {
+        if (studentId.value || isStudentRole.value) {
             const studentData = await StudentAPI.getStudentById(targetID)
             mapStudentData(studentData)
 
-        } else if (isAdvisorRole.value && !studentIdParam) {
+        } else if (isAdvisorRole.value && !studentId) {
             const advisorData = await AdvisorAPI.getAdvisorById(targetID)
             mapAdvisorData(advisorData)
 
@@ -669,7 +667,7 @@ async function saveEdit() {
       tags: editable.tags,
     }
 
-    if (isStudentRole.value || studentIdParam) {
+    if (isStudentRole.value || studentId) {
       await StudentAPI.updateStudent(editable.studentID, updates)
       
       profile.firstName = editable.firstName

@@ -2,6 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useViewModeStore } from '../store/pinia.js'
+//import { useUserStore } from '../store/user.js' Unsure whether this is actually needed
 import { storeToRefs } from 'pinia'
 import AdminAPI from '../apis/AdminAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
@@ -162,8 +163,17 @@ const filteredStudents = computed(() => {
    ACTIONS & HANDLERS
 ========================================================= */
 function goToUser(id) {
-  if (viewMode.value === 'students') router.push(`/student/${id}`)
-  else router.push(`/advisor/${id}`)
+  if (viewMode.value === 'students'){
+    localStorage.setItem("selected_user1", id)
+    console.log("Saved Student ID", localStorage.getItem("selected_user1"))
+    router.push(`/student`)
+  }
+  else{
+    store.selectedAdvisorID = id
+    console.log("Saved Advisor ID", store.selectedAdvisorID)
+    localStorage.setItem("selected_user2", id)
+     router.push(`/advisor`)
+  }
 }
 
 function selectUser(item) {

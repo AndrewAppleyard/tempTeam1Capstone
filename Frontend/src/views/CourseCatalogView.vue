@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
 import CurrentCourseAPI from '../apis/CurrentCourseAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import { useUserStore } from '../store/user.js'
@@ -25,12 +24,14 @@ const error = ref<string | null>(null)
 const termInput = ref('Spring 2026')
 const searchText = ref('')
 const userStore = useUserStore()
-const route = useRoute()
+
 const isStudent = computed(() => userStore.userRole === 'UAFS_STUDENTS')
-const studentId = computed(() => {
-  const paramId = route.params.studentid ? Number(route.params.studentid) : null
-  return paramId || (userStore.userID ? Number(userStore.userID) : null)
-})
+const studentId = computed(() =>
+  userStore.userRole === 'UAFS_STUDENTS'
+    ? Number(userStore.roleID)
+    : null
+)
+
 const colWidths = [
   '12%',  // Section
   '8%',   // Status

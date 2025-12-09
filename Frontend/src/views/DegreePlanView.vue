@@ -5,14 +5,21 @@ import DegreePlanAPI from '../apis/DegreePlanAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import { useUserStore } from '../store/user.js'
 
-const route = useRoute()
+
 const userStore = useUserStore()
 
 const studentId = computed<number | null>(() => {
-  const routeId = Number(route.params.id)
-  if (!Number.isNaN(routeId)) return routeId
-  const storeId = userStore.userID ? Number(userStore.userID) : NaN
-  return Number.isNaN(storeId) ? null : storeId
+  if (!userStore.isLoggedIn) return null
+
+  if (userStore.userRole === 'UAFS_STUDENTS') {
+    // Students use their own roleID
+    const id = userStore.roleID ? Number(userStore.roleID) : NaN
+    return Number.isNaN(id) ? null : id
+  } else {
+    // Advisors/admins use the selected student
+    const id = Number(localStorage.getItem('selected_user1'))
+    return Number.isNaN(id) ? null : id
+  }
 })
 
 const hasStudentId = computed(() => !!studentId.value)

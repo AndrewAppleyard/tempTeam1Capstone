@@ -16,6 +16,8 @@ const props = defineProps<{
   formatPhoneNumber: (rawNumber: string | null | undefined) => string
 }>()
 
+console.log("Inside appointment card", props)
+
 /* =========================================================
    APPOINTMENT DATA & STATE
 ========================================================= */

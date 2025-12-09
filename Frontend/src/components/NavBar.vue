@@ -15,10 +15,10 @@ const isAdminRoute = computed(() => userStore.userRole === "UAFS_ADMINS")
 const isStudentRoute = computed(() => userStore.userRole === "UAFS_STUDENTS")
 const homePath = computed(() => {
   if (userStore.userRole === 'UAFS_STUDENTS') {
-    return `/student/${userStore.roleID}`
+    return `/student`
   }
   if (userStore.userRole === 'UAFS_ADVISORS') {
-    return `/advisor/${userStore.roleID}`
+    return `/advisor`
   }
   return '/'
 })
@@ -26,6 +26,7 @@ const homePath = computed(() => {
 function handleSetMode(mode) {
   console.log('Setting view mode to:', mode)
   setViewMode(mode)
+  //doesn't persist on refresh. Needs to be fixed.
   router.push('/admin')
   drawer.value = false
 }
@@ -85,7 +86,7 @@ const initials = computed(() => {
         <v-list-item 
           v-if="userStore.roleID"
           link 
-          :to="{ path: `/UserProfilePage/${userStore.roleID}` }" 
+          :to="{ path: `/UserProfilePage` }" 
           @click="drawer = false"
         >
           <v-list-item-title>Profile</v-list-item-title>
@@ -97,7 +98,7 @@ const initials = computed(() => {
         <v-list-item 
           v-if="userStore.roleID"
           link 
-          :to="{ path: `/UserProfilePage/${userStore.roleID}` }" 
+          :to="{ path: `/UserProfilePage` }" 
           @click="drawer = false"
         >
           <v-list-item-title>Profile</v-list-item-title>
@@ -106,7 +107,7 @@ const initials = computed(() => {
         <v-list-item 
           v-if="userStore.roleID"
           link 
-          :to="{ path: `/transcript/${userStore.roleID}` }" 
+          :to="{ path: `/transcript` }" 
           @click="drawer = false"
         >
           <v-list-item-title>Transcript</v-list-item-title>
@@ -115,7 +116,7 @@ const initials = computed(() => {
         <v-list-item 
           v-if="userStore.roleID"
           link 
-          :to="{ path: `/degreePlanProgressView/${userStore.roleID}` }" 
+          :to="{ path: `/degreePlanProgressView` }" 
           @click="drawer = false"
         >
           <v-list-item-title>Degree Progress</v-list-item-title>
@@ -125,18 +126,14 @@ const initials = computed(() => {
       <!-- admin, advisor, student -->
       <v-list-item
         link
-        :to="{ path: (userStore.userRole === 'UAFS_STUDENTS' && (userStore.roleID || userStore.userID)) ? `/courseCatalog/${userStore.roleID || userStore.userID}` : '/courseCatalog' }"
+        :to="{ path:`/courseCatalog`}"
         @click="drawer = false"
       >
         <v-list-item-title>Current Courses</v-list-item-title>
       </v-list-item>
       <v-list-item
         link
-        :to="{
-          path: (userStore.userRole === 'UAFS_STUDENTS' && userStore.roleID)
-            ? `/DegreePlanView/${userStore.roleID}`
-            : '/DegreePlanView'
-        }"
+        :to="{path: '/DegreePlanView'}"
         @click="drawer = false"
       >
         <v-list-item-title>Degree Plan</v-list-item-title>
@@ -155,7 +152,7 @@ const initials = computed(() => {
     <span
       class="ml-3 font-weight-bold text-white"
       style="font-size: 20px; font-weight: 700; cursor: pointer;"
-      @click="router.push(homePath)"
+      @click="router.push(homePath.value)"
     >
       NUMA ADVISING
     </span>

@@ -21,7 +21,7 @@ function initials(f: string, l: string) { return `${f?.[0] ?? ''}${l?.[0] ?? ''}
 /* Routing */
 const route = useRoute()
 const router = useRouter()
-const advisorIdParam = route.params.advisorID as string | undefined 
+//const advisorIdParam = route.params.advisorID as string | undefined 
 
 /* Store access */
 const userStore = useUserStore()
@@ -87,7 +87,7 @@ function mapAdvisorData(response: any) {
     const data = response.advisor || response;
     
     // --- Profile Data ---
-    profile.advisorID = String(data.advisorid) || advisorIdParam || ''
+    profile.advisorID = String(data.advisorid) || ''
     profile.firstName = data.firstname || ''
     profile.lastName = data.lastname || ''
     profile.title = data.title || 'Academic Advisor'
@@ -176,7 +176,7 @@ onMounted(async () => {
         return
     }
 
-    const targetID = advisorIdParam || currentRoleID.value
+    const targetID = currentRoleID.value
     
     try {
         const advisorData = await AdvisorAPI.getAdvisorById(targetID)
