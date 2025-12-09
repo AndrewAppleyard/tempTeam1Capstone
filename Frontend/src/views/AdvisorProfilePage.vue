@@ -63,7 +63,6 @@ const profile = reactive({
   pronouns: '',
 })
 
-
 /* Store access */
 const userStore = useUserStore()
 const currentRoleID = computed(() => userStore.roleID) // advisorID
