@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../store/user.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
 import AppointmentCard from '../components/AppointmentCard.vue'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 
 /* =========================================================
@@ -391,6 +392,22 @@ async function submitChangeRequest() {
     changeRequestSubmitting.value = false
   }
 }
+
+function goToTranscript() {
+  if (!studentId.value) return
+  router.push('/transcript')
+}
+
+function goToDegreePlanProgress() {
+  if (!studentId.value) return
+  router.push('/degreePlanProgressView')
+}
+
+function goToDegreePlan() {
+  if (!studentId.value) return
+  router.push('/degreePlanView')
+}
+
 
 /* =========================================================
    6) PERSISTENCE (load / save next-semester)
@@ -876,7 +893,6 @@ async function sendTestSMS() {
             <v-divider class="mx-4" />
             
             <v-card-text class="d-flex flex-column pt-4" style="gap: 12px;"> 
-                
               <v-btn
                 class="request-btn"
                 variant="outlined"
@@ -1268,6 +1284,74 @@ async function sendTestSMS() {
           </v-card-text>
         </v-card>
       </v-dialog>
+
+      
+      <v-row dense class="mt-4">
+        <v-col cols="12" class="pa-3">
+          <v-card
+            class="panel-card"
+            style="
+              background-color: #F3F8FD; 
+              border: 1px solid #002856;
+              border-radius: 12px;
+              height: 100%;
+            "
+          >
+            <v-card-title class="panel-title pb-1">
+              <v-icon size="20" class="mr-2">mdi-shield-crown-outline</v-icon>
+              Navigation
+            </v-card-title>
+            <v-divider class="mx-4" />
+            
+            <v-card-text class="pa-3">
+                <div class="d-flex flex-wrap justify-space-between align-center" style="gap: 12px;">
+
+                    <v-btn
+                        :disabled="!hasStudentId || userStore.userRole == 'UAFS_ADMINS'"
+                        :style="{
+                          borderColor: COLOR_PRIMARY,
+                          color: COLOR_PRIMARY
+                        }"
+                        variant="outlined"
+                        @click="goToTranscript"
+                        class="flex-grow-1"
+                    >
+                        <v-icon start>mdi-file-document-outline</v-icon>
+                        View Transcript
+                    </v-btn>
+
+                    <v-btn
+                        :disabled="!hasStudentId || userStore.userRole == 'UAFS_ADMINS'"
+                        :style="{
+                          borderColor: COLOR_PRIMARY,
+                          color: COLOR_PRIMARY
+                        }"
+                        variant="outlined"
+                        @click="goToDegreePlanProgress"
+                        class="flex-grow-1"
+                    >
+                        <v-icon start>mdi-progress-check</v-icon>
+                        Degree Plan Progress
+                    </v-btn>
+
+                    <v-btn
+                        :disabled="!hasStudentId || userStore.userRole == 'UAFS_ADMINS'"
+                        :style="{
+                          borderColor: COLOR_PRIMARY,
+                          color: COLOR_PRIMARY
+                        }"
+                        variant="outlined"
+                        @click="goToDegreePlan"
+                        class="flex-grow-1"
+                    >
+                        <v-icon start>mdi-clipboard-list-outline</v-icon>
+                        Full Degree Plan
+                    </v-btn>
+                </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
 
     </v-container>
 
