@@ -17,8 +17,17 @@ const studentId = computed<number | null>(() => {
     return Number.isNaN(id) ? null : id
   } else {
     // Advisors/admins use the selected student
-    const id = Number(localStorage.getItem('selected_user1'))
-    return Number.isNaN(id) ? null : id
+    const id = localStorage.getItem('selected_user1') ? Number(localStorage.getItem('selected_user1')) : NaN
+    if (!Number.isNaN(id) && id > 0) {
+      return Number.isNaN(id) ? null : id
+    } else {
+      // advisors/admins see default view
+      major.value = 'B.S. in Computer Science'
+      loadDegreeOptions()
+      loadDegreePlan(selectedMajor.value || major.value)
+
+      return null
+    }
   }
 })
 
@@ -103,21 +112,15 @@ function computeType(code: string, title: string): RowType {
 onMounted(async () => {
   try {
 
-     if (!hasStudentId.value) {
-    console.warn("No student ID found")
-    return
+    if (!hasStudentId.value) {
+      console.warn("No student ID found")
+      return
     }
-      const studentData = await StudentAPI.getStudentById(studentId.value)
-      // major = studentData.student.major
-      // console.log('Student major:', major)
-      major.value = studentData.student.major
-      selectedMajor.value = major.value || null
-      console.log('Student major:', major.value)
+    const studentData = await StudentAPI.getStudentById(studentId.value)
+    major.value = studentData.student.major
+    selectedMajor.value = major.value || null
+    console.log('Student major:', major.value)
 
-    // if (!major) {
-    //   console.warn('No major found, cannot load degree plan.')
-    //   return
-    // }
     if (!major.value) {
       console.warn('No major found, cannot load degree plan.')
       return
@@ -125,6 +128,7 @@ onMounted(async () => {
 
     await loadDegreeOptions()
     await loadDegreePlan(selectedMajor.value || major.value)
+
   } catch (err) {
     console.error("Failed to load degree plan", err)
   }
