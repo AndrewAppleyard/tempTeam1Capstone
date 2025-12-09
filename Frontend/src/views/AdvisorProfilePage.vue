@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '../store/user.js'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
 import AppointmentAPI from '../apis/AppointmentAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
@@ -41,14 +42,6 @@ const error = ref<string | null>(null)
    DATA MODELS
 ========================================================= */
 
-/* Store access */
-const userStore = useUserStore()
-const currentRoleID = computed(() => userStore.roleID) // advisorID
-const fullName = computed(() => `${profile.firstName} ${profile.lastName}`)
-
-/* Loading State */
-const isLoading = ref(true)
-
 /* --- DATA MODELS --- */
 const profile = reactive({
   advisorID: '',
@@ -62,7 +55,20 @@ const profile = reactive({
   pronouns: '',
 })
 
+/* Store access */
+const userStore = useUserStore()
+const currentRoleID = computed(() => userStore.roleID) // advisorID
+const advisorId = computed(() => {
+  const paramId = route.params.id ? String(route.params.id) : ''
+  if (paramId) return paramId
+  if (currentRoleID.value) return String(currentRoleID.value)
+  if (userStore.userID) return String(userStore.userID)
+  return ''
+})
 const fullName = computed(() => `${profile.firstName} ${profile.lastName}`)
+
+/* Loading State */
+const isLoading = ref(true)
 
 /* Advisor Stats */
 const stats = reactive({
@@ -118,7 +124,7 @@ function mapAdvisorData(response: any) {
   const data = response.advisor || response
 
   // --- Profile Data ---
-  profile.advisorID = String(data.advisorid || advisorId || '')
+  profile.advisorID = String(data.advisorid || advisorId.value || '')
   profile.firstName = data.firstname || ''
   profile.lastName = data.lastname || ''
   profile.title = data.title || 'Academic Advisor'
@@ -225,8 +231,7 @@ async function fetchNextAppointment(id: string) {
       stats.nextAppt = 'No upcoming appointments'
     }
   } catch (e: any) {
-    const errorMsg = String(e)
-    if (errorMsg.includes('404') || errorMsg.includes('No appointments')) {
+    if (e?.response?.status === 404) {
       stats.nextAppt = 'No upcoming appointments'
     } else {
       console.error('Could not fetch advisor next appointment:', e)
@@ -259,14 +264,15 @@ async function fetchInstructorCourses(lastName: string) {
 ========================================================= */
 onMounted(async () => {
   try {
-    if (!advisorId) {
+    const targetId = advisorId.value
+    if (!targetId) {
       console.error('Advisor ID not available from route.')
       error.value = 'Advisor not found. Please check the URL or log in again.'
       loading.value = false
       return
     }
 
-    const advisorData = await AdvisorAPI.getAdvisorById(advisorId)
+    const advisorData = await AdvisorAPI.getAdvisorById(targetId)
     mapAdvisorData(advisorData)
   } catch (e) {
     console.error('Error fetching advisor profile data:', e)

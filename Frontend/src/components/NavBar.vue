@@ -77,7 +77,7 @@ const initials = computed(() => {
           <v-list-item 
           v-if="userStore.roleID"
           link 
-          :to="{ path: `/AdvisorProfilePage/${userStore.roleID}` }" 
+          :to="{ path: `/advisorProfilePage` }" 
           @click="drawer = false"
         >
           <v-list-item-title>Profile</v-list-item-title>

@@ -23,6 +23,9 @@ export default {
       console.log('Next appointment:', response.data);
       return response.data;
     } catch (err) {
+      if (err?.response?.status === 404) {
+        return null;
+      }
       console.error('Error fetching next appointment:', err);
       throw err;
     }
@@ -47,12 +50,15 @@ export default {
             console.log("Appointment data:", response.data);
         return response.data;
         } catch (err) {
+            if (err?.response?.status === 404) {
+              return null;
+            }
             console.error("Error fetching appointment:", err);
             throw err;
         }
     }, 
 
-    async getAdvisorAppointments() {
+    async getAdvisorAppointments(advisorid) {
         try {
             const response = await api.get(`/Advisor/Appointment/GetAdvisorAppointments/${advisorid}`);
             console.log("Appointment data:", response.data);
