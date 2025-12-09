@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AdvisorAPI from '../apis/AdvisorAPI.js'
 import AppointmentAPI from '../apis/AppointmentAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
+import CurrentCourseAPI from '../apis/CurrentCourseAPI.js'
 
 /* =========================================================
    Utility Functions
@@ -72,7 +73,6 @@ interface StudentRow {
 
 const studentLoad = ref<StudentRow[]>([])
 const studentHeaders = [
-  { title: 'ID', key: 'id' },
   { title: 'Name', key: 'name' },
   { title: 'Major', key: 'major' },
   { title: 'GPA', key: 'gpa' },
@@ -88,6 +88,16 @@ const activityHeaders = [
   { title: 'Date', key: 'date' },
   { title: 'Student', key: 'student' },
   { title: 'Action/Note', key: 'action' },
+]
+
+/* Instructor courses */
+const instructorCourses = ref<any[]>([])
+const courseHeaders = [
+  { title: 'Section', key: 'section' },
+  { title: 'Status', key: 'courseavailability' },
+  { title: 'Meeting', key: 'meetingpattern' },
+  { title: 'Location', key: 'courselocation' },
+  { title: 'Start Date', key: 'startdate' }
 ]
 
 /* =========================================================
@@ -106,12 +116,19 @@ function mapAdvisorData(response: any) {
 
   // --- Contact Data ---
   profile.email = data.email || ''
-  profile.phone = data.phone ? String(data.phone) : ''
+  profile.phone = data.phonenumber
+    ? String(data.phonenumber)
+    : data.phone
+      ? String(data.phone)
+      : ''
 
   // Dependent data
   if (profile.advisorID) {
     fetchAdvisorStudents(profile.advisorID)
     fetchNextAppointment(profile.advisorID)
+    if (profile.lastName) {
+      fetchInstructorCourses(profile.lastName)
+    }
     // future: fetchRecentActivity(profile.advisorID), fetchDocuments(profile.advisorID)
   }
 }
@@ -124,6 +141,7 @@ async function fetchAdvisorStudents(id: string) {
     const students = await StudentAPI.getStudentsByAdvisor(id)
 
     studentLoad.value = students.map((s: any) => {
+      const sid = s.studentid || s.userid || s.id
       const gpa = Number(s.gpa || 0)
       const holds =
         !!s.advisinghold || !!s.financialhold || !!s.academichold
@@ -132,7 +150,7 @@ async function fetchAdvisorStudents(id: string) {
       if (holds) studentsWithHold++
 
       return {
-        id: String(s.studentid),
+        id: sid ? String(sid) : '',
         name: `${s.firstname} ${s.lastname}`,
         major: s.major || 'Undeclared',
         gpa,
@@ -192,6 +210,25 @@ async function fetchNextAppointment(id: string) {
   }
 }
 
+async function fetchInstructorCourses(lastName: string) {
+  if (!lastName) {
+    instructorCourses.value = []
+    return
+  }
+  try {
+    const term = 'Spring 2026'
+    const data = await CurrentCourseAPI.getCurrentCourses(term)
+    const list = Array.isArray(data) ? data : Array.isArray(data?.courses) ? data.courses : []
+    const lname = lastName.toLowerCase()
+    instructorCourses.value = list.filter((c: any) =>
+      (c.instructor || '').toLowerCase().includes(lname)
+    )
+  } catch (e) {
+    console.error('Could not fetch instructor courses:', e)
+    instructorCourses.value = []
+  }
+}
+
 /* =========================================================
    Lifecycle
 ========================================================= */
@@ -231,7 +268,7 @@ function printPage() {
 }
 
 function viewStudent(studentId: string) {
-  router.push({ name: 'student-profile', params: { studentID: studentId } })
+  router.push({ path: `/student/${studentId}` })
 }
 
 function downloadDoc(item: any) {
@@ -438,16 +475,30 @@ async function saveEdit() {
               <!-- Overview -->
               <v-window-item value="overview" class="brand-primary text-left">
                 <v-card flat class="pa-5">
-                  <div class="text-body-1">
-                    Summary statistics and key performance indicators (KPIs)
-                    relevant to advising effectiveness and student success
-                    metrics are displayed here.
+                  <div class="section-title mb-3">
+                    Current Courses Taught by Advisor
                   </div>
-                  <v-alert type="info" variant="tonal" class="mt-4">
-                    This section can be populated with advising metrics like
-                    student retention rate, average time-to-graduation for your
-                    cohort, and advising appointment totals.
-                  </v-alert>
+                  <v-data-table
+                    :headers="courseHeaders"
+                    :items="instructorCourses"
+                    class="elevation-0 bigger-table"
+                    density="comfortable"
+                  >
+                    <template #item.meetingpattern="{ item }">
+                      <div class="text-wrap">{{ item.meetingpattern || 'N/A' }}</div>
+                    </template>
+                    <template #item.courselocation="{ item }">
+                      <div class="text-wrap">{{ item.courselocation || 'N/A' }}</div>
+                    </template>
+                    <template #item.startdate="{ item }">
+                      {{ item.startdate || 'N/A' }}
+                    </template>
+                    <template #no-data>
+                      <div class="text-body-2 py-4 text-center">
+                        No current courses found for this instructor.
+                      </div>
+                    </template>
+                  </v-data-table>
                 </v-card>
               </v-window-item>
 

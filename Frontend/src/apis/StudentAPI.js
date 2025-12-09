@@ -87,4 +87,15 @@ export default {
     }
   },
 
+  async getStudentsByAdvisor(advisorid) {
+    try {
+      const response = await api.get(`/Advisor/Student/${advisorid}`);
+      console.log('Advisor students:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Get Students By Advisor Error:', err);
+      throw err;
+    }
+  },
+
 };
