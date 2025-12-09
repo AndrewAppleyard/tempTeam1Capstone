@@ -29,13 +29,13 @@ export const useUserStore = defineStore('user', () => {
       userID.value = data.UserID || null
       email.value = data.Email || null
       roleID.value = localStorage.getItem("role_id")
+
       if(localStorage.getItem("selected_user1")){
         selectedStudentID.value = localStorage.getItem("selected_user1")
       }
       if(localStorage.getItem("selected_user2")){
-        selectedAdvisorID.value = locatlStorage.getItem("selected_user2")
+        selectedAdvisorID.value = localStorage.getItem("selected_user2")
       }
-      
 
       if (email.value) {
         await restoreUserDetails(email.value)
@@ -103,7 +103,7 @@ export const useUserStore = defineStore('user', () => {
 
       token.value = storedToken
       userRole.value = payload.Role
-      userID.value = payload.userID // double check
+      userID.value = payload.userID
       email.value = payload.Email
       isLoggedIn.value = true
 
@@ -128,7 +128,10 @@ export const useUserStore = defineStore('user', () => {
     selectedStudentID.value = null
     selectedAdvisorID.value = null
     
-    localStorage.clear()
+    // localStorage.clear()
+    localStorage.removeItem("selected_user1")
+    localStorage.removeItem("selected_user2")
+    localStorage.removeItem("role_id")
 
     try{
       const data = await TransferAPI.logout()
@@ -140,5 +143,20 @@ export const useUserStore = defineStore('user', () => {
     router.replace('/')
   }
 
-  return { isLoggedIn, userRole, userID, email, roleID, token, firstName, lastName, selectedAdvisorID, selectedStudentID, logout, restoreSession, restoreLogin, decodeToken }
+  return { 
+    isLoggedIn, 
+    userRole, 
+    userID, 
+    email, 
+    roleID, 
+    token, 
+    firstName, 
+    lastName, 
+    selectedAdvisorID, 
+    selectedStudentID, 
+    logout, 
+    restoreSession, 
+    restoreLogin, 
+    decodeToken 
+  }
 })

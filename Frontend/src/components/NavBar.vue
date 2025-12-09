@@ -26,7 +26,6 @@ const homePath = computed(() => {
 function handleSetMode(mode) {
   console.log('Setting view mode to:', mode)
   setViewMode(mode)
-  //doesn't persist on refresh. Needs to be fixed.
   router.push('/admin')
   drawer.value = false
 }
@@ -86,7 +85,7 @@ const initials = computed(() => {
         <v-list-item 
           v-if="userStore.roleID"
           link 
-          :to="{ path: `/UserProfilePage` }" 
+          :to="{ path: `/userProfilePage` }" 
           @click="drawer = false"
         >
           <v-list-item-title>Profile</v-list-item-title>
@@ -98,7 +97,7 @@ const initials = computed(() => {
         <v-list-item 
           v-if="userStore.roleID"
           link 
-          :to="{ path: `/UserProfilePage` }" 
+          :to="{ path: `/userProfilePage` }" 
           @click="drawer = false"
         >
           <v-list-item-title>Profile</v-list-item-title>
@@ -133,7 +132,7 @@ const initials = computed(() => {
       </v-list-item>
       <v-list-item
         link
-        :to="{path: '/DegreePlanView'}"
+        :to="{path: '/degreePlanView'}"
         @click="drawer = false"
       >
         <v-list-item-title>Degree Plan</v-list-item-title>

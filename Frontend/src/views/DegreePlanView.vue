@@ -16,7 +16,9 @@ const studentId = computed<number | null>(() => {
     const id = userStore.roleID ? Number(userStore.roleID) : NaN
     return Number.isNaN(id) ? null : id
   } else {
-    // Advisors/admins use the selected student
+    // Advisors/admins use the selected student. note that this DOES show 
+    // the previously selected student's degree plan if accessed through navbar
+    // after clicking on a student before
     const id = localStorage.getItem('selected_user1') ? Number(localStorage.getItem('selected_user1')) : NaN
     if (!Number.isNaN(id) && id > 0) {
       return Number.isNaN(id) ? null : id
