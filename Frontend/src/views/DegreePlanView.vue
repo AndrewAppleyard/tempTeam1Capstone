@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import DegreePlanAPI from '../apis/DegreePlanAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import { useUserStore } from '../store/user.js'
 
-
+const router = useRouter()
 const userStore = useUserStore()
 
 const studentId = computed<number | null>(() => {
@@ -135,6 +135,10 @@ onMounted(async () => {
     console.error("Failed to load degree plan", err)
   }
 })
+
+async function goBack() {
+  router.push('/student')
+}
 
 async function loadDegreeOptions() {
   try {
@@ -329,37 +333,12 @@ function downloadCSV() {
 }
 </script>
 
-<style scoped>
-  v-container{
-    padding-right: 5%;
-  }
-
-.font-mono{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
-}
-
-.scroll-table {
-  max-height: 600px;
-  overflow-y: auto;
-  width: 100%;
-}
-
-.center {
- padding-right: 5%;
-}
-
-@media print{
-  .v-btn,.v-select,.v-text-field{ display:none !important; }
-  body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .v-card{ box-shadow:none !important; }
-}
-</style>
 
 <template>
-  <v-container class="pa-2" style="background-color: transparent; padding-right: 5%;">
+  <v-container class="pa-2" style="background-color: transparent;">
     <v-row style="padding-right: 5%;">
-      <v-col cols="12" class="mx-auto" style="width:95%;">
-        <v-card class="pa-5" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:16px; padding-right: 5%;">
+      <v-col cols="12">
+        <v-card class="pa-5" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:16px;">
           <!-- Header / Title -->
           <v-row class="mb-3" align="center" no-gutters>
             <v-col cols="12" md="6" class="d-flex align-center">
@@ -372,7 +351,12 @@ function downloadCSV() {
                 </v-card-title>
               </v-card>
             </v-col>
+
             <v-col cols="12" md="6" class="d-flex justify-end align-center flex-wrap" style="gap:10px;">
+              <v-btn variant="outlined" :ripple="false" class="mr-2" color="#002856" @click="goBack">
+                <v-icon start>mdi-arrow-left</v-icon>
+                Back
+              </v-btn>
               <v-btn variant="outlined" color="#002856" @click="printPage">
                 <v-icon start>mdi-printer</v-icon>
                 Print / Save PDF
@@ -586,3 +570,29 @@ function downloadCSV() {
     </div>
   </v-container>
 </template>
+
+<style scoped>
+  v-container{
+    padding-right: 5%;
+  }
+
+.font-mono{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+}
+
+.scroll-table {
+  max-height: 600px;
+  overflow-y: auto;
+  width: 100%;
+}
+
+.center {
+ padding-right: 5%;
+}
+
+@media print{
+  .v-btn,.v-select,.v-text-field{ display:none !important; }
+  body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .v-card{ box-shadow:none !important; }
+}
+</style>

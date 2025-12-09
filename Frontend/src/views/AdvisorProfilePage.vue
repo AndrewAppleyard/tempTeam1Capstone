@@ -42,6 +42,14 @@ const error = ref<string | null>(null)
    DATA MODELS
 ========================================================= */
 
+/* Store access */
+const userStore = useUserStore()
+const advisorId = computed(() => userStore.roleID) // advisorID
+const fullName = computed(() => `${profile.firstName} ${profile.lastName}`)
+
+/* Loading State */
+const isLoading = ref(true)
+
 /* --- DATA MODELS --- */
 const profile = reactive({
   advisorID: '',
@@ -264,15 +272,14 @@ async function fetchInstructorCourses(lastName: string) {
 ========================================================= */
 onMounted(async () => {
   try {
-    const targetId = advisorId.value
-    if (!targetId) {
+    if (!advisorId.value) {
       console.error('Advisor ID not available from route.')
       error.value = 'Advisor not found. Please check the URL or log in again.'
       loading.value = false
       return
     }
 
-    const advisorData = await AdvisorAPI.getAdvisorById(targetId)
+    const advisorData = await AdvisorAPI.getAdvisorById(advisorId.value)
     mapAdvisorData(advisorData)
   } catch (e) {
     console.error('Error fetching advisor profile data:', e)
@@ -314,7 +321,9 @@ function printPage() {
 }
 
 function viewStudent(studentId: string) {
-  router.push({ path: `/student/${studentId}` })
+  localStorage.setItem("selected_user1", studentId)
+    console.log("Viewing Page for Student ID ", localStorage.getItem("selected_user1"))
+    router.push(`/student`)
 }
 
 function downloadDoc(item: any) {

@@ -195,7 +195,7 @@ function goToUser(id) {
     store.selectedAdvisorID = id
     console.log("Saved Advisor ID", store.selectedAdvisorID)
     localStorage.setItem("selected_user2", id)
-     router.push(`/advisor`)
+    router.push(`/advisor`)
   }
 }
 
