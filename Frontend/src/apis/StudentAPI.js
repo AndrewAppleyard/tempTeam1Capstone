@@ -98,4 +98,15 @@ export default {
     }
   },
 
+  async sendTestSMS(studentid) {
+    try {
+      const response = await api.post(`/Student/TestSMS/${studentid}`);
+      console.log('Test SMS:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Send Test SMS Error:', err);
+      throw err;
+    }
+  },
+
 };

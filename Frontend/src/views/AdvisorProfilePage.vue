@@ -29,6 +29,7 @@ function initials(f: string, l: string) {
 const route = useRoute()
 const router = useRouter()
 const advisorId = route.params.id as string // same pattern as student list
+const TIME_ZONE = 'America/Chicago'
 
 /* =========================================================
    Loading / Error
@@ -180,32 +181,31 @@ async function fetchAdvisorStudents(id: string) {
 async function fetchNextAppointment(id: string) {
   try {
     const apptData = await AppointmentAPI.getNextAppointment(id)
-
-    if (apptData?.appointmentstatus === 'Scheduled' && apptData.starttime) {
+    if (apptData && apptData.starttime) {
       const startTime = new Date(apptData.starttime)
-
       const formattedTime = startTime.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true,
+        timeZone: TIME_ZONE,
       })
       const formattedDate = startTime.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
         day: 'numeric',
+        timeZone: TIME_ZONE,
       })
-
       stats.nextAppt = `${formattedDate} at ${formattedTime}`
     } else {
-      stats.nextAppt = 'None Scheduled'
+      stats.nextAppt = 'No upcoming appointments'
     }
   } catch (e: any) {
     const errorMsg = String(e)
     if (errorMsg.includes('404') || errorMsg.includes('No appointments')) {
-      stats.nextAppt = 'None Scheduled'
+      stats.nextAppt = 'No upcoming appointments'
     } else {
       console.error('Could not fetch advisor next appointment:', e)
-      stats.nextAppt = 'Error Fetching'
+      stats.nextAppt = 'No upcoming appointments'
     }
   }
 }

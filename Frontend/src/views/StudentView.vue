@@ -47,6 +47,7 @@ const studentId = computed<number | null>(() => {
 })
 
 const hasStudentId = computed(() => studentId.value !== null)
+const isAdvisor = computed(() => userStore.userRole === 'UAFS_ADVISORS')
 
 interface SemesterData { coursemap: any; courses: TranscriptCourse[] }
 
@@ -678,6 +679,20 @@ async function runHoldCheck() {
     showPreferenceSnackbar('Error checking advising hold.', 'error', 10000)
   }
 }
+
+async function sendTestSMS() {
+  if (!studentId.value) {
+    showPreferenceSnackbar('No student selected to send SMS.', 'error')
+    return
+  }
+  try {
+    await StudentAPI.sendTestSMS(studentId.value)
+    showPreferenceSnackbar('Test SMS sent (check your phone).', 'success', 8000)
+  } catch (err) {
+    console.error('Send test SMS error:', err)
+    showPreferenceSnackbar('Failed to send test SMS.', 'error', 8000)
+  }
+}
 </script>
 
 <template>
@@ -718,6 +733,16 @@ async function runHoldCheck() {
             >
               <v-icon start>mdi-clipboard-text</v-icon>
               Schedule Preferences
+            </v-btn>
+            <v-btn
+              v-if="isAdvisor"
+              :disabled="!hasStudentId"
+              variant="outlined"
+              color="#005bb5"
+              @click="sendTestSMS"
+            >
+              <v-icon start>mdi-message-processing</v-icon>
+              Send Test SMS
             </v-btn>
           </v-col>
 
