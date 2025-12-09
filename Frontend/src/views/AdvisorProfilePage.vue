@@ -63,6 +63,22 @@ const profile = reactive({
   pronouns: '',
 })
 
+
+/* Store access */
+const userStore = useUserStore()
+const currentRoleID = computed(() => userStore.roleID) // advisorID
+const advisorId = computed(() => {
+  const paramId = route.params.id ? String(route.params.id) : ''
+  if (paramId) return paramId
+  if (currentRoleID.value) return String(currentRoleID.value)
+  if (userStore.userID) return String(userStore.userID)
+  return ''
+})
+const fullName = computed(() => `${profile.firstName} ${profile.lastName}`)
+
+/* Loading State */
+const isLoading = ref(true)
+
 /* Advisor Stats */
 const stats = reactive({
   totalStudents: 0,
@@ -224,8 +240,7 @@ async function fetchNextAppointment(id: string) {
       stats.nextAppt = 'No upcoming appointments'
     }
   } catch (e: any) {
-    const errorMsg = String(e)
-    if (errorMsg.includes('404') || errorMsg.includes('No appointments')) {
+    if (e?.response?.status === 404) {
       stats.nextAppt = 'No upcoming appointments'
     } else {
       console.error('Could not fetch advisor next appointment:', e)
