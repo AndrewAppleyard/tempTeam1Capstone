@@ -557,16 +557,7 @@ async function saveSelectedCourses() {
 
 <template>
   <!-- Shell matches Degree Planner styling -->
-  <v-container
-    fluid
-    class="pa-6 respectful-shell catalog-shell"
-    :style="{
-      maxWidth: '1500px',
-      backgroundColor: COLOR_ACCENT_BG,
-      borderRadius: '16px',
-      border: `1px solid ${COLOR_PRIMARY}`
-    }"
-  >
+  
     <v-row justify="center">
       <v-col cols="12">
         <v-card
@@ -902,10 +893,10 @@ async function saveSelectedCourses() {
         </v-card-text>
       </v-card>
     </v-dialog>
-  </v-container>
+  
 
   <v-container fluid class="pa-2" style="background-color: transparent;">
-    <div class="text-center mt-6 brand-primary">
+    <div class="text-center mt-6 brand-primary" style="padding-right: 5%;">
       © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
     </div>
   </v-container>
@@ -930,6 +921,11 @@ async function saveSelectedCourses() {
 }
 .catalog-card {
   min-height: 70vh;
+  width: 97.5vw;
+  max-width: none;
+  margin-left: calc(50% - 50vw - 0.5vw) !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
 }
 
 /* Header */
@@ -1024,15 +1020,27 @@ async function saveSelectedCourses() {
   user-select: none;
 }
 
+.course-table td,
+.course-table th {
+  border-right: 1px solid #c7d9ea;
+}
+
+/* Remove the last column border so it doesn’t double up on the table edge */
+.course-table td:last-child,
+.course-table th:last-child {
+  border-right: none;
+}
 /* Selected row styling */
 .selected-row {
   background-color: #81b1ff !important;
-  outline: 2px solid #004492;
-  outline-offset: -2px;
+  box-shadow: inset 0 0 0 2px #004492; /* replaces outline */
 }
+
+.selected-row th,
 .selected-row td {
-  background-color: #81b1ff !important;
+  background-color: #81b1ff !important; /* inherit row background */
 }
+
 
 /* Selected list (right-hand card) */
 .selected-list {

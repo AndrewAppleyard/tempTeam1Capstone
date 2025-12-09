@@ -75,14 +75,14 @@ const loginDisabled = computed(() => !valid.value || loading.value)
 
 <template>
   <v-container
-    fluid
     class="pa-0"
-    style="background-color: transparent; min-height: 100vh;"
+    style="background-color: transparent; min-height: 100vh;padding-right: 5%;"
   >
 
     <!-- Centered content -->
-    <v-container class="fill-height">
-      <v-row class="fill-height" align="center" justify="center">
+    <v-container class="pa-0 d-flex align-center justify-center"
+                 style="min-height: 50vh; background-color: transparent; padding-right: 25%;">
+      <v-row class="fill-height" align="center" justify="center" style="padding-right: 5%;">
         <v-col cols="12" sm="10" md="8" lg="6" xl="5">
           <v-card
             elevation="2"
@@ -184,7 +184,7 @@ const loginDisabled = computed(() => !valid.value || loading.value)
           </v-card>
 
           <!-- Subtle institution footer -->
-          <div class="text-center mt-4" style="color:#002856; opacity:.85;">
+          <div class="text-center mt-4" style="color:#002856; opacity:.85; padding-right: 5%;">
             © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
           </div>
         </v-col>

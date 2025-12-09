@@ -132,3 +132,6 @@ button:focus-visible {
     color: #ffffff;
   }
 }
+v-container.fluid {
+  padding-right: 50%;
+}

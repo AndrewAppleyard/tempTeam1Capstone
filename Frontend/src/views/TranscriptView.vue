@@ -266,7 +266,7 @@ function downloadCSV() {
 
 <template>
   <v-container fluid class="pa-1" style="background-color: transparent;">
-    <v-row justify="center">
+    <v-row style="padding-right: 5%;">
       <v-col cols="12">
         <v-card class="pa-4" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:12px;">
           <!-- Header / Title -->
@@ -430,7 +430,7 @@ function downloadCSV() {
   </v-container>
 
   <v-container fluid class="pa-2" style="background-color: transparent;">
-    <div class="text-center mt-6 brand-primary">
+    <div class="text-center mt-6 brand-primary" style="padding-right: 5%;">
       © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
     </div>
   </v-container>

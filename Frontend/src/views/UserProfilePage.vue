@@ -711,6 +711,7 @@ async function saveEdit() {
   width: 95%;
   margin-left: auto;
   margin-right: auto;
+  padding-right: 5%;
 }
 
 /* Heavier but not flashy */
@@ -1145,7 +1146,7 @@ async function saveEdit() {
   </v-container>
 
   <v-container fluid class="pa-2" style="background-color: transparent;">
-    <div class="text-center mt-6 brand-primary">
+    <div class="text-center mt-6 brand-primary" style="padding-right: 5%;">
       © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
     </div>
   </v-container>

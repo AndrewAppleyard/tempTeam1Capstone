@@ -47,6 +47,7 @@ const studentId = computed<number | null>(() => {
 })
 
 const hasStudentId = computed(() => studentId.value !== null)
+const isAdvisor = computed(() => userStore.userRole === 'UAFS_ADVISORS')
 
 interface SemesterData { coursemap: any; courses: TranscriptCourse[] }
 
@@ -678,565 +679,636 @@ async function runHoldCheck() {
     showPreferenceSnackbar('Error checking advising hold.', 'error', 10000)
   }
 }
+
+async function sendTestSMS() {
+  if (!studentId.value) {
+    showPreferenceSnackbar('No student selected to send SMS.', 'error')
+    return
+  }
+  try {
+    await StudentAPI.sendTestSMS(studentId.value)
+    showPreferenceSnackbar('Test SMS sent (check your phone).', 'success', 8000)
+  } catch (err) {
+    console.error('Send test SMS error:', err)
+    showPreferenceSnackbar('Failed to send test SMS.', 'error', 8000)
+  }
+}
 </script>
 
 <template>
   <v-container
-    fluid
     class="pa-6 respectful-shell"
     :style="{
-      maxWidth: '1500px',
       backgroundColor: COLOR_ACCENT_BG,
       borderRadius: '16px',
-      border: `1px solid ${COLOR_PRIMARY}`
+      border: `1px solid ${COLOR_PRIMARY}`,
+      margin: '0 auto'
     }"
   >
-    <!-- Header: Degree Planner LEFT, Welcome center, Actions RIGHT -->
-    <header class="mb-4 layout-head">
-      <v-row align="center" class="header-grid">
-        <v-col cols="12" md="4" class="text-left">
-          <div class="planner-left" :style="{ color: COLOR_PRIMARY }">
-            Degree Planner
-          </div>
-        </v-col>
+      <!-- Header: Degree Planner LEFT, Welcome center, Actions RIGHT -->
+      <header class="mb-4 layout-head">
+        <v-row align="center" class="header-grid">
+          
+          <!-- Left column -->
+          <v-col cols="12" md="4" class="text-left">
+            <div class="planner-left" :style="{ color: COLOR_PRIMARY }">
+              Degree Planner
+            </div>
+          </v-col>
 
-        <v-col cols="12" md="4" class="text-center">
-          <h1 class="welcome-center" :style="{ color: COLOR_PRIMARY }">
-           {{ welcomeGreeting }}
-          </h1>
-        </v-col>
+          <!-- Center column -->
+          <v-col cols="12" md="4" class="text-center">
+            <h1 class="welcome-center" :style="{ color: COLOR_PRIMARY }">
+              {{ welcomeGreeting }}
+            </h1>
+          </v-col>
 
-        <v-col
-          cols="12"
-          md="4"
-          class="text-right d-flex flex-column align-end header-actions"
-        >
-          <v-btn
-            class="request-btn mb-2"
-            variant="outlined"
-            :style="{
-              borderColor: COLOR_PRIMARY,
-              color: COLOR_PRIMARY
-            }"
-            @click="changeRequestDialog = true"
-          >
-            <v-icon start>mdi-file-document-edit-outline</v-icon>
-            Request Major / Minor Change
-          </v-btn>
-
-          <div class="d-flex flex-wrap justify-end" style="gap:8px;">
-            <v-btn :disabled="!hasStudentId" color="primary" @click="generateSchedule">
-              <v-icon start>mdi-calendar-refresh</v-icon>
-              Generate Schedule
-            </v-btn>
-            <v-btn :disabled="!hasStudentId" color="primary" variant="tonal" @click="runHoldCheck">
-              <v-icon start>mdi-shield-check-outline</v-icon>
-              Check Advising Hold
-            </v-btn>
-            <v-btn :disabled="!hasStudentId" variant="outlined" color="#002856" @click="openPreferencesDialog">
+          <!-- Right column (button aligned right) -->
+          <v-col cols="12" md="4" class="d-flex justify-end" style="gap: 30px; padding-right: 20px;">
+            <v-btn
+              :disabled="!hasStudentId"
+              variant="outlined"
+              color="#002856"
+              @click="openPreferencesDialog"
+            >
               <v-icon start>mdi-clipboard-text</v-icon>
               Schedule Preferences
             </v-btn>
-          </div>
+            <v-btn
+              v-if="isAdvisor"
+              :disabled="!hasStudentId"
+              variant="outlined"
+              color="#005bb5"
+              @click="sendTestSMS"
+            >
+              <v-icon start>mdi-message-processing</v-icon>
+              Send Test SMS
+            </v-btn>
+          </v-col>
+
+        </v-row>
+      </header>
+
+
+      <v-row dense>
+        <!-- CURRENT SEMESTER -->
+        <v-col cols="12" md="6" class="pa-3">
+          <v-card class="panel-card ensure-fab-visibility">
+            <v-card-title class="panel-title">
+              <v-icon size="20" class="mr-2">mdi-calendar-month</v-icon>
+              Current Semester
+            </v-card-title>
+            <v-divider />
+            <v-card-text class="pa-0">
+              <div class="table-wrap">
+                <v-table
+                  density="comfortable"
+                  class="zebra sticky-head align-left with-divider"
+                  aria-label="Current Semester Schedule"
+                >
+                  <thead>
+                    <tr>
+                      <th class="th-narrow">Course No.</th>
+                      <th>Course</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, i) in currentSchedule" :key="`cur-${i}`">
+                      <td>{{ row.number }}</td>
+                      <td>{{ row.name }}</td>
+                    </tr>
+                  </tbody>
+                </v-table>
+              </div>
+            </v-card-text>
+            <div class="card-fab">
+              <v-tooltip text="View details">
+                <template #activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    icon
+                    class="fab-btn"
+                    :color="COLOR_PRIMARY"
+                    aria-label="Open current schedule details"
+                    @click="currentDialog = true"
+                  >
+                    <v-icon>mdi-eye</v-icon>
+                  </v-btn>
+                </template>
+              </v-tooltip>
+            </div>
+          </v-card>
         </v-col>
-      </v-row>
-    </header>
 
-    <v-row dense>
-      <!-- CURRENT SEMESTER -->
-      <v-col cols="12" md="6" class="pa-3">
-        <v-card class="panel-card ensure-fab-visibility">
-          <v-card-title class="panel-title">
-            <v-icon size="20" class="mr-2">mdi-calendar-month</v-icon>
-            Current Semester
-          </v-card-title>
-          <v-divider />
-          <v-card-text class="pa-0">
-            <div class="table-wrap">
-              <v-table
-                density="comfortable"
-                class="zebra sticky-head align-left with-divider"
-                aria-label="Current Semester Schedule"
-              >
-                <thead>
-                  <tr>
-                    <th class="th-narrow">Course No.</th>
-                    <th>Course</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(row, i) in currentSchedule" :key="`cur-${i}`">
-                    <td>{{ row.number }}</td>
-                    <td>{{ row.name }}</td>
-                  </tr>
-                </tbody>
-              </v-table>
-            </div>
-          </v-card-text>
-          <div class="card-fab">
-            <v-tooltip text="View details">
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  icon
-                  class="fab-btn"
-                  :color="COLOR_PRIMARY"
-                  aria-label="Open current schedule details"
-                  @click="currentDialog = true"
+        <!-- NEXT SEMESTER -->
+        <v-col cols="12" md="6" class="pa-3">
+          <v-card class="panel-card ensure-fab-visibility">
+            <v-card-title class="panel-title">
+              <v-icon size="20" class="mr-2">mdi-calendar-edit</v-icon>
+              Next Semester
+            </v-card-title>
+            <v-divider />
+            <v-card-text class="pa-0">
+              <div class="table-wrap">
+                <v-table
+                  density="comfortable"
+                  class="zebra sticky-head align-left with-divider"
+                  aria-label="Next semester schedule"
                 >
-                  <v-icon>mdi-eye</v-icon>
-                </v-btn>
-              </template>
-            </v-tooltip>
-          </div>
-        </v-card>
-      </v-col>
-
-      <!-- NEXT SEMESTER -->
-      <v-col cols="12" md="6" class="pa-3">
-        <v-card class="panel-card ensure-fab-visibility">
-          <v-card-title class="panel-title">
-            <v-icon size="20" class="mr-2">mdi-calendar-edit</v-icon>
-            Next Semester
-          </v-card-title>
-          <v-divider />
-          <v-card-text class="pa-0">
-            <div class="table-wrap">
-              <v-table
-                density="comfortable"
-                class="zebra sticky-head align-left with-divider"
-                aria-label="Next semester schedule"
-              >
-                <thead>
-                  <tr>
-                    <th class="th-narrow">Course No.</th>
-                    <th>Course</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(row, i) in nextSchedule" :key="`next-${i}`">
-                    <td>{{ row.number }}</td>
-                    <td>{{ row.name }}</td>
-                  </tr>
-                </tbody>
-              </v-table>
+                  <thead>
+                    <tr>
+                      <th class="th-narrow">Course No.</th>
+                      <th>Course</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, i) in nextSchedule" :key="`next-${i}`">
+                      <td>{{ row.number }}</td>
+                      <td>{{ row.name }}</td>
+                    </tr>
+                  </tbody>
+                </v-table>
+              </div>
+            </v-card-text>
+            <div class="card-fab">
+              <v-tooltip text="View next semester">
+                <template #activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    icon
+                    class="fab-btn"
+                    :color="COLOR_PRIMARY"
+                    aria-label="View next semester schedule"
+                    @click="nextDialog = true"
+                  >
+                    <v-icon>mdi-eye</v-icon>
+                  </v-btn>
+                </template>
+              </v-tooltip>
             </div>
-          </v-card-text>
-          <div class="card-fab">
-            <v-tooltip text="View next semester">
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  icon
-                  class="fab-btn"
-                  :color="COLOR_PRIMARY"
-                  aria-label="View next semester schedule"
-                  @click="nextDialog = true"
-                >
-                  <v-icon>mdi-eye</v-icon>
-                </v-btn>
-              </template>
-            </v-tooltip>
-          </div>
-        </v-card>
-      </v-col>
+          </v-card>
+        </v-col>
 
-      <!-- ADVISOR INFO -->
-      <!-- <v-col cols="12" md="6" class="pa-3" style="text-align: left;">
-        <v-card class="panel-card" :style="{ backgroundColor: COLOR_PANEL_BG }">
-          <v-card-title class="panel-title">
-            <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
-            Advisor Information
-          </v-card-title>
-          <v-divider />
-          <v-list density="comfortable" class="info-list">
-            <v-list-item class="info-item">
-              <strong>Name:</strong> {{ advisorName }}
-            </v-list-item>
-            <v-list-item class="info-item">
-              <strong>Email: </strong>
-              <a
-                :href="'mailto:' + advisorEmail"
-                v-if="advisorEmail !== 'TBA' && advisorEmail !== 'N/A'"
-              >
-                {{ advisorEmail }}
-              </a>
-              <span v-else>{{ advisorEmail }}</span>
-            </v-list-item>
-            <v-list-item class="info-item">
-              <strong>Phone:</strong> {{ formatPhoneNumber(advisorPhone) }}
-            </v-list-item>
-          </v-list>
-        </v-card>
-      </v-col>
-    </v-row> -->
-    <v-col cols="12" md="6" class="pa-3" style="text-align: left;">
+        <!-- ADVISOR INFO -->
+        <!-- <v-col cols="12" md="6" class="pa-3" style="text-align: left;">
+          <v-card class="panel-card" :style="{ backgroundColor: COLOR_PANEL_BG }">
+            <v-card-title class="panel-title">
+              <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
+              Advisor Information
+            </v-card-title>
+            <v-divider />
+            <v-list density="comfortable" class="info-list">
+              <v-list-item class="info-item">
+                <strong>Name:</strong> {{ advisorName }}
+              </v-list-item>
+              <v-list-item class="info-item">
+                <strong>Email: </strong>
+                <a
+                  :href="'mailto:' + advisorEmail"
+                  v-if="advisorEmail !== 'TBA' && advisorEmail !== 'N/A'"
+                >
+                  {{ advisorEmail }}
+                </a>
+                <span v-else>{{ advisorEmail }}</span>
+              </v-list-item>
+              <v-list-item class="info-item">
+                <strong>Phone:</strong> {{ formatPhoneNumber(advisorPhone) }}
+              </v-list-item>
+            </v-list>
+          </v-card>
+        </v-col>
+      </v-row> -->
+      <v-row dense class="mt-4">
+  <!-- LEFT: Appointment Card -->
+  <v-col
+    cols="12"
+    md="5"
+    style="
+      text-align: left;
+      background-color: #ffffff;
+      border: 1px solid #002856;
+      border-radius: 12px;
+      margin-left: 13px;
+    "
+  >
     <AppointmentCard
-          :advisor-id="advisorId"
-          :advisor-name="advisorName"
-          :advisor-email="advisorEmail"
-          :advisor-phone="advisorPhone"
-          :student-id="studentId"
-          :has-student-id="hasStudentId"
-          :format-phone-number="formatPhoneNumber"
-        />
-    </v-col>
-  </v-row dense>
-      
+      :advisor-id="advisorId"
+      :advisor-name="advisorName"
+      :advisor-email="advisorEmail"
+      :advisor-phone="advisorPhone"
+      :student-id="studentId"
+      :has-student-id="hasStudentId"
+      :format-phone-number="formatPhoneNumber"
+    />
+  </v-col>
 
-    <!-- CURRENT: Dialog -->
-    <v-dialog
-      v-model="currentDialog"
-      width="900"
-      aria-label="Current Course Schedule Dialog"
-    >
-      <v-card class="dialog-card">
-        <v-card-title class="dialog-title">
-          <v-icon size="18" class="mr-2">mdi-calendar-month-outline</v-icon>
-          Current Course Schedule
-        </v-card-title>
-        <v-divider />
-        <v-card-text class="pa-0">
-          <v-table class="zebra align-left with-divider">
-            <thead>
-              <tr>
-                <th>Course No.</th>
-                <th>Course Name</th>
-                <th>Time</th>
-                <th>Location</th>
-                <th>Professor</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(row, i) in currentPopupRows" :key="`c-pop-${i}`">
-                <td>{{ row.number }}</td>
-                <td>{{ row.course }}</td>
-                <td>{{ row.time }}</td>
-                <td>{{ row.location }}</td>
-                <td>{{ row.professor }}</td>
-              </tr>
-            </tbody>
-          </v-table>
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="currentDialog = false">Close</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+  <!-- RIGHT: Actions -->
+  <v-col
+  cols="6"
+  md="4"
+  class="d-flex flex-column align-end"
+  style="
+    background-color: transparent;
+    border-radius: 12px;
+    padding-right: 1px;
+    margin-left: 325px;
+  "
+>
+  <!-- Button 1: Request change -->
+  <v-btn
+    class="request-btn mb-2"
+    variant="outlined"
+    :style="{
+      borderColor: COLOR_PRIMARY,
+      color: COLOR_PRIMARY
+    }"
+    @click="changeRequestDialog = true"
+  >
+    <v-icon start>mdi-file-document-edit-outline</v-icon>
+    Request Major / Minor Change
+  </v-btn>
 
-    <!-- NEXT: Dialog -->
-    <v-dialog
-      v-model="nextDialog"
-      width="1200"
-      aria-label="Next Semester Course Schedule Dialog"
-    >
-      <v-card class="dialog-card">
-        <v-card-title class="dialog-title">
-          Next Semester Course Schedule
-        </v-card-title>
-        <v-divider />
+  <!-- Button 2: Generate Schedule -->
+  <v-btn
+    class="mb-2"
+    :disabled="!hasStudentId"
+    color="primary"
+    @click="generateSchedule"
+  >
+    <v-icon start>mdi-calendar-refresh</v-icon>
+    Generate Schedule
+  </v-btn>
 
-        <v-card-text>
-          <v-table class="zebra align-left with-divider next-popup-table">
-            <thead>
-              <tr>
-                <th style="width: 115px;">Course No.</th>
-                <th>Course Name</th>
-                <th style="width: 85px;">Time</th>
-                <th style="width: 120px;">Location</th>
-                <th style="width: 130px;">Professor</th>
-                <th style="width: 110px;">Availability</th>
-                <th style="width: 110px;">Delivery</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(row, i) in nextPopupRows" :key="`n-pop-${i}`">
-                <td>{{ row.number }}</td>
-                <td>{{ row.course }}</td>
-                <td>{{ row.time }}</td>
-                <td>{{ row.location }}</td>
-                <td>{{ row.professor }}</td>
-                <td>{{ row.availability }}</td>
-                <td>{{ row.deliverymode }}</td>
-              </tr>
-            </tbody>
-          </v-table>
-        </v-card-text>
+  <!-- Button 3: Check Advising Hold -->
+  <v-btn
+    :disabled="!hasStudentId"
+    color="primary"
+    variant="outlined"
+    @click="runHoldCheck"
+  >
+    <v-icon start>mdi-shield-check-outline</v-icon>
+    Check Advising Hold
+  </v-btn>
+</v-col>
 
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="nextDialog = false">Close</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+</v-row>
 
-    <!-- PREFERENCES: Dialog -->
-    <v-dialog v-model="preferencesDialog" width="780" aria-label="Schedule Preferences Dialog">
-      <v-card class="dialog-card">
-        <v-card-title class="dialog-title">
-          Schedule Preferences
-        </v-card-title>
-        <v-divider />
-        <v-card-text>
-          <v-alert
-            v-if="preferenceLoadError"
-            type="error"
-            density="comfortable"
-            class="mb-3"
-            variant="tonal"
-          >
-            {{ preferenceLoadError }}
-          </v-alert>
-          <v-progress-linear
-            v-if="loadingPreferences"
-            color="primary"
-            indeterminate
-            class="mb-3"
-          />
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model.number="preferenceForm.preferredCreditHours"
-                type="number"
-                min="1"
-                max="21"
-                step="1"
-                label="Preferred credit hours"
-                density="comfortable"
-                :disabled="loadingPreferences"
-                hint="Total hours you want to carry next term"
-                persistent-hint
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="preferenceForm.preferredDays"
-                :items="dayOptions"
-                label="Days you prefer on campus"
-                multiple
-                chips
-                closable-chips
-                density="comfortable"
-                :disabled="loadingPreferences"
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="preferenceForm.timeOfDay"
-                :items="timeOfDayOptions"
-                label="Time of day"
-                density="comfortable"
-                :disabled="loadingPreferences"
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="preferenceForm.modality"
-                :items="modalityOptions"
-                label="Course modality"
-                density="comfortable"
-                :disabled="loadingPreferences"
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="preferenceForm.earliestStart"
-                :items="timeOptions"
-                item-title="label"
-                item-value="value"
-                label="Earliest start time"
-                density="comfortable"
-                :disabled="loadingPreferences"
-                clearable
-                hint="Pick a start time"
-                persistent-hint
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="preferenceForm.latestEnd"
-                :items="timeOptions"
-                item-title="label"
-                item-value="value"
-                label="Latest end time"
-                density="comfortable"
-                :disabled="loadingPreferences"
-                clearable
-                hint="Pick an end time"
-                persistent-hint
-              />
-            </v-col>
-            <v-col cols="12">
-              <v-checkbox
-                v-model="preferenceForm.avoidBackToBack"
-                label="Try to avoid back-to-back classes"
-                density="comfortable"
-                :disabled="loadingPreferences"
-              />
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="preferencesDialog = false">Cancel</v-btn>
-          <v-btn
-            color="primary"
-            :loading="savingPreferences"
-            :disabled="savingPreferences || loadingPreferences || !hasStudentId"
-            @click="savePreferences"
-          >
-            Save preferences
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    </v-row dense>
+        
 
-    <v-snackbar
-      v-model="preferenceSnackbar"
-      :color="preferenceSnackbarColor"
-      location="bottom right"
-      :timeout="preferenceSnackbarTimeout"
-    >
-      {{ preferenceSnackbarMessage }}
-      <template #actions>
-        <v-btn icon variant="text" @click="preferenceSnackbar = false">
-          <v-icon size="18">mdi-close</v-icon>
-        </v-btn>
-      </template>
-    </v-snackbar>
+      <!-- CURRENT: Dialog -->
+      <v-dialog
+        v-model="currentDialog"
+        width="900"
+        aria-label="Current Course Schedule Dialog"
+      >
+        <v-card class="dialog-card">
+          <v-card-title class="dialog-title">
+            <v-icon size="18" class="mr-2">mdi-calendar-month-outline</v-icon>
+            Current Course Schedule
+          </v-card-title>
+          <v-divider />
+          <v-card-text class="pa-0">
+            <v-table class="zebra align-left with-divider">
+              <thead>
+                <tr>
+                  <th>Course No.</th>
+                  <th>Course Name</th>
+                  <th>Time</th>
+                  <th>Location</th>
+                  <th>Professor</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(row, i) in currentPopupRows" :key="`c-pop-${i}`">
+                  <td>{{ row.number }}</td>
+                  <td>{{ row.course }}</td>
+                  <td>{{ row.time }}</td>
+                  <td>{{ row.location }}</td>
+                  <td>{{ row.professor }}</td>
+                </tr>
+              </tbody>
+            </v-table>
+          </v-card-text>
+          <v-card-actions class="justify-end">
+            <v-btn variant="text" @click="currentDialog = false">Close</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
-    <!-- PROGRAM CHANGE REQUEST: Dialog -->
-    <v-dialog
-      v-model="changeRequestDialog"
-      width="800"
-      aria-label="Major / Minor Change Request Form Dialog"
-    >
-      <v-card class="dialog-card">
-        <v-card-title class="dialog-title">
-          <v-icon size="18" class="mr-2">mdi-file-document-edit-outline</v-icon>
-          Major / Minor Change Request
-        </v-card-title>
-        <v-divider />
-        <v-card-text>
-          <p class="mb-4 text-body-2" style="color:#002856;">
-            Please complete all fields below to request a change of major or
-            minor. Your advisor will review your request and follow up with you
-            using your UAFS contact information.
-          </p>
+      <!-- NEXT: Dialog -->
+      <v-dialog
+        v-model="nextDialog"
+        width="1200"
+        aria-label="Next Semester Course Schedule Dialog"
+      >
+        <v-card class="dialog-card">
+          <v-card-title class="dialog-title">
+            Next Semester Course Schedule
+          </v-card-title>
+          <v-divider />
 
-          <v-form @submit.prevent="submitChangeRequest">
-            <v-row dense>
+          <v-card-text>
+            <v-table class="zebra align-left with-divider next-popup-table">
+              <thead>
+                <tr>
+                  <th style="width: 115px;">Course No.</th>
+                  <th>Course Name</th>
+                  <th style="width: 85px;">Time</th>
+                  <th style="width: 120px;">Location</th>
+                  <th style="width: 130px;">Professor</th>
+                  <th style="width: 110px;">Availability</th>
+                  <th style="width: 110px;">Delivery</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(row, i) in nextPopupRows" :key="`n-pop-${i}`">
+                  <td>{{ row.number }}</td>
+                  <td>{{ row.course }}</td>
+                  <td>{{ row.time }}</td>
+                  <td>{{ row.location }}</td>
+                  <td>{{ row.professor }}</td>
+                  <td>{{ row.availability }}</td>
+                  <td>{{ row.deliverymode }}</td>
+                </tr>
+              </tbody>
+            </v-table>
+          </v-card-text>
+
+          <v-card-actions class="justify-end">
+            <v-btn variant="text" @click="nextDialog = false">Close</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- PREFERENCES: Dialog -->
+      <v-dialog v-model="preferencesDialog" width="780" aria-label="Schedule Preferences Dialog">
+        <v-card class="dialog-card">
+          <v-card-title class="dialog-title">
+            Schedule Preferences
+          </v-card-title>
+          <v-divider />
+          <v-card-text>
+            <v-alert
+              v-if="preferenceLoadError"
+              type="error"
+              density="comfortable"
+              class="mb-3"
+              variant="tonal"
+            >
+              {{ preferenceLoadError }}
+            </v-alert>
+            <v-progress-linear
+              v-if="loadingPreferences"
+              color="primary"
+              indeterminate
+              class="mb-3"
+            />
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model.number="preferenceForm.preferredCreditHours"
+                  type="number"
+                  min="1"
+                  max="21"
+                  step="1"
+                  label="Preferred credit hours"
+                  density="comfortable"
+                  :disabled="loadingPreferences"
+                  hint="Total hours you want to carry next term"
+                  persistent-hint
+                />
+              </v-col>
               <v-col cols="12" md="6">
                 <v-select
-                  v-model="changeRequestForm.action"
-                  :items="changeRequestActionOptions"
-                  label="Request type"
+                  v-model="preferenceForm.preferredDays"
+                  :items="dayOptions"
+                  label="Days you prefer on campus"
+                  multiple
+                  chips
+                  closable-chips
                   density="comfortable"
-                  required
-                  :error-messages="changeRequestErrors.action ? [changeRequestErrors.action] : []"
+                  :disabled="loadingPreferences"
                 />
               </v-col>
-
               <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="changeRequestForm.effectiveTerm"
-                  label="Requested effective term (e.g., Fall 2026)"
+                <v-select
+                  v-model="preferenceForm.timeOfDay"
+                  :items="timeOfDayOptions"
+                  label="Time of day"
                   density="comfortable"
-                  required
-                  :error-messages="changeRequestErrors.effectiveTerm ? [changeRequestErrors.effectiveTerm] : []"
+                  :disabled="loadingPreferences"
                 />
               </v-col>
-
               <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="changeRequestForm.currentMajor"
-                  label="Current major"
+                <v-select
+                  v-model="preferenceForm.modality"
+                  :items="modalityOptions"
+                  label="Course modality"
                   density="comfortable"
-                  required
-                  :error-messages="changeRequestErrors.currentMajor ? [changeRequestErrors.currentMajor] : []"
+                  :disabled="loadingPreferences"
                 />
               </v-col>
-
               <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="changeRequestForm.currentMinor"
-                  label="Current minor(s)"
+                <v-select
+                  v-model="preferenceForm.earliestStart"
+                  :items="timeOptions"
+                  item-title="label"
+                  item-value="value"
+                  label="Earliest start time"
                   density="comfortable"
-                  required
-                  :error-messages="changeRequestErrors.currentMinor ? [changeRequestErrors.currentMinor] : []"
+                  :disabled="loadingPreferences"
+                  clearable
+                  hint="Pick a start time"
+                  persistent-hint
                 />
               </v-col>
-
               <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="changeRequestForm.requestedMajor"
-                  label="Requested major"
+                <v-select
+                  v-model="preferenceForm.latestEnd"
+                  :items="timeOptions"
+                  item-title="label"
+                  item-value="value"
+                  label="Latest end time"
                   density="comfortable"
-                  required
-                  :error-messages="changeRequestErrors.requestedMajor ? [changeRequestErrors.requestedMajor] : []"
+                  :disabled="loadingPreferences"
+                  clearable
+                  hint="Pick an end time"
+                  persistent-hint
                 />
               </v-col>
-
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="changeRequestForm.requestedMinor"
-                  label="Requested minor (or N/A)"
-                  density="comfortable"
-                  required
-                  :error-messages="changeRequestErrors.requestedMinor ? [changeRequestErrors.requestedMinor] : []"
-                />
-              </v-col>
-
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="changeRequestForm.catalogYear"
-                  label="Catalog year (e.g., 2024–2025)"
-                  density="comfortable"
-                  required
-                  :error-messages="changeRequestErrors.catalogYear ? [changeRequestErrors.catalogYear] : []"
-                />
-              </v-col>
-
               <v-col cols="12">
-                <v-textarea
-                  v-model="changeRequestForm.reason"
-                  label="Briefly explain the reason for this change"
+                <v-checkbox
+                  v-model="preferenceForm.avoidBackToBack"
+                  label="Try to avoid back-to-back classes"
                   density="comfortable"
-                  rows="3"
-                  auto-grow
-                  required
-                  :error-messages="changeRequestErrors.reason ? [changeRequestErrors.reason] : []"
+                  :disabled="loadingPreferences"
                 />
               </v-col>
             </v-row>
+          </v-card-text>
+          <v-card-actions class="justify-end">
+            <v-btn variant="text" @click="preferencesDialog = false">Cancel</v-btn>
+            <v-btn
+              color="primary"
+              :loading="savingPreferences"
+              :disabled="savingPreferences || loadingPreferences || !hasStudentId"
+              @click="savePreferences"
+            >
+              Save preferences
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
-            <div class="d-flex justify-end mt-4">
-              <v-btn
-                variant="text"
-                class="mr-2"
-                @click="changeRequestDialog = false"
-              >
-                Cancel
-              </v-btn>
-              <v-btn
-                type="submit"
-                color="primary"
-                :loading="changeRequestSubmitting"
-                :disabled="changeRequestSubmitting"
-              >
-                <v-icon start>mdi-send</v-icon>
-                Submit Request
-              </v-btn>
-            </div>
-          </v-form>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
+      <v-snackbar
+        v-model="preferenceSnackbar"
+        :color="preferenceSnackbarColor"
+        location="bottom right"
+        :timeout="preferenceSnackbarTimeout"
+      >
+        {{ preferenceSnackbarMessage }}
+        <template #actions>
+          <v-btn icon variant="text" @click="preferenceSnackbar = false">
+            <v-icon size="18">mdi-close</v-icon>
+          </v-btn>
+        </template>
+      </v-snackbar>
 
-  </v-container>
+      <!-- PROGRAM CHANGE REQUEST: Dialog -->
+      <v-dialog
+        v-model="changeRequestDialog"
+        width="800"
+        aria-label="Major / Minor Change Request Form Dialog"
+      >
+        <v-card class="dialog-card">
+          <v-card-title class="dialog-title">
+            <v-icon size="18" class="mr-2">mdi-file-document-edit-outline</v-icon>
+            Major / Minor Change Request
+          </v-card-title>
+          <v-divider />
+          <v-card-text>
+            <p class="mb-4 text-body-2" style="color:#002856;">
+              Please complete all fields below to request a change of major or
+              minor. Your advisor will review your request and follow up with you
+              using your UAFS contact information.
+            </p>
 
-  <v-container fluid class="pa-2" style="background-color: transparent;">
-    <div class="text-center mt-6 brand-primary">
-      © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
-    </div>
+            <v-form @submit.prevent="submitChangeRequest">
+              <v-row dense>
+                <v-col cols="12" md="6">
+                  <v-select
+                    v-model="changeRequestForm.action"
+                    :items="changeRequestActionOptions"
+                    label="Request type"
+                    density="comfortable"
+                    required
+                    :error-messages="changeRequestErrors.action ? [changeRequestErrors.action] : []"
+                  />
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="changeRequestForm.effectiveTerm"
+                    label="Requested effective term (e.g., Fall 2026)"
+                    density="comfortable"
+                    required
+                    :error-messages="changeRequestErrors.effectiveTerm ? [changeRequestErrors.effectiveTerm] : []"
+                  />
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="changeRequestForm.currentMajor"
+                    label="Current major"
+                    density="comfortable"
+                    required
+                    :error-messages="changeRequestErrors.currentMajor ? [changeRequestErrors.currentMajor] : []"
+                  />
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="changeRequestForm.currentMinor"
+                    label="Current minor(s)"
+                    density="comfortable"
+                    required
+                    :error-messages="changeRequestErrors.currentMinor ? [changeRequestErrors.currentMinor] : []"
+                  />
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="changeRequestForm.requestedMajor"
+                    label="Requested major"
+                    density="comfortable"
+                    required
+                    :error-messages="changeRequestErrors.requestedMajor ? [changeRequestErrors.requestedMajor] : []"
+                  />
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="changeRequestForm.requestedMinor"
+                    label="Requested minor (or N/A)"
+                    density="comfortable"
+                    required
+                    :error-messages="changeRequestErrors.requestedMinor ? [changeRequestErrors.requestedMinor] : []"
+                  />
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="changeRequestForm.catalogYear"
+                    label="Catalog year (e.g., 2024–2025)"
+                    density="comfortable"
+                    required
+                    :error-messages="changeRequestErrors.catalogYear ? [changeRequestErrors.catalogYear] : []"
+                  />
+                </v-col>
+
+                <v-col cols="12">
+                  <v-textarea
+                    v-model="changeRequestForm.reason"
+                    label="Briefly explain the reason for this change"
+                    density="comfortable"
+                    rows="3"
+                    auto-grow
+                    required
+                    :error-messages="changeRequestErrors.reason ? [changeRequestErrors.reason] : []"
+                  />
+                </v-col>
+              </v-row>
+
+              <div class="d-flex justify-end mt-4">
+                <v-btn
+                  variant="text"
+                  class="mr-2"
+                  @click="changeRequestDialog = false"
+                >
+                  Cancel
+                </v-btn>
+                <v-btn
+                  type="submit"
+                  color="primary"
+                  :loading="changeRequestSubmitting"
+                  :disabled="changeRequestSubmitting"
+                >
+                  <v-icon start>mdi-send</v-icon>
+                  Submit Request
+                </v-btn>
+              </div>
+            </v-form>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+
+    </v-container>
+
+    <v-container fluid class="pa-2" style="background-color: transparent;">
+      <div class="text-center mt-6 brand-primary" style="padding-right: 5%;">
+        © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
+      </div>
   </v-container>
 </template>
 
@@ -1245,7 +1317,12 @@ async function runHoldCheck() {
    BASE IMPROVEMENTS — subtle, respectful, not flashy
 ========================================================= */
 .respectful-shell {
+
   box-shadow: 0 1px 0 rgba(0,0,0,0.05) inset;
+   max-width: 100%;
+  padding-right: 5%;
+  margin-left: calc(46% - 36.5vw ) !important;
+  
 }
 
 /* Header layout */

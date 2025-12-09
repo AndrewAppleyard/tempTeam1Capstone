@@ -42,8 +42,8 @@ const roleRoutes = {
   ],
   UAFS_ADVISORS: [
     '/advisor',
-    // '/AdvisorProfilePage',
-    '/UserProfilePage',
+    '/AdvisorProfilePage',
+    //'/UserProfilePage',
     '/student',
     '/transcript',
     '/courseCatalog',
