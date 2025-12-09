@@ -693,53 +693,37 @@ async function runHoldCheck() {
       <!-- Header: Degree Planner LEFT, Welcome center, Actions RIGHT -->
       <header class="mb-4 layout-head">
         <v-row align="center" class="header-grid">
+          
+          <!-- Left column -->
           <v-col cols="12" md="4" class="text-left">
             <div class="planner-left" :style="{ color: COLOR_PRIMARY }">
               Degree Planner
             </div>
           </v-col>
 
+          <!-- Center column -->
           <v-col cols="12" md="4" class="text-center">
             <h1 class="welcome-center" :style="{ color: COLOR_PRIMARY }">
-            {{ welcomeGreeting }}
+              {{ welcomeGreeting }}
             </h1>
           </v-col>
 
-          <v-col
-            cols="12"
-            md="4"
-            class="text-right d-flex flex-column align-end header-actions"
-          >
+          <!-- Right column (button aligned right) -->
+          <v-col cols="12" md="4" class="d-flex justify-end" style="gap: 30px; padding-right: 20px;">
             <v-btn
-              class="request-btn mb-2"
+              :disabled="!hasStudentId"
               variant="outlined"
-              :style="{
-                borderColor: COLOR_PRIMARY,
-                color: COLOR_PRIMARY
-              }"
-              @click="changeRequestDialog = true"
+              color="#002856"
+              @click="openPreferencesDialog"
             >
-              <v-icon start>mdi-file-document-edit-outline</v-icon>
-              Request Major / Minor Change
+              <v-icon start>mdi-clipboard-text</v-icon>
+              Schedule Preferences
             </v-btn>
-
-            <div class="d-flex flex-wrap justify-end" style="gap:8px;">
-              <v-btn :disabled="!hasStudentId" color="primary" @click="generateSchedule">
-                <v-icon start>mdi-calendar-refresh</v-icon>
-                Generate Schedule
-              </v-btn>
-              <v-btn :disabled="!hasStudentId" color="primary" variant="tonal" @click="runHoldCheck">
-                <v-icon start>mdi-shield-check-outline</v-icon>
-                Check Advising Hold
-              </v-btn>
-              <v-btn :disabled="!hasStudentId" variant="outlined" color="#002856" @click="openPreferencesDialog">
-                <v-icon start>mdi-clipboard-text</v-icon>
-                Schedule Preferences
-              </v-btn>
-            </div>
           </v-col>
+
         </v-row>
       </header>
+
 
       <v-row dense>
         <!-- CURRENT SEMESTER -->
@@ -869,17 +853,81 @@ async function runHoldCheck() {
           </v-card>
         </v-col>
       </v-row> -->
-      <v-col cols="9" md="5" style="text-align: left; background-color: #ffffff;border: 1px solid #002856;border-radius: 12px; margin-left: 10px;">
-      <AppointmentCard
-            :advisor-id="advisorId"
-            :advisor-name="advisorName"
-            :advisor-email="advisorEmail"
-            :advisor-phone="advisorPhone"
-            :student-id="studentId"
-            :has-student-id="hasStudentId"
-            :format-phone-number="formatPhoneNumber"
-          />
-      </v-col>
+      <v-row dense class="mt-4">
+  <!-- LEFT: Appointment Card -->
+  <v-col
+    cols="12"
+    md="5"
+    style="
+      text-align: left;
+      background-color: #ffffff;
+      border: 1px solid #002856;
+      border-radius: 12px;
+      margin-left: 13px;
+    "
+  >
+    <AppointmentCard
+      :advisor-id="advisorId"
+      :advisor-name="advisorName"
+      :advisor-email="advisorEmail"
+      :advisor-phone="advisorPhone"
+      :student-id="studentId"
+      :has-student-id="hasStudentId"
+      :format-phone-number="formatPhoneNumber"
+    />
+  </v-col>
+
+  <!-- RIGHT: Actions -->
+  <v-col
+  cols="6"
+  md="4"
+  class="d-flex flex-column align-end"
+  style="
+    background-color: transparent;
+    border-radius: 12px;
+    padding-right: 1px;
+    margin-left: 325px;
+  "
+>
+  <!-- Button 1: Request change -->
+  <v-btn
+    class="request-btn mb-2"
+    variant="outlined"
+    :style="{
+      borderColor: COLOR_PRIMARY,
+      color: COLOR_PRIMARY
+    }"
+    @click="changeRequestDialog = true"
+  >
+    <v-icon start>mdi-file-document-edit-outline</v-icon>
+    Request Major / Minor Change
+  </v-btn>
+
+  <!-- Button 2: Generate Schedule -->
+  <v-btn
+    class="mb-2"
+    :disabled="!hasStudentId"
+    color="primary"
+    @click="generateSchedule"
+  >
+    <v-icon start>mdi-calendar-refresh</v-icon>
+    Generate Schedule
+  </v-btn>
+
+  <!-- Button 3: Check Advising Hold -->
+  <v-btn
+    :disabled="!hasStudentId"
+    color="primary"
+    variant="outlined"
+    @click="runHoldCheck"
+  >
+    <v-icon start>mdi-shield-check-outline</v-icon>
+    Check Advising Hold
+  </v-btn>
+</v-col>
+
+</v-row>
+
     </v-row dense>
         
 
