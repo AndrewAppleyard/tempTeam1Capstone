@@ -15,7 +15,18 @@ export default {
             console.error("Error booking appointment:", err.response || err); 
             throw new Error(err.response?.data?.error || "Failed to book appointment.");
         }
-    },
+  },
+
+  async getNextAppointment(advisorid) {
+    try {
+      const response = await api.get(`/Advisor/Appointment/Next/${advisorid}`);
+      console.log('Next appointment:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Error fetching next appointment:', err);
+      throw err;
+    }
+  },
 
     async cancelAppointment(appointmentid) {
         try {

@@ -60,20 +60,27 @@ async function fetchStudents() {
     const data = await StudentAPI.getAllStudents()
     const now = new Date()
 
-    students.value = (data || []).sort((a, b) => {
+    students.value = (data || []).map(s => ({
+      ...s,
+      dateadvised_norm: s.dateadvised ? parseServerDateToYYYYMMDD(s.dateadvised) : null
+    })).sort((a, b) => {
+      // create local-midnight Date objects from the normalized YMD strings
+      const aDate = a.dateadvised_norm ? ymdToLocalDate(a.dateadvised_norm) : null
+      const bDate = b.dateadvised_norm ? ymdToLocalDate(b.dateadvised_norm) : null
+
       const aHold = a.advisinghold || a.academichold || a.financialhold
       const bHold = b.advisinghold || b.academichold || b.financialhold
       if (aHold !== bHold) return bHold - aHold
 
-      const aUpcoming = a.dateadvised && new Date(a.dateadvised) > now
-      const bUpcoming = b.dateadvised && new Date(b.dateadvised) > now
+      const aUpcoming = aDate && aDate > now
+      const bUpcoming = bDate && bDate > now
       if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1
 
-      if (!a.dateadvised && b.dateadvised) return -1
-      if (a.dateadvised && !b.dateadvised) return 1
+      if (!aDate && bDate) return -1
+      if (aDate && !bDate) return 1
 
-      const aPast = a.dateadvised && new Date(a.dateadvised) < now
-      const bPast = b.dateadvised && new Date(b.dateadvised) < now
+      const aPast = aDate && aDate < now
+      const bPast = bDate && bDate < now
       if (aPast !== bPast) return aPast ? 1 : -1
 
       return a.lastname.localeCompare(b.lastname)
@@ -83,6 +90,22 @@ async function fetchStudents() {
   }
 }
 
+function parseServerDateToYYYYMMDD(dateStr) {
+  if (!dateStr) return null
+  const parsed = new Date(dateStr)
+  if (isNaN(parsed.getTime())) return null
+  const y = parsed.getUTCFullYear()
+  const m = String(parsed.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(parsed.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function ymdToLocalDate(ymd) {
+  if (!ymd) return null
+  const [y, m, d] = ymd.split('-').map(Number)
+  if (!y || !m || !d) return null
+  return new Date(y, m - 1, d) // local midnight
+}
 
 /* =========================================================
    ADVISOR CATEGORY HELPER
@@ -379,7 +402,7 @@ watch(
 </script>
 
 <template>
-  <v-container fluid class="pa-2" style="background-color: transparent;">
+  <v-container fluid class="pa-2" style="background-color: transparent; padding-right: 5%;">
     <v-row>
       <!-- 95% width shell, centered to match other pages -->
       <v-col cols="12" class="mx-auto admin-shell">
@@ -539,15 +562,10 @@ watch(
                     </v-tooltip>
                   </v-card-title>
 
-                  <v-card-subtitle
-                    v-if="item.dateadvised"
-                    class="text-caption"
-                    style="color: black;"
-                  >
-                    {{
-                      new Date(item.dateadvised) > new Date()
-                        ? `Upcoming advising appointment: ${new Date(item.dateadvised).toLocaleDateString()}`
-                        : `Advised on: ${new Date(item.dateadvised).toLocaleDateString()}`
+                  <v-card-subtitle v-if="item.dateadvised_norm" class="text-caption" style="color:black;">
+                    {{ ymdToLocalDate(item.dateadvised_norm) > new Date()
+                        ? `Upcoming advising appointment: ${ymdToLocalDate(item.dateadvised_norm).toLocaleDateString()}`
+                        : `Advised on: ${ymdToLocalDate(item.dateadvised_norm).toLocaleDateString()}`
                     }}
                   </v-card-subtitle>
                 </v-card>
@@ -751,8 +769,8 @@ watch(
     </v-dialog>
   </v-container>
 
-  <v-container fluid class="pa-2" style="background-color: transparent;">
-    <div class="text-center mt-6 brand-primary">
+  <v-container fluid class="pa-2" style="background-color: transparent; justify-content: center;">
+    <div class="text-center mt-6 brand-primary" style="padding-right: 5%;">
       © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
     </div>
 
@@ -782,6 +800,7 @@ watch(
 /* 95% width shell, centered to align with your other pages */
 .admin-shell {
   width: 95%;
+  padding-right: 5%;
   margin-left: auto;
   margin-right: auto;
 }

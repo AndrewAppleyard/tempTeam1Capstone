@@ -139,9 +139,7 @@ watch(
 </script>
 
 <template>
-  <div>
-    <v-card class="panel-card" :style="{ backgroundColor: COLOR_PANEL_BG }">
-      <v-card-title class="panel-title">
+      <v-card-title class="panel-card">
         <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
         Advisor Information
       </v-card-title>
@@ -175,7 +173,6 @@ watch(
           Book Appointment
         </v-btn>
       </v-card-actions>
-    </v-card>
 
     <v-dialog
       v-model="appointmentDialog"
@@ -281,5 +278,4 @@ watch(
         </v-btn>
       </template>
     </v-snackbar>
-  </div>
 </template>

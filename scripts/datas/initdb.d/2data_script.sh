@@ -69,7 +69,7 @@ userPassword: password123
 EOF
 
 ldapadd -D "cn=Directory Manager" -w ${DS_DM_PASSWORD} -H ldap://localhost:3389 -x <<EOF
-dn: uid=advisor@uafs.edu,cn=Users,cn=Person,${DS_SUFFIX_NAME}
+dn: uid=bbright@uafs.edu,cn=Users,cn=Person,${DS_SUFFIX_NAME}
 uid: bbright00@uafs.edu
 givenName: Brittany
 sn: Advisor

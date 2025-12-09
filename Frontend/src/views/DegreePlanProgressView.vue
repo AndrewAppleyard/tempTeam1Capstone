@@ -857,7 +857,7 @@ watch(groupedProgress, (groups) => {
 
 <template>
   <v-container fluid class="pa-2" style="background-color: transparent;">
-    <v-row>
+    <v-row style="padding-right: 5%;">
       <v-col cols="12" class="mx-auto" style="width:95%;">
         <v-card class="pa-5" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:16px;">
           
@@ -1111,7 +1111,7 @@ watch(groupedProgress, (groups) => {
   </v-container>
 
   <v-container fluid class="pa-2" style="background-color: transparent;">
-    <div class="text-center mt-6 brand-primary">
+    <div class="text-center mt-6 brand-primary" style="padding-right: 5%;">
       © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
     </div>
   </v-container>

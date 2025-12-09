@@ -13,19 +13,6 @@ import DegreePlanView from '../views/DegreePlanView.vue'
 import DegreePlanProgressView from '../views/DegreePlanProgressView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 
-// const routes = [
-//   { path: '/', component: LoginView },
-//   { path: '/admin', component: AdminView },
-//   { path: '/advisor', component: AdvisorView },
-//   { path: '/student', component: StudentView },
-//   { path: '/transcript', component: TranscriptView },
-//   { path: '/courseCatalog', component: CourseCatalogView },
-//   { path: '/degreePlanView', component: DegreePlanView },
-//   { path: '/degreePlanProgressView', component: DegreePlanProgressView },
-//   { path: '/userProfilePage', component: UserProfilePage },
-//   { path: '/advisorProfilePage', component: AdvisorProfilePage },
-// ]
-
 
 const routes = [
   { path: '/', component: LoginView },
@@ -90,10 +77,6 @@ export const router = createRouter({
   history: createWebHistory(),
   routes,
 })
-
-// router.beforeEach((to, from, next) => {
-//   return next()
-// })
 
 
 router.beforeEach(async (to, from, next) => {

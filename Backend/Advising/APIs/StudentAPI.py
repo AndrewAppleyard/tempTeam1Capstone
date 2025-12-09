@@ -5,8 +5,8 @@ from sqlalchemy_utils import database_exists, create_database
 from pymysql import install_as_MySQLdb
 import json
 import traceback
-from datetime import datetime
-import os, sys
+from datetime import datetime, timedelta, timezone
+import os, sys, smtplib
 from ldap3 import Server, Connection, ALL
 from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
 from functools import wraps
@@ -20,6 +20,7 @@ parent_dir = os.path.join(current_dir, '..')
 sys.path.append(parent_dir)
 
 from UserClasses import Advisor, User, Student, Admin, Transcript
+from UserClasses.Advisor import Appointment
 
 path = os.path.abspath(__file__)
 directory = os.path.dirname(path)
@@ -49,6 +50,64 @@ def role_required(*required_roles):
         return wrapper
     
     return decorator
+
+
+def _send_sms(to_number: str, body: str):
+    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    from_number = os.getenv("TWILIO_FROM_NUMBER")
+
+    if not (account_sid and auth_token and from_number):
+        print("SMS skipped: Twilio env vars not configured.")
+        return False
+
+    digits = "".join(ch for ch in str(to_number or "") if ch.isdigit())
+    if not digits:
+        return False
+    if len(digits) == 10:
+        to_e164 = f"+1{digits}"
+    elif len(digits) == 11 and digits.startswith("1"):
+        to_e164 = f"+{digits}"
+    elif digits.startswith("+"):
+        to_e164 = digits
+    else:
+        to_e164 = f"+{digits}"
+
+    try:
+        import requests
+    except ImportError:
+        print("SMS skipped: requests not available.")
+        return False
+
+    try:
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+        data = {
+            "From": from_number,
+            "To": to_e164,
+            "Body": body
+        }
+        resp = requests.post(url, data=data, auth=(account_sid, auth_token))
+        if 200 <= resp.status_code < 300:
+            return True
+        print(f"Twilio SMS failed: {resp.status_code} {resp.text}")
+        return False
+    except Exception as e:
+        print("SMS send exception:", e)
+        return False
+
+
+def _format_phone(raw):
+    s = str(raw or "").strip()
+    if not s:
+        return None
+    if s.startswith("+"):
+        return s
+    digits = "".join(ch for ch in s if ch.isdigit())
+    if len(digits) == 10:
+        return f"+1{digits}"
+    if len(digits) == 11 and digits.startswith("1"):
+        return f"+{digits}"
+    return f"+{digits}" if digits else None
 
 @bp.route("/", methods=['GET'])
 @role_required("UAFS_ADMINS")
@@ -116,6 +175,56 @@ def getStudents():
         session.close()
 
 
+def send_sms_reminders(session: Session, now: datetime):
+    window_24h_start = now + timedelta(hours=23)
+    window_24h_end = now + timedelta(hours=25)
+    window_3h_start = now + timedelta(hours=2)
+    window_3h_end = now + timedelta(hours=4)
+
+    base_query = (
+        session.query(Appointment, Student.StudentMap)
+        .join(Student.StudentMap, Appointment.studentid == Student.StudentMap.studentid)
+        .filter(Appointment.appointmentstatus == "Scheduled")
+    )
+
+    reminders_sent = {"24h": 0, "3h": 0}
+
+    appts_24h = base_query.filter(
+        Appointment.starttime >= window_24h_start,
+        Appointment.starttime <= window_24h_end,
+        Appointment.reminded_24h == False  # noqa: E712
+    ).all()
+
+    for appt, stu in appts_24h:
+        to = _format_phone(stu.phonenumber)
+        if not to:
+            continue
+        start_local = appt.starttime
+        body = f"Reminder: Advising appointment on {start_local.strftime('%a %b %d at %I:%M %p')}."
+        if _send_sms(to, body):
+            appt.reminded_24h = True
+            reminders_sent["24h"] += 1
+
+    appts_3h = base_query.filter(
+        Appointment.starttime >= window_3h_start,
+        Appointment.starttime <= window_3h_end,
+        Appointment.reminded_3h == False  # noqa: E712
+    ).all()
+
+    for appt, stu in appts_3h:
+        to = _format_phone(stu.phonenumber)
+        if not to:
+            continue
+        start_local = appt.starttime
+        body = f"Reminder: Advising appointment today at {start_local.strftime('%I:%M %p')}."
+        if _send_sms(to, body):
+            appt.reminded_3h = True
+            reminders_sent["3h"] += 1
+
+    session.commit()
+    return reminders_sent
+
+
 @bp.route("/<int:studentid>",methods = ['GET', 'POST'])
 @role_required("UAFS_STUDENTS", "UAFS_ADVISORS", "UAFS_ADMINS")
 def getStudentInfo(studentid: int):
@@ -176,6 +285,48 @@ def getStudentInfo(studentid: int):
         return "Failed to Execute Search"
     finally:
         session.close()
+
+
+@bp.route("/SendSMSReminders", methods=['POST'])
+@role_required("UAFS_ADMINS")
+def trigger_sms_reminders():
+  now = datetime.now(timezone.utc)
+  try:
+    with Session(engine) as session:
+      sent = send_sms_reminders(session, now)
+      return jsonify({"message": "Reminder job completed", "sent": sent}), 200
+  except Exception as e:
+    traceback.print_exc()
+    return jsonify({"message": "Failed to send SMS reminders.", "error": str(e)}), 500
+
+
+@bp.route("/TestSMS/<int:studentid>", methods=['POST'])
+@role_required("UAFS_STUDENTS", "UAFS_ADVISORS", "UAFS_ADMINS")
+def send_test_sms(studentid: int):
+    try:
+        with Session(engine) as session:
+            student = session.query(Student.StudentMap).filter(Student.StudentMap.studentid == studentid).first()
+            if not student:
+                return jsonify({"message": "Student not found"}), 404
+
+            advisor = None
+            # try to find advisor via linking table
+            link = session.query(Advisor.Advisor_And_StudentsMap).filter(Advisor.Advisor_And_StudentsMap.studentid == studentid).first()
+            if link:
+                advisor = session.query(Advisor.AdvisorMap).filter(Advisor.AdvisorMap.advisorid == link.advisorid).first()
+
+            to = _format_phone(student.phonenumber)
+            if not to:
+                return jsonify({"message": "No valid phone number for student."}), 400
+
+            advisor_name = advisor.firstname + " " + advisor.lastname if advisor else "your advisor"
+            body = f"Advising reminder: Hi {student.firstname or 'student'}, you have 3 hours until your advising appointment with {advisor_name}."
+            if _send_sms(to, body):
+                return jsonify({"message": "Test SMS sent."}), 200
+            return jsonify({"message": "Failed to send SMS."}), 500
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"message": "Failed to send SMS.", "error": str(e)}), 500
 
 @bp.route("/Update/<int:id>", methods = ['GET','POST'])
 @role_required("UAFS_ADMINS", "UAFS_STUDENTS", "UAFS_ADVISORS")

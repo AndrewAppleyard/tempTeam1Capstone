@@ -4,6 +4,14 @@ import CurrentCourseAPI from '../apis/CurrentCourseAPI.js'
 import StudentAPI from '../apis/StudentAPI.js'
 import { useUserStore } from '../store/user.js'
 
+/* =========================================================
+   THEME (matched to Degree Planner)
+========================================================= */
+const COLOR_PRIMARY = '#002856'   // deep navy
+const COLOR_SURFACE = '#ffffff'   // white surface
+const COLOR_ACCENT_BG = '#BDD5E7' // soft blue page background
+const COLOR_PANEL_BG  = '#F3F8FD' // very light blue for info panels
+
 interface CurrentCourse {
   section: string
   courseavailability: string
@@ -469,17 +477,17 @@ const selectedCoursesList = computed(() => {
 
   selectedSections.value.forEach(key => {
     const [section, meeting] = key.split('__')
-  const course = courses.value.find(c => courseKey(c.section, normalizeMeeting(c.meetingpattern)) === key)
-  if (course) {
-    map.set(key, {
-      number: course.section,
-      name: course.section,
+    const course = courses.value.find(c => courseKey(c.section, normalizeMeeting(c.meetingpattern)) === key)
+    if (course) {
+      map.set(key, {
+        number: course.section,
+        name: course.section,
         meetingpattern: normalizeMeeting(course.meetingpattern),
-      academicperiod: course.academicperiod,
-      courseavailability: course.courseavailability,
-      deliverymode: course.deliverymode,
-      courselocation: course.courselocation,
-      instructor: course.instructor
+        academicperiod: course.academicperiod,
+        courseavailability: course.courseavailability,
+        deliverymode: course.deliverymode,
+        courselocation: course.courselocation,
+        instructor: course.instructor
       })
       return
     }
@@ -549,175 +557,223 @@ async function saveSelectedCourses() {
 </script>
 
 <template>
-  <v-container fluid class="catalog-shell" style="background-color: transparent;">
+  <!-- Shell matches Degree Planner styling -->
+  
     <v-row justify="center">
       <v-col cols="12">
-        <v-card class="pa-6 catalog-card" style="background-color:#BDD5E7;border:1px solid #002856;border-radius:16px;">
-          <v-row class="mb-3" align="center" justify="space-between">
-            <v-col cols="12" md="4">
-              <h2 class="mb-2 title-no-wrap" style="color:#002856; font-weight: 800;">University of Arkansas - Fort Smith • Current Courses</h2>
-            </v-col>
-            <v-col cols="12" md="8" class="d-flex flex-wrap align-center justify-end" style="gap:12px;">
-              <v-text-field
-                v-model="termInput"
-                label="Semester / term to fetch"
-                density="comfortable"
-                hide-details
-                style="max-width: 220px;"
-              />
-              <v-text-field
-                v-model="searchText"
-                label="Search (section, term, instructor, etc.)"
-                density="comfortable"
-                hide-details
-                style="max-width: 320px;"
-              />
-              <v-btn color="primary" :loading="loading" @click="loadCourses">
-                <v-icon start>mdi-refresh</v-icon>
-                Refresh
-              </v-btn>
-              <div class="text-caption" style="color:#002856;">
-                Total: {{ summary.total }} • Open: {{ summary.open }}
-              </div>
-            </v-col>
-          </v-row>
-
-          <v-alert
-            v-if="error"
-            type="error"
-            variant="tonal"
-            density="comfortable"
-            class="mb-3"
-          >
-            {{ error }}
-          </v-alert>
-
-          <v-progress-linear
-            v-if="loading"
-            indeterminate
-            color="primary"
-            class="mb-3"
-          />
-          <v-row v-if="!loading" class="mt-2" dense>
-            <v-col :cols="12" :md="isStudent ? 8 : 12">
-              <div
-                class="sticky-header-bar"
-                :style="{ gridTemplateColumns: colWidths.join(' ') }"
+        <v-card
+          class="panel-card catalog-card"
+          :style="{ backgroundColor: COLOR_SURFACE }"
+        >
+          <!-- Header / Controls -->
+          <v-card-title class="catalog-header">
+            <v-row class="align-center" no-gutters>
+              <v-col cols="12" md="6" class="text-left">
+                <h2 class="catalog-title" :style="{ color: COLOR_PRIMARY }">
+                  University of Arkansas – Fort Smith • Current Courses
+                </h2>
+              </v-col>
+              <v-col
+                cols="12"
+                md="6"
+                class="d-flex flex-wrap align-center justify-end catalog-controls"
               >
-                <div
-                  v-for="(title, i) in headerTitles"
-                  :key="i"
-                  class="header-cell sortable"
-                  @click="toggleSort(i)"
-                >
-                  <span>{{ title }}</span>
-                  <v-icon
-                    v-if="sortIndicator(i)"
-                    size="16"
-                    class="ml-1 sort-icon"
-                  >
-                    {{ sortIndicator(i) }}
-                  </v-icon>
-                </div>
-              </div>
-
-              <div class="table-wrap">
-                <v-table
+                <v-text-field
+                  v-model="termInput"
+                  label="Semester / term to fetch"
                   density="comfortable"
-              class="zebra sticky-head align-center course-table"
-              style="table-layout: fixed; width: 100%;"
-            >
-                  <colgroup>
-                    <col v-for="(w, i) in colWidths" :key="`col-${i}`" :style="{ width: w }" />
-                  </colgroup>
-                  <tbody>
-                    <tr
-                      v-for="(c, i) in sortedCourses"
-                      :key="`${c.section}-${i}`"
-                      :class="{ 'selected-row': isStudent && isRowSelected(c.section, c.meetingpattern) }"
-                      @click="isStudent && toggleSelection(c.section, c.meetingpattern)"
-                      :style="isStudent ? 'cursor:pointer;' : ''"
-                    >
-                  <td>{{ c.section }}</td>
-                      <td>{{ c.courseavailability }}</td>
-                      <td>{{ c.deliverymode }}</td>
-                      <td>{{ c.meetingpattern }}</td>
-                      <td>{{ c.courselocation }}</td>
-                      <td>{{ c.instructor }}</td>
-                      <td>{{ c.enrolled }}</td>
-                      <td>{{ c.capacity }}</td>
-                      <td>{{ c.academicperiod }}</td>
-                      <td>{{ c.startdate }}</td>
-                    </tr>
-                    <tr v-if="!filteredCourses.length">
-                      <td colspan="10" class="text-center py-6" style="color:#002856;">
-                        No current courses found for this term.
-                      </td>
-                    </tr>
-                  </tbody>
-                </v-table>
-              </div>
-            </v-col>
-
-            <v-col v-if="isStudent" cols="12" md="4">
-              <v-card class="pa-3" outlined>
-                <h3 style="color:#002856; font-weight:700;">Selected Classes</h3>
-                <template v-if="selectedCoursesList.length">
-                  <div class="d-flex justify-end">
-                    <v-btn
-                      size="small"
-                      variant="outlined"
-                      color="primary"
-                      class="mb-2"
-                      @click="showScheduleDialog = true"
-                    >
-                      <v-icon start size="18">mdi-calendar-clock</v-icon>
-                      View Schedule Times
-                    </v-btn>
-                  </div>
-                  <v-list density="compact" class="selected-list mt-2">
-                    <v-list-item
-                      v-for="(cls, idx) in selectedCoursesList"
-                      :key="`sel-${idx}`"
-                      class="selected-list-item"
-                    >
-                      <v-list-item-title class="selected-content">
-                        <div class="selected-title">{{ cls.name || cls.number }}</div>
-                        <div class="selected-meeting">Meeting: {{ meetingDisplay(cls) }}</div>
-                      </v-list-item-title>
-                      <template #append>
-                        <v-btn
-                          icon
-                          size="small"
-                          variant="text"
-                          class="close-btn"
-                          @click.stop="toggleSelection(cls.number, cls.meetingpattern || '')"
-                        >
-                          <v-icon size="18">mdi-close</v-icon>
-                        </v-btn>
-                      </template>
-                    </v-list-item>
-                  </v-list>
-                </template>
-                <div v-else class="text-caption mt-2" style="color:#002856;">
-                  No classes selected.
-                </div>
+                  hide-details
+                  class="mr-2 catalog-input"
+                />
+                <v-text-field
+                  v-model="searchText"
+                  label="Search (section, term, instructor, etc.)"
+                  density="comfortable"
+                  hide-details
+                  class="mr-2 catalog-input wide"
+                />
                 <v-btn
-                  block
                   color="primary"
-                  class="mt-4 save-btn"
-                  :loading="savingSelection"
-                  :disabled="savingSelection || selectedSections.size === 0 || !studentId"
-                  @click="saveSelectedCourses"
+                  :loading="loading"
+                  class="mr-3"
+                  @click="loadCourses"
                 >
-                  Save to My Classes
+                  <v-icon start>mdi-refresh</v-icon>
+                  Refresh
                 </v-btn>
-              </v-card>
-            </v-col>
-          </v-row>
+                <div class="text-caption catalog-summary" :style="{ color: COLOR_PRIMARY }">
+                  Total: {{ summary.total }} • Open: {{ summary.open }}
+                </div>
+              </v-col>
+            </v-row>
+          </v-card-title>
+
+          <v-divider />
+
+          <v-card-text>
+            <v-alert
+              v-if="error"
+              type="error"
+              variant="tonal"
+              density="comfortable"
+              class="mb-3"
+            >
+              {{ error }}
+            </v-alert>
+
+            <v-progress-linear
+              v-if="loading"
+              indeterminate
+              color="primary"
+              class="mb-3"
+            />
+
+            <v-row v-if="!loading" dense>
+              <!-- COURSE TABLE -->
+              <v-col :cols="12" :md="isStudent ? 8 : 12" class="pa-2">
+                <div
+                  class="sticky-header-bar"
+                  :style="{ gridTemplateColumns: colWidths.join(' ') }"
+                >
+                  <div
+                    v-for="(title, i) in headerTitles"
+                    :key="i"
+                    class="header-cell sortable"
+                    @click="toggleSort(i)"
+                  >
+                    <span>{{ title }}</span>
+                    <v-icon
+                      v-if="sortIndicator(i)"
+                      size="16"
+                      class="ml-1 sort-icon"
+                    >
+                      {{ sortIndicator(i) }}
+                    </v-icon>
+                  </div>
+                </div>
+
+                <div class="table-wrap">
+                  <v-table
+                    density="comfortable"
+                    class="zebra sticky-head align-center with-divider course-table"
+                    style="table-layout: fixed; width: 100%;"
+                  >
+                    <colgroup>
+                      <col
+                        v-for="(w, i) in colWidths"
+                        :key="`col-${i}`"
+                        :style="{ width: w }"
+                      />
+                    </colgroup>
+                    <tbody>
+                      <tr
+                        v-for="(c, i) in sortedCourses"
+                        :key="`${c.section}-${i}`"
+                        :class="{ 'selected-row': isStudent && isRowSelected(c.section, c.meetingpattern) }"
+                        @click="isStudent && toggleSelection(c.section, c.meetingpattern)"
+                        :style="isStudent ? 'cursor:pointer;' : ''"
+                      >
+                        <td>{{ c.section }}</td>
+                        <td>{{ c.courseavailability }}</td>
+                        <td>{{ c.deliverymode }}</td>
+                        <td class="wrap-cell">{{ c.meetingpattern }}</td>
+                        <td>{{ c.courselocation }}</td>
+                        <td>{{ c.instructor }}</td>
+                        <td>{{ c.enrolled }}</td>
+                        <td>{{ c.capacity }}</td>
+                        <td>{{ c.academicperiod }}</td>
+                        <td>{{ c.startdate }}</td>
+                      </tr>
+                      <tr v-if="!filteredCourses.length">
+                        <td
+                          colspan="10"
+                          class="text-center py-6"
+                          :style="{ color: COLOR_PRIMARY }"
+                        >
+                          No current courses found for this term.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </v-table>
+                </div>
+              </v-col>
+
+              <!-- SELECTED CLASSES (Student only) -->
+              <v-col v-if="isStudent" cols="12" md="4" class="pa-2">
+                <v-card class="panel-card" :style="{ backgroundColor: COLOR_PANEL_BG }">
+                  <v-card-title class="panel-title">
+                    <v-icon size="20" class="mr-2">mdi-bookmark-check</v-icon>
+                    Selected Classes
+                  </v-card-title>
+                  <v-divider />
+                  <v-card-text>
+                    <template v-if="selectedCoursesList.length">
+                      <div class="d-flex justify-end mb-2">
+                        <v-btn
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          @click="showScheduleDialog = true"
+                        >
+                          <v-icon start size="18">mdi-calendar-clock</v-icon>
+                          View Schedule Times
+                        </v-btn>
+                      </div>
+                      <v-list density="compact" class="selected-list mt-2">
+                        <v-list-item
+                          v-for="(cls, idx) in selectedCoursesList"
+                          :key="`sel-${idx}`"
+                          class="selected-list-item"
+                        >
+                          <v-list-item-title class="selected-content">
+                            <div class="selected-title">
+                              {{ cls.name || cls.number }}
+                            </div>
+                            <div class="selected-meeting">
+                              Meeting: {{ meetingDisplay(cls) }}
+                            </div>
+                          </v-list-item-title>
+                          <template #append>
+                            <v-btn
+                              icon
+                              size="small"
+                              variant="text"
+                              class="close-btn"
+                              @click.stop="toggleSelection(cls.number, cls.meetingpattern || '')"
+                            >
+                              <v-icon size="18">mdi-close</v-icon>
+                            </v-btn>
+                          </template>
+                        </v-list-item>
+                      </v-list>
+                    </template>
+                    <div
+                      v-else
+                      class="text-caption mt-2"
+                      :style="{ color: COLOR_PRIMARY }"
+                    >
+                      No classes selected.
+                    </div>
+                    <v-btn
+                      block
+                      class="mt-4 save-btn"
+                      color="primary"
+                      :loading="savingSelection"
+                      :disabled="savingSelection || selectedSections.size === 0 || !studentId"
+                      @click="saveSelectedCourses"
+                    >
+                      Save to My Classes
+                    </v-btn>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-card-text>
         </v-card>
       </v-col>
     </v-row>
+
+    <!-- Snackbars -->
     <v-snackbar
       v-if="isStudent"
       v-model="showSelectionError"
@@ -729,6 +785,7 @@ async function saveSelectedCourses() {
     >
       <span class="selection-error-text">{{ selectionError }}</span>
     </v-snackbar>
+
     <v-snackbar
       v-if="isStudent && overlapWarning"
       v-model="showOverlapSnackbar"
@@ -738,8 +795,11 @@ async function saveSelectedCourses() {
       class="selection-error-snackbar"
       elevation="6"
     >
-      <span class="selection-error-text">Warning: You have overlapping classes.</span>
+      <span class="selection-error-text">
+        Warning: You have overlapping classes.
+      </span>
     </v-snackbar>
+
     <v-snackbar
       v-if="isStudent"
       v-model="showSaveMessage"
@@ -751,6 +811,7 @@ async function saveSelectedCourses() {
     >
       <span class="selection-error-text">{{ saveMessage }}</span>
     </v-snackbar>
+
     <v-snackbar
       v-if="isStudent"
       v-model="showSaveError"
@@ -763,14 +824,15 @@ async function saveSelectedCourses() {
       <span class="selection-error-text">{{ saveError }}</span>
     </v-snackbar>
 
+    <!-- Weekly schedule dialog -->
     <v-dialog
       v-model="showScheduleDialog"
       max-width="1100"
       persistent
     >
-      <v-card>
-        <v-card-title class="d-flex align-center justify-space-between">
-          <div style="font-weight:700; color:#002856;">Weekly Schedule (Selected Classes)</div>
+      <v-card class="dialog-card">
+        <v-card-title class="dialog-title d-flex align-center justify-space-between">
+          <div>Weekly Schedule (Selected Classes)</div>
           <v-btn icon variant="text" @click="showScheduleDialog = false">
             <v-icon>mdi-close</v-icon>
           </v-btn>
@@ -790,13 +852,21 @@ async function saveSelectedCourses() {
             <div class="time-axis">
               <div class="time-axis-spacer"></div>
               <div class="time-axis-ticks">
-                <div v-for="tick in timeTicks" :key="tick" class="time-tick">
+                <div
+                  v-for="tick in timeTicks"
+                  :key="tick"
+                  class="time-tick"
+                >
                   {{ formatTime(tick) }}
                 </div>
               </div>
             </div>
             <div class="day-columns">
-              <div v-for="day in dayLabels" :key="day" class="day-column">
+              <div
+                v-for="day in dayLabels"
+                :key="day"
+                class="day-column"
+              >
                 <div class="day-header">{{ day }}</div>
                 <div class="day-track">
                   <div
@@ -806,9 +876,17 @@ async function saveSelectedCourses() {
                     :style="slotStyle(slot)"
                   >
                     <div class="slot-bar-label">{{ slot.label }}</div>
-                    <div class="slot-bar-time">{{ formatTime(slot.startMinutes) }} - {{ formatTime(slot.endMinutes) }}</div>
+                    <div class="slot-bar-time">
+                      {{ formatTime(slot.startMinutes) }} -
+                      {{ formatTime(slot.endMinutes) }}
+                    </div>
                   </div>
-                  <div v-if="!scheduleByDay[day].length" class="no-slot">No classes</div>
+                  <div
+                    v-if="!scheduleByDay[day].length"
+                    class="no-slot"
+                  >
+                    No classes
+                  </div>
                 </div>
               </div>
             </div>
@@ -816,46 +894,102 @@ async function saveSelectedCourses() {
         </v-card-text>
       </v-card>
     </v-dialog>
-  </v-container>
+  
 
   <v-container fluid class="pa-2" style="background-color: transparent;">
-    <div class="text-center mt-6 brand-primary">
+    <div class="text-center mt-6 brand-primary" style="padding-right: 5%;">
       © {{ new Date().getFullYear() }} Numa Advising • University of Arkansas – Fort Smith
     </div>
   </v-container>
 </template>
 
 <style scoped>
-.table-wrap {
-  max-height: 80vh;
-  overflow: auto;
-  border: 1px solid #c7d9ea;
-  border-radius: 8px;
-  background: #ffffff;
-  scrollbar-gutter: stable;
+/* Match overall shell from Degree Planner */
+.respectful-shell {
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05) inset;
 }
 .catalog-shell {
+  margin: 0 auto;
+}
+
+/* Panel / card look */
+.panel-card {
+  background-color: #ffffff;
+  border: 1px solid #002856;
+  border-radius: 12px;
+  position: relative;
+  overflow: visible;
+}
+.catalog-card {
+  min-height: 70vh;
   width: 97.5vw;
   max-width: none;
   margin-left: calc(50% - 50vw - 0.5vw) !important;
   margin-right: 0 !important;
   padding: 0 !important;
 }
-.catalog-card {
-  min-height: 85vh;
+
+/* Header */
+.catalog-header {
+  padding: 16px 20px 8px;
 }
-.title-no-wrap {
+.catalog-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+.catalog-controls {
+  gap: 8px;
+}
+.catalog-input {
+  max-width: 210px;
+}
+.catalog-input.wide {
+  max-width: 280px;
+}
+.catalog-summary {
   white-space: nowrap;
 }
+
+/* Table and header strip */
+.table-wrap {
+  max-height: 70vh;
+  overflow: auto;
+  border: 1px solid #c7d9ea;
+  border-radius: 8px;
+  background: #ffffff;
+  scrollbar-gutter: stable;
+}
+
+.sticky-head thead th {
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 1;
+}
+
 .zebra tbody tr:nth-child(odd) { background: #f7fbff; }
-.selected-row {
-  background-color: #81b1ff !important;
-  outline: 2px solid #004492;
-  outline-offset: -2px;
+
+.align-center th {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.selected-row td {
-  background-color: #81b1ff !important;
+.align-center td {
+  text-align: center;
+  vertical-align: middle;
+  white-space: normal;
+  word-break: break-word;
 }
+
+/* vertical divider between first and second columns */
+.with-divider th:first-child,
+.with-divider td:first-child {
+  border-right: 1px solid #c7d9ea;
+}
+
+/* Custom sticky header bar for sortable columns */
 .sticky-header-bar {
   position: sticky;
   top: 0;
@@ -869,10 +1003,7 @@ async function saveSelectedCourses() {
   background: #e9f2fb;
   padding: 8px;
   box-sizing: border-box;
-  overflow: hidden;
-}
-.sr-head {
-  display: none;
+  margin-bottom: 6px;
 }
 .header-cell {
   font-weight: 700;
@@ -889,35 +1020,30 @@ async function saveSelectedCourses() {
   cursor: pointer;
   user-select: none;
 }
-.sticky-header-bar .header-cell:nth-child(8) {
-  transform: translateX(5px);
+
+.course-table td,
+.course-table th {
+  border-right: 1px solid #c7d9ea;
 }
-.sticky-header-bar .header-cell:nth-child(9) {
-  transform: translateX(4px);
+
+/* Remove the last column border so it doesn’t double up on the table edge */
+.course-table td:last-child,
+.course-table th:last-child {
+  border-right: none;
 }
-.sticky-header-bar .header-cell:nth-child(2) {
-  transform: translateX(-5px);
+/* Selected row styling */
+.selected-row {
+  background-color: #81b1ff !important;
+  box-shadow: inset 0 0 0 2px #004492; /* replaces outline */
 }
-.sticky-header-bar .header-cell:nth-child(1) {
-  transform: translateX(-4px);
+
+.selected-row th,
+.selected-row td {
+  background-color: #81b1ff !important; /* inherit row background */
 }
-.align-center th {
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.align-center td {
-  text-align: center;
-  vertical-align: middle;
-  white-space: normal;
-  word-break: break-word;
-}
-.wrap-cell {
-  white-space: normal !important;
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
+
+
+/* Selected list (right-hand card) */
 .selected-list {
   padding-top: 0;
 }
@@ -990,6 +1116,8 @@ async function saveSelectedCourses() {
 .save-btn:hover {
   filter: brightness(1.05);
 }
+
+/* Snackbars */
 .selection-error-snackbar {
   min-width: 260px;
 }
@@ -997,6 +1125,18 @@ async function saveSelectedCourses() {
   font-size: 12px;
   font-weight: 600;
 }
+
+/* Schedule dialog */
+.dialog-card {
+  border: 1px solid #002856;
+  border-radius: 12px;
+}
+.dialog-title {
+  color: #002856;
+  padding: 10px 16px;
+  font-weight: 700;
+}
+
 .schedule-grid-visual {
   display: grid;
   grid-template-columns: 90px 1fr;
@@ -1099,5 +1239,11 @@ async function saveSelectedCourses() {
   transform: translate(-50%, -50%);
   color: #7a8da6;
   font-size: 12px;
+}
+
+.wrap-cell {
+  white-space: normal !important;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 </style>

@@ -74,22 +74,22 @@ const initials = computed(() => {
 
       <!-- advisor -->
        <template v-if="!isAdminRoute && !isStudentRoute">
-         <!-- <v-list-item 
+          <v-list-item 
           v-if="userStore.roleID"
           link 
           :to="{ path: `/AdvisorProfilePage/${userStore.roleID}` }" 
           @click="drawer = false"
         >
           <v-list-item-title>Profile</v-list-item-title>
-        </v-list-item> -->
-        <v-list-item 
+        </v-list-item>
+<!--<v-list-item 
           v-if="userStore.roleID"
           link 
           :to="{ path: `/userProfilePage` }" 
           @click="drawer = false"
         >
           <v-list-item-title>Profile</v-list-item-title>
-        </v-list-item>
+        </v-list-item> -->
        </template>
 
       <!-- student  -->

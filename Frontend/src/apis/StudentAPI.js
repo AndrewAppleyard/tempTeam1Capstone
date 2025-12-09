@@ -87,4 +87,26 @@ export default {
     }
   },
 
+  async getStudentsByAdvisor(advisorid) {
+    try {
+      const response = await api.get(`/Advisor/Student/${advisorid}`);
+      console.log('Advisor students:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Get Students By Advisor Error:', err);
+      throw err;
+    }
+  },
+
+  async sendTestSMS(studentid) {
+    try {
+      const response = await api.post(`/Student/TestSMS/${studentid}`);
+      console.log('Test SMS:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Send Test SMS Error:', err);
+      throw err;
+    }
+  },
+
 };
