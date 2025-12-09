@@ -353,7 +353,7 @@ function downloadCSV() {
             </v-col>
 
             <v-col cols="12" md="6" class="d-flex justify-end align-center flex-wrap" style="gap:10px;">
-              <v-btn variant="outlined" :ripple="false" class="mr-2" color="#002856" @click="goBack">
+              <v-btn v-if="userStore.userRole != 'UAFS_ADMINS'" variant="outlined" :ripple="false" class="mr-2" color="#002856" @click="goBack">
                 <v-icon start>mdi-arrow-left</v-icon>
                 Back
               </v-btn>
