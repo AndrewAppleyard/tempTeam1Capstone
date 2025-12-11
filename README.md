@@ -1,6 +1,6 @@
 To run the application,```cd``` into the ```scripts``` folder and run:
 
-```sudo ./setup-docker```
+```sudo ./setup-docker.sh```
 
 Give the file executable permissions if necessary.
 
