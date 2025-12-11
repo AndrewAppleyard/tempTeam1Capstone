@@ -5,6 +5,7 @@ To run the application,```cd``` into the ```scripts``` folder and run:
 Give the file executable permissions if necessary.
 
 
+
 Frontend:
 - Vue + Vuetify
 - Apache server
